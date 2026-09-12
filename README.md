@@ -249,6 +249,39 @@ Chunks are matched by a hash of their embedding input. Re-running an ingestion o
 
 Three things invalidate a chunk: its text, the document title (it is part of the embedded context header), and the chunking parameters. All three are captured in the hash, so the system can never quietly serve a stale mixture.
 
+### Deletions
+
+Ingestion only ever walks what a source still returns, so it cannot notice that a record is gone: a deleted book keeps answering questions until something removes its document. Two mechanisms, and you want both.
+
+Immediately, from wherever the host deletes the record — a model observer is the place that cannot be bypassed:
+
+```php
+use Murkrow\Rag\Facades\Rag;
+
+public function deleted(Book $book): void
+{
+    Rag::forget('books', $book->getKey());
+}
+```
+
+Chunks and citations cascade from the document row, and the vector lives on the chunk row, so that one call takes the embeddings with it. It returns `false` when nothing was indexed under that id.
+
+Nightly, as the safety net for the delete paths that skip model events (`Model::query()->delete()`, a truncate, a manual `DELETE`):
+
+```php
+Schedule::job(new PruneOrphanChunksJob)->dailyAt('03:00');
+```
+
+It asks each source whether every document's host record still exists, and drops the ones that do not.
+
+**A grouped source is different.** Its `external_id` is the group, not the row — deleting one of the thousands of rows that share a document must *re-ingest that group*, not forget it:
+
+```php
+Rag::ingest('toponyms', ['initials' => 'S']);   // incremental: re-embeds only what changed
+```
+
+`forget()` on a grouped source would delete every entry that shares the group. Reach for it only when the whole group is gone, and let the nightly prune handle that case instead.
+
 ### Chunking
 
 Text is split into sentence-aligned windows with overlap, which sounds ordinary and is not, because the input is usually worse than prose:

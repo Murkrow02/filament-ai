@@ -130,4 +130,4 @@ Source (class)   →  DocumentIngestor  →  Chunker  →  ChunkDiffer  →  Chu
 - Only one vector driver. The `VectorStore` contract exists so a second is one class, not a refactor.
 - No re-ranker model. MMR and de-duplication cover most of the benefit; a cross-encoder would be a new `Retriever`.
 - No conversational memory beyond `AnswerOptions::$history`, which is passed straight to the prompt.
-- `PruneOrphanChunksJob` exists but is not scheduled. Ingestion only walks what the source still returns, so it cannot notice deletions; schedule it nightly on a corpus that gets pruned.
+- `PruneOrphanChunksJob` exists but is not scheduled. Ingestion only walks what the source still returns, so it cannot notice deletions; schedule it nightly on a corpus that gets pruned. `RagManager::forget()` is the immediate counterpart, for a host that calls it from a model observer -- note that on a grouped source its `$externalId` is the *group*, so a host deleting one row of thousands must re-ingest that group instead.

@@ -15,6 +15,7 @@ use Murkrow\Rag\RagManager;
  * @method static \Murkrow\Rag\Models\IngestionRun ingest(string $sourceKey, array $filters = [], \Murkrow\Rag\Enums\IngestionMode $mode = \Murkrow\Rag\Enums\IngestionMode::Incremental, array $chunkingOverrides = [], int|string|null $createdBy = null)
  * @method static \Murkrow\Rag\Models\IngestionRun ingestSync(string $sourceKey, array $filters = [], \Murkrow\Rag\Enums\IngestionMode $mode = \Murkrow\Rag\Enums\IngestionMode::Incremental, array $chunkingOverrides = [], ?\Closure $onProgress = null)
  * @method static \Murkrow\Rag\Data\IngestionEstimate estimate(string $sourceKey, array $filters = [])
+ * @method static bool forget(string $sourceKey, string|int $externalId)
  * @method static \Murkrow\Rag\Sources\ClosureKnowledgeSource source(string $key)
  * @method static void register(\Murkrow\Rag\Contracts\KnowledgeSource $source)
  * @method static \Murkrow\Rag\Sources\SourceRegistry sources()

@@ -19,6 +19,7 @@ use Murkrow\Rag\Enums\IngestionMode;
 use Murkrow\Rag\Ingestion\IngestionPlanner;
 use Murkrow\Rag\Ingestion\StartIngestionRun;
 use Murkrow\Rag\Ingestion\SyncIngestionRunner;
+use Murkrow\Rag\Models\Document;
 use Murkrow\Rag\Models\IngestionRun;
 use Murkrow\Rag\Sources\ClosureKnowledgeSource;
 use Murkrow\Rag\Sources\SourceRegistry;
@@ -124,6 +125,33 @@ final class RagManager
      * Build a source at runtime, for knowledge that is not an Eloquent model.
      * Returns the builder; call `register()` on it once configured.
      */
+    /**
+     * Drop one indexed document, by the source key and external id it was
+     * ingested under.
+     *
+     * For deletions in the host application: ingestion only ever walks what a
+     * source still returns, so it cannot notice that a record is gone, and the
+     * document keeps answering questions until something removes it. This is
+     * the immediate, single-record counterpart to PruneOrphanChunksJob's
+     * nightly sweep -- call it from a model observer's `deleted()`.
+     *
+     * Chunks and citations cascade from the document row and the vector lives
+     * on the chunk row, so the cascade takes the embeddings with it.
+     *
+     * Note what `$externalId` means for a grouped source: the group, not the
+     * host row. Deleting one of thousands of rows that share a document must
+     * re-ingest that group instead of calling this.
+     *
+     * @return bool Whether a document was actually indexed under that id.
+     */
+    public function forget(string $sourceKey, string|int $externalId): bool
+    {
+        return Document::query()
+            ->where('source_key', $sourceKey)
+            ->where('external_id', (string) $externalId)
+            ->delete() > 0;
+    }
+
     public function source(string $key): ClosureKnowledgeSource
     {
         return new ClosureKnowledgeSource($key, $this->sources->register(...));
