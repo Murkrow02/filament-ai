@@ -55,6 +55,10 @@ return [
         'prism_provider' => env('RAG_EMBEDDING_PROVIDER', 'openai'),
         'model' => env('RAG_EMBEDDING_MODEL', 'text-embedding-3-small'),
         'dimensions' => (int) env('RAG_EMBEDDING_DIMENSIONS', 1536),
+        // Texts per embedding request. A queued job carries
+        // rag.queue.chunks_per_job chunks and sends them in requests of this
+        // size. Keep it small (1-2) for a self-hosted embedder: Ollama serves
+        // one request at a time, so a search waits behind the one in flight.
         'batch_size' => (int) env('RAG_EMBEDDING_BATCH_SIZE', 96),
         'max_input_tokens' => (int) env('RAG_EMBEDDING_MAX_INPUT_TOKENS', 8000),
 

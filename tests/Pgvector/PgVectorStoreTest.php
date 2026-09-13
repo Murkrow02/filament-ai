@@ -7,9 +7,12 @@ use Murkrow\Rag\Contracts\Retriever;
 use Murkrow\Rag\Contracts\VectorStore;
 use Murkrow\Rag\Data\RetrievalOptions;
 use Murkrow\Rag\Data\VectorQuery;
+use Murkrow\Rag\Embeddings\FakeEmbeddingProvider;
 use Murkrow\Rag\Embeddings\VectorMath;
+use Murkrow\Rag\Ingestion\ChunkEmbedder;
 use Murkrow\Rag\Facades\Rag;
 use Murkrow\Rag\Models\Chunk;
+use Murkrow\Rag\Models\Document;
 use Murkrow\Rag\Support\Tables;
 use Murkrow\Rag\Tests\Fixtures\TestBook;
 use Illuminate\Support\Facades\DB;
@@ -152,6 +155,78 @@ it('rebuilds the index on demand', function (): void {
         'SELECT indexdef FROM pg_indexes WHERE tablename = ? AND indexdef ILIKE ?',
         [Tables::chunks(), '%USING hnsw%'],
     ))->not->toBeNull();
+});
+
+function pgColumnWidth(): int
+{
+    return (int) DB::selectOne(
+        'SELECT atttypmod FROM pg_attribute WHERE attrelid = ?::regclass AND attname = ?',
+        [Tables::chunks(), 'embedding'],
+    )->atttypmod;
+}
+
+it('reports the width the column was installed with', function (): void {
+    expect(app(VectorStore::class)->installedDimensions())
+        ->toBe((int) config('rag.embeddings.dimensions'));
+});
+
+it('keeps every vector when reindexing at the same width', function (): void {
+    seedPgLibrary();
+
+    $embedded = app(VectorStore::class)->countEmbedded();
+
+    $this->artisan('rag:vector:reindex', ['--force' => true])->assertExitCode(0);
+
+    expect($embedded)->toBeGreaterThan(0)
+        ->and(app(VectorStore::class)->countEmbedded())->toBe($embedded)
+        ->and(pgColumnWidth())->toBe((int) config('rag.embeddings.dimensions'));
+});
+
+it('resizes the column when the configured dimensions changed', function (): void {
+    seedPgLibrary();
+
+    $installed = (int) config('rag.embeddings.dimensions');
+    $configured = intdiv($installed, 2);
+
+    // What happens in a real deployment: the migration ran with one width,
+    // then the model changed and the config with it.
+    config(['rag.embeddings.dimensions' => $configured]);
+
+    $this->artisan('rag:vector:reindex', ['--force' => true])
+        ->expectsOutputToContain('--mode=embeddings_only')
+        ->assertExitCode(0);
+
+    expect(pgColumnWidth())->toBe($configured)
+        ->and(app(VectorStore::class)->installedDimensions())->toBe($configured)
+        ->and(Chunk::query()->whereNotNull('embedded_at')->count())->toBe(0)
+        ->and(Document::query()->where('embedded_chunk_count', '>', 0)->count())->toBe(0)
+        ->and(DB::selectOne(
+            'SELECT indexdef FROM pg_indexes WHERE tablename = ? AND indexdef ILIKE ?',
+            [Tables::chunks(), '%USING hnsw%'],
+        ))->not->toBeNull();
+
+    // The new width actually accepts writes -- the failure that prompted this.
+    $ids = Chunk::query()->pluck('id')->map(intval(...))->all();
+    $embedder = new ChunkEmbedder(new FakeEmbeddingProvider(dimensions: $configured), app(VectorStore::class));
+
+    expect($embedder->embed($ids)['embedded'])->toBe(count($ids))
+        ->and(app(VectorStore::class)->countEmbedded())->toBe(count($ids));
+});
+
+it('does nothing when the resize is not confirmed', function (): void {
+    seedPgLibrary();
+
+    $installed = (int) config('rag.embeddings.dimensions');
+    $embedded = app(VectorStore::class)->countEmbedded();
+
+    config(['rag.embeddings.dimensions' => intdiv($installed, 2)]);
+
+    $this->artisan('rag:vector:reindex')
+        ->expectsConfirmation('Discard '.number_format($embedded).' stored vectors, resize the column and rebuild the index?', 'no')
+        ->assertExitCode(0);
+
+    expect(pgColumnWidth())->toBe($installed)
+        ->and(app(VectorStore::class)->countEmbedded())->toBe($embedded);
 });
 
 it('runs the whole retrieval pipeline against postgres', function (): void {

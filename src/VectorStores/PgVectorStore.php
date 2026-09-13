@@ -8,6 +8,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Murkrow\Rag\Contracts\ResizableVectorStore;
 use Murkrow\Rag\Data\ScoredChunk;
 use Murkrow\Rag\Data\VectorQuery;
 use Murkrow\Rag\Embeddings\VectorMath;
@@ -22,7 +23,7 @@ use Murkrow\Rag\Support\Tables;
  * the raw distance operator rather than on the derived score so the HNSW index
  * is actually used -- ordering by `1 - distance DESC` would defeat it.
  */
-final class PgVectorStore extends AbstractVectorStore
+final class PgVectorStore extends AbstractVectorStore implements ResizableVectorStore
 {
     /** @var array<int, true> */
     private static array $tuned = [];
@@ -81,6 +82,48 @@ final class PgVectorStore extends AbstractVectorStore
         foreach (['hnsw', 'ivfflat'] as $index) {
             $this->connection()->statement("DROP INDEX IF EXISTS {$chunks}_embedding_{$index}");
         }
+    }
+
+    public function installedDimensions(): ?int
+    {
+        // For vector and halfvec, atttypmod is the declared width itself.
+        $row = $this->connection()->selectOne(
+            'SELECT atttypmod FROM pg_attribute
+             WHERE attrelid = to_regclass(?) AND attname = ? AND NOT attisdropped',
+            [Tables::chunks(), 'embedding'],
+        );
+
+        if ($row === null) {
+            return null;
+        }
+
+        $width = (int) $row->atttypmod;
+
+        return $width > 0 ? $width : null;
+    }
+
+    public function resize(int $dimensions): void
+    {
+        $chunks = Tables::chunks();
+        $type = $this->columnType();
+        $connection = $this->connection();
+
+        $connection->transaction(static function () use ($connection, $chunks, $type, $dimensions): void {
+            $connection->table($chunks)
+                ->where(static fn ($query) => $query->whereNotNull('embedding')->orWhereNotNull('embedded_at'))
+                ->update([
+                    'embedding' => null,
+                    'embedding_model' => null,
+                    'embedding_dimensions' => null,
+                    'embedded_at' => null,
+                ]);
+
+            // USING NULL rather than a cast: the old vectors are already gone,
+            // and a cast between widths is exactly what pgvector rejects.
+            $connection->statement(
+                "ALTER TABLE {$chunks} ALTER COLUMN embedding TYPE {$type}({$dimensions}) USING NULL"
+            );
+        });
     }
 
     public function assertSupported(): void

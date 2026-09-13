@@ -12,7 +12,13 @@ use Murkrow\Rag\Models\Document;
 use Murkrow\Rag\Support\Tables;
 
 /**
- * Embeds a group of chunks in one API call and writes the vectors back.
+ * Embeds a group of chunks and writes the vectors back.
+ *
+ * A group is `rag.queue.chunks_per_job` chunks; it is sent to the provider in
+ * calls of at most `maxBatchSize()` texts (`rag.embeddings.batch_size`). The
+ * split matters for a self-hosted embedder: Ollama serves one request at a
+ * time, so the size of each call is how long a search query can wait behind
+ * an ingestion that is running.
  *
  * Shared by the queued job and by `rag:ingest --sync` so the two paths cannot
  * drift. Idempotent by design: it re-reads the rows and skips anything already
@@ -54,34 +60,44 @@ final class ChunkEmbedder
             return ['embedded' => 0, 'tokens' => 0, 'cost_micros' => 0];
         }
 
-        $inputs = [];
-        $ids = [];
+        $pending = [];
 
         foreach ($chunks as $chunk) {
-            $ids[] = (int) $chunk->id;
-            $inputs[] = EmbeddingInput::for($chunk);
+            $pending[] = ['id' => (int) $chunk->id, 'input' => EmbeddingInput::for($chunk)];
         }
 
-        $batch = $this->embeddings->embedBatch($inputs);
-
+        $perCall = max(1, $this->embeddings->maxBatchSize());
         $vectors = [];
+        $tokens = 0;
+        $costMicros = 0;
 
-        foreach ($batch->vectors as $index => $vector) {
-            if (! isset($ids[$index])) {
-                continue;
+        foreach (array_chunk($pending, $perCall) as $slice) {
+            $batch = $this->embeddings->embedBatch(array_column($slice, 'input'));
+
+            foreach ($batch->vectors as $index => $vector) {
+                if (! isset($slice[$index])) {
+                    continue;
+                }
+
+                $vectors[] = ['id' => $slice[$index]['id'], 'vector' => $vector];
             }
 
-            $vectors[] = ['id' => $ids[$index], 'vector' => $vector];
+            $tokens += $batch->tokens;
+            $costMicros += CostCalculator::embeddingMicros($batch->model, $batch->tokens);
         }
 
-        $this->store->upsert($vectors, $batch->model, $batch->dimensions);
+        // One write for the whole group, after every call has succeeded. Writing
+        // slice by slice would leave a failed group half-embedded: the retry
+        // skips the saved rows, so the run's progress would never count them.
+        // Re-embedding a few chunks on a retry is the cheaper price.
+        $this->store->upsert($vectors, $this->embeddings->model(), $this->embeddings->dimensions());
 
         $this->refreshDocumentCounters($chunks->pluck('document_id')->unique()->all());
 
         return [
             'embedded' => count($vectors),
-            'tokens' => $batch->tokens,
-            'cost_micros' => CostCalculator::embeddingMicros($batch->model, $batch->tokens),
+            'tokens' => $tokens,
+            'cost_micros' => $costMicros,
         ];
     }
 

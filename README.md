@@ -511,7 +511,7 @@ php artisan rag:purge books --embeddings-only
 
 **Build the index after a bulk load, not before.** `rag:vector:reindex` drops and rebuilds it, which produces a better graph and is substantially faster than incremental inserts. Raise `maintenance_work_mem` first on a large corpus.
 
-**Changing the embedding model invalidates every vector.** Vectors from two models are not comparable, and a pgvector column has a fixed width. The change is a deployment, not a setting: update the config, run `rag:vector:reindex`, then `rag:ingest <source> --mode=embeddings_only`. `rag:status` reports how many vectors are stale so the condition is visible rather than silent.
+**Changing the embedding model invalidates every vector.** Vectors from two models are not comparable, and a pgvector column has a fixed width that the migration set once, from the config of that moment. The change is a deployment, not a setting: update the config, then run `rag:vector:reindex`. When `rag.embeddings.dimensions` no longer matches the column, the command says so, discards the stored vectors, resizes the column and rebuilds the index; re-embed afterwards with `rag:ingest <source> --mode=embeddings_only`. A new model with the same width needs only that last step, and `rag:status` reports vectors from another model as stale so the condition is visible rather than silent.
 
 ### Cost
 
@@ -525,6 +525,8 @@ Roughly, for a 1,000-book library of ~250 pages each at ~350 tokens per page:
 | Incremental re-run, nothing changed | $0 |
 
 The dominant cost is wall-clock time against the provider's API, not money. Batches of 96 chunks per request and parallel workers are what move that number; the built-in rate limiter keeps a bulk run from burning its retry budget against a 429.
+
+Two settings shape a queued run: `rag.queue.chunks_per_job` is how many chunks one job carries, and `rag.embeddings.batch_size` how many of them go into one embedding request, so each job makes ⌈chunks_per_job ÷ batch_size⌉ calls. A self-hosted embedder such as Ollama serves requests strictly one at a time: there, a small `batch_size` (1–2) keeps a search query from waiting behind a long ingestion request, at no cost in throughput, and a second worker adds wait rather than speed.
 
 ---
 
