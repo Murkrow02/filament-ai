@@ -4,7 +4,7 @@ Handoff notes for an AI agent continuing this package. Read `README.md` first fo
 
 ## Status
 
-Mid-migration to `murkrow/filament-ai` on branch `feat/filament-ai`: Filament v5 and laravel/ai drivers are in, the agent layer (resource-derived tools, in-panel chat, MCP parity) is not built yet. Green: 206 tests on SQLite + 14 pgvector.
+Mid-migration to `murkrow/filament-ai` on branch `feat/filament-ai`: Filament v5, laravel/ai drivers and the read-only agent core are in; write tools with approval, the in-panel chat and MCP parity are not built yet. Green: 231 tests on SQLite + 14 pgvector.
 
 **Do not merge this branch to `main` as-is.** `release.yml` would tag it as a *patch* of `murkrow/laravel-rag`, and the renamed `name` in `composer.json` conflicts with that repo's Packagist entry. Settle the new repository/Packagist package and tag a major by hand first. Hosts pinned to `murkrow/laravel-rag ^1.0` (Filament 4) stay on 1.x.
 
@@ -58,6 +58,8 @@ Source (class)   →  DocumentIngestor  →  Chunker  →  ChunkDiffer  →  Chu
 - `src/Retrieval/`, `src/Answering/` — pipeline and grounding.
 - `src/Filament/` — the panel surface (Filament is required). `src/Mcp/` — the optional MCP surface.
 - `src/Llm/`, `src/Embeddings/` — `laravel-ai` is the default driver, `prism` is deprecated and goes in the next minor, `fake` is for tests.
+- `src/Knowledge/KnowledgeSearch` — search and fetch over the corpus for an *external* caller, scoped to an allow-list it never widens. The MCP tools and the agent tools are both thin wrappers over it; change rendering or scoping here, not in a tool.
+- `src/Agent/` — the panel agent. `PanelAssistant` (a laravel/ai agent, usable with no subclass) composes the knowledge tools and `ResourceToolRegistry`'s tools. A Filament resource opts in with `AgentResource` + `InteractsWithAgent`; `ResourceInspector` reads its table, form and labels into a `ResourceBlueprint`, and `ListRecordsTool` / `ViewRecordTool` act on that blueprint only.
 - `src/Chat/`, `src/Http/`, `routes/chat.php`, `resources/views/chat/`, `resources/dist/` — the standalone chat page. Filament-free by construction: it is the surface for someone who wants an answer, not a retriever to tune. `ChatAbilities` is its whole authorization vocabulary; `ChatPayload` is the only thing that decides what reaches the browser.
 
 ## Decisions that look odd and are not
@@ -92,6 +94,11 @@ Source (class)   →  DocumentIngestor  →  Chunker  →  ChunkDiffer  →  Chu
 - **The chat's CSS custom properties live on `:root`.** They were on `.rag` once, and `body` is its *ancestor*: custom properties inherit downwards only, so every `var()` on `body` was invalid and the whole page fell back to the browser's default serif.
 - **A conversation id is checked with `Str::isUuid()` before it reaches the query.** On PostgreSQL `rag_conversations.uuid` is a native `uuid`, so `where('uuid', 'undefined')` is not a miss -- it is `SQLSTATE[22P02]` and a 500. SQLite stores it as text and swallows this, so the Web suite cannot catch it; the guard is the test.
 - **An unusable conversation id opens a new thread, it does not fail the request.** The id is a continuation hint. A deleted, pruned or corrupted one must never leave somebody on a page that refuses to answer anything, so `AskRequest` does not validate it as a uuid and `AskController::resolveConversation()` falls back to a fresh conversation.
+- **Agent tools return `Error: ...` strings instead of throwing.** A thrown exception ends the model's whole turn; an error it can read lets it fix its arguments or explain the problem. `KnowledgeResult::toToolOutput()` is the one place the prefix is added.
+- **Resource tools check policies inside `handle()`, not only at registration.** `ResourceToolRegistry` leaves out a resource whose `viewAny` denies the user, so the model is not told about it, but the tool list is built once per prompt and a conversation can outlive a permission change. `AgentResourceToolsTest > it checks the policy again when a tool is called` pins it. `view` also checks the record-level `view` policy.
+- **Resource tools query through `Resource::getEloquentQuery()`.** That is what applies tenant scoping and whatever the host narrowed for its table; a record outside it is reported as not found, not as forbidden, so its existence does not leak.
+- **`RecordPresenter` skips attributes the model hides, even when named.** A resource declaring a column is not consent to hand a password hash to a language model.
+- **`ResourceInspector` builds the table against an unmounted instance of the resource's own table page.** `Table::make()` needs a `HasTable` and no Livewire component is mounted when the agent runs. Only static facts (names, searchability) are read, every read is wrapped so an exotic resource degrades to a less informed tool rather than an exception, and search columns are intersected with the model table's real columns: a searchable relationship or custom-query column would otherwise reach SQL as a column that does not exist.
 - **The `job_batches` migration is dated `9999_12_31`.** It must run *after* every host migration so an application that publishes its own always wins and ours no-ops. Dated normally it created the table first and made the host's migration fail with a duplicate-table error — which is exactly what happened in this repo.
 
 ## Testing notes

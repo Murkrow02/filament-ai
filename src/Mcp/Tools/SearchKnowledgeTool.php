@@ -8,9 +8,7 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
-use Murkrow\FilamentAi\Contracts\Retriever;
-use Murkrow\FilamentAi\Data\RetrievalOptions;
-use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Knowledge\KnowledgeSearch;
 use Murkrow\FilamentAi\Sources\SourceRegistry;
 
 /**
@@ -20,6 +18,8 @@ use Murkrow\FilamentAi\Sources\SourceRegistry;
  * to its own domain -- `search_books_knowledge` reads far better to a model
  * than a generic `search_knowledge`, and the name is most of what the model
  * uses to decide whether to reach for it.
+ *
+ * The search itself lives in `KnowledgeSearch`, shared with the panel agent.
  */
 class SearchKnowledgeTool extends Tool
 {
@@ -83,86 +83,27 @@ class SearchKnowledgeTool extends Tool
         ];
     }
 
-    public function handle(Request $request, Retriever $retriever): Response
+    public function handle(Request $request, KnowledgeSearch $search): Response
     {
-        $query = trim((string) $request->get('query', ''));
-
-        if ($query === '') {
-            return Response::error('The "query" argument is required.');
-        }
-
         $limit = $request->get('limit');
+        $minScore = $request->get('min_score');
+        $documentIds = $request->get('document_ids');
 
-        $options = new RetrievalOptions(
-            sourceKeys: $this->sourceKeys($request->get('source')),
-            externalIds: $this->toList($request->get('document_ids')),
+        // Always the exposed set, empty included: an empty set means the host
+        // exposed nothing to MCP, and the search must return nothing rather
+        // than quietly falling back to every source.
+        $result = $search->search(
+            query: (string) $request->get('query', ''),
+            allowedSources: app(SourceRegistry::class)->exposedKeys(),
+            source: $request->get('source') === null ? null : (string) $request->get('source'),
+            documentIds: $documentIds === null ? null : (array) $documentIds,
             positionFrom: $this->toInt($request->get('position_from')),
             positionTo: $this->toInt($request->get('position_to')),
-            topK: $limit === null ? null : max(1, min(20, (int) $limit)),
-            minScore: $request->get('min_score') === null ? null : (float) $request->get('min_score'),
+            limit: $this->toInt($limit),
+            minScore: $minScore === null ? null : (float) $minScore,
         );
 
-        $result = $retriever->retrieve($query, $options);
-
-        if ($result->isEmpty()) {
-            return Response::text('No passage in the knowledge base matches that query.');
-        }
-
-        $blocks = [];
-        $marker = 1;
-
-        foreach ($result->chunks as $chunk) {
-            $blocks[] = $this->render($marker++, $chunk);
-        }
-
-        return Response::text(implode("\n\n", $blocks));
-    }
-
-    private function render(int $marker, ScoredChunk $chunk): string
-    {
-        $sources = app(SourceRegistry::class);
-
-        $position = $sources->has($chunk->sourceKey)
-            ? $sources->get($chunk->sourceKey)->positionLabel($chunk->positionStart, $chunk->positionEnd)
-            : "{$chunk->positionStart}-{$chunk->positionEnd}";
-
-        $title = $chunk->documentTitle ?? $chunk->externalId;
-        $score = number_format($chunk->score, 2);
-
-        $header = "[#{$marker}] {$title} - {$position} (score {$score}, document_id {$chunk->externalId})";
-
-        return $header."\n".$chunk->content;
-    }
-
-    /**
-     * Always returns the exposed set, empty included: an empty set means the
-     * host exposed nothing to MCP, and the search must return nothing rather
-     * than quietly falling back to every source.
-     *
-     * @return array<int, string>
-     */
-    private function sourceKeys(mixed $source): array
-    {
-        $exposed = app(SourceRegistry::class)->exposedKeys();
-
-        if ($source === null || $source === '') {
-            return $exposed;
-        }
-
-        // A source the host did not expose stays inaccessible even if named.
-        return array_values(array_intersect($exposed, [(string) $source]));
-    }
-
-    /**
-     * @return array<int, string>|null
-     */
-    private function toList(mixed $value): ?array
-    {
-        if ($value === null || $value === []) {
-            return null;
-        }
-
-        return array_map(strval(...), (array) $value);
+        return $result->isError ? Response::error($result->text) : Response::text($result->text);
     }
 
     private function toInt(mixed $value): ?int

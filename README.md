@@ -362,6 +362,56 @@ Embeddings are weakest at exactly what lexical search is best at: names, dates, 
 
 ---
 
+## Panel agent
+
+An assistant the panel user can ask instead of navigating. It reads the knowledge base and every Filament resource that opts in, always as the signed-in user.
+
+Opt a resource in with one interface and one trait. Nothing else is written for the agent: its tools are derived from what the resource already declares.
+
+```php
+use Murkrow\FilamentAi\Agent\Resources\AgentResource;
+use Murkrow\FilamentAi\Agent\Resources\InteractsWithAgent;
+
+class OrderResource extends Resource implements AgentResource
+{
+    use InteractsWithAgent;
+}
+```
+
+That resource now gives the agent `orders_list` (free-text search over the table's searchable columns, paginated, newest first) and `orders_view` (one record, with the table's columns and the form's fields). Narrow or describe it when the defaults are not right:
+
+```php
+public static function agentTools(AgentTools $tools): AgentTools
+{
+    return $tools
+        ->only(AgentTools::LIST)
+        ->searchUsing(['number', 'customer_name'])
+        ->limit(10)
+        ->describe('Customer orders. "Open" means placed but not shipped.');
+}
+```
+
+What the agent can and cannot reach:
+
+- Records come from `Resource::getEloquentQuery()`, so tenant scoping and anything you narrowed for the table apply unchanged.
+- `viewAny` and `view` policies are checked on every call. A resource the user may not view is not even offered to the model.
+- Attributes the model hides (`$hidden`) are never returned.
+- Resources without `AgentResource` are invisible to it. It cannot change data yet.
+
+The agent itself works with no class of your own:
+
+```php
+use Murkrow\FilamentAi\Agent\PanelAssistant;
+
+(new PanelAssistant)
+    ->onPage(OrderResource::class, $order)   // so "this order" means something
+    ->prompt('Has this customer ordered before?');
+```
+
+Extend it to give it a voice and a domain (`persona()`, `domain()`, `additionalTools()`). Knowledge sources it may read and the default record cap live under `rag.agent`.
+
+---
+
 ## MCP server
 
 With `laravel/mcp` installed, the package registers a server automatically — no route file to publish.

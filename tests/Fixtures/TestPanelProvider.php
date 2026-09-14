@@ -36,6 +36,11 @@ class TestPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            // Host resources: one opted in to the agent, one not.
+            ->resources([
+                Filament\TestBookResource::class,
+                Filament\TestBookPageResource::class,
+            ])
             ->plugin(RagPlugin::make());
     }
 }

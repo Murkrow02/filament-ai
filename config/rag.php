@@ -334,6 +334,34 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Panel agent
+    |--------------------------------------------------------------------------
+    |
+    | The assistant a panel user talks to. It reads the knowledge base and the
+    | Filament resources that implement AgentResource -- exposure is opt-in per
+    | resource -- always as the signed-in user, through the resource's own
+    | query and policies.
+    |
+    */
+
+    'agent' => [
+        'enabled' => env('RAG_AGENT_ENABLED', true),
+
+        'knowledge' => [
+            'enabled' => true,
+            // null => every registered source; [] => none.
+            'sources' => null,
+        ],
+
+        'resources' => [
+            'enabled' => true,
+            // Default cap on records per list call; AgentTools::limit() overrides it per resource.
+            'max_records' => 25,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Chat page
     |--------------------------------------------------------------------------
     |
