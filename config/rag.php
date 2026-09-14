@@ -358,6 +358,28 @@ return [
             // Default cap on records per list call; AgentTools::limit() overrides it per resource.
             'max_records' => 25,
         ],
+
+        // The agent class the panel chat talks to. Extend PanelAssistant to
+        // give it a persona, a domain and extra tools.
+        'assistant' => \Murkrow\FilamentAi\Agent\PanelAssistant::class,
+
+        // fn (?Authenticatable $user): bool -- who may use the assistant.
+        // null lets every user who can reach the panel use it.
+        'authorize' => null,
+
+        // The chat page inside the panel. It keeps its history in laravel/ai's
+        // conversation tables: publish and run laravel/ai's migrations.
+        'chat' => [
+            'enabled' => true,
+            'slug' => 'assistant',
+            'navigation_group' => null,
+            'navigation_sort' => -1,
+            // Conversations listed in the chat's sidebar.
+            'history' => 20,
+            // A button next to global search that opens the chat about the
+            // record on screen.
+            'topbar_button' => true,
+        ],
     ],
 
     /*

@@ -420,6 +420,21 @@ foreach ($response->pendingApprovals as $approval) {
 
 Resuming reads the paused call back from laravel/ai's conversation tables, so publish and run its migrations, and prompt with `forUser()`. Creation and edits can skip the confirmation per resource with `->withoutApproval(AgentTools::CREATE, AgentTools::EDIT)`; a deletion is always confirmed.
 
+### In the panel
+
+The plugin adds an **Assistant** page to the panel: the user's conversations in a sidebar, answers rendered as Markdown, and every pending change shown as a card with Approve and Reject. A button next to global search opens it about the page on screen, so "this order" means the order being viewed. History lives in laravel/ai's conversation tables -- run its migrations -- and is only ever visible to the user who wrote it.
+
+```php
+// config/rag.php
+'agent' => [
+    'assistant' => \App\Ai\Assistant::class,      // your PanelAssistant subclass
+    'authorize' => fn ($user) => $user->can('useAssistant'),
+    'chat' => ['slug' => 'assistant', 'topbar_button' => true],
+],
+```
+
+Answers arrive whole, not streamed, for now.
+
 The agent itself works with no class of your own:
 
 ```php

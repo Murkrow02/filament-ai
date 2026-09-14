@@ -8,6 +8,9 @@ use Filament\Contracts\Plugin;
 use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
+use Murkrow\FilamentAi\Agent\Chat\AssistantAccess;
+use Murkrow\FilamentAi\Filament\Pages\AssistantChat;
 use Illuminate\Support\Facades\Route;
 use Murkrow\FilamentAi\Chat\ChatAbilities;
 use Murkrow\FilamentAi\Filament\Pages\IngestKnowledge;
@@ -56,6 +59,12 @@ class RagPlugin implements Plugin
             ->resources($this->resources())
             ->pages($this->pages())
             ->widgets($this->widgets());
+
+        if (AssistantAccess::enabled() && config('rag.agent.chat.topbar_button', true)) {
+            // Resolved at render time, not here: the button needs the
+            // signed-in user and the page being rendered.
+            $panel->renderHook(PanelsRenderHook::GLOBAL_SEARCH_BEFORE, static fn (): string => AssistantChat::topbarButton());
+        }
     }
 
     /**
@@ -140,6 +149,7 @@ class RagPlugin implements Plugin
             config('rag.filament.pages.ingest', true) ? IngestKnowledge::class : null,
             config('rag.filament.pages.playground', true) ? RagPlayground::class : null,
             config('rag.filament.pages.settings', true) ? RagSettings::class : null,
+            AssistantAccess::enabled() ? AssistantChat::class : null,
         ]));
     }
 
