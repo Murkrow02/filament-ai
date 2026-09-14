@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Ingestion;
+namespace Murkrow\FilamentAi\Ingestion;
 
 /**
  * Converts token counts into micro-USD integers.

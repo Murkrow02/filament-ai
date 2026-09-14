@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Http\Concerns;
+namespace Murkrow\FilamentAi\Http\Concerns;
 
 use Illuminate\Http\Request;
-use Murkrow\Rag\Chat\ChatAbilities;
-use Murkrow\Rag\Models\Conversation;
+use Murkrow\FilamentAi\Chat\ChatAbilities;
+use Murkrow\FilamentAi\Models\Conversation;
 
 trait InteractsWithConversations
 {

@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Contracts;
+namespace Murkrow\FilamentAi\Contracts;
 
 use Generator;
 use Illuminate\Support\LazyCollection;
-use Murkrow\Rag\Data\DocumentDraft;
-use Murkrow\Rag\Data\Segment;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Sources\ChunkingOverrides;
-use Murkrow\Rag\Sources\FilterSet;
+use Murkrow\FilamentAi\Data\DocumentDraft;
+use Murkrow\FilamentAi\Data\Segment;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Sources\ChunkingOverrides;
+use Murkrow\FilamentAi\Sources\FilterSet;
 
 /**
  * Adapts host application data to the package.

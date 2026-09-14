@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Embeddings;
+namespace Murkrow\FilamentAi\Embeddings;
 
-use Murkrow\Rag\Contracts\EmbeddingProvider;
-use Murkrow\Rag\Data\EmbeddingBatch;
-use Murkrow\Rag\Exceptions\DimensionMismatchException;
+use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
+use Murkrow\FilamentAi\Data\EmbeddingBatch;
+use Murkrow\FilamentAi\Exceptions\DimensionMismatchException;
 use Prism\Prism\Enums\Provider;
 use Prism\Prism\Facades\Prism;
 

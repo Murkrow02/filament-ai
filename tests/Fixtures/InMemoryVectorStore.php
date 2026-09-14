@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Tests\Fixtures;
+namespace Murkrow\FilamentAi\Tests\Fixtures;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Collection;
-use Murkrow\Rag\Data\ScoredChunk;
-use Murkrow\Rag\Data\VectorQuery;
-use Murkrow\Rag\Embeddings\VectorMath;
-use Murkrow\Rag\Support\Tables;
-use Murkrow\Rag\VectorStores\AbstractVectorStore;
+use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Data\VectorQuery;
+use Murkrow\FilamentAi\Embeddings\VectorMath;
+use Murkrow\FilamentAi\Support\Tables;
+use Murkrow\FilamentAi\VectorStores\AbstractVectorStore;
 
 /**
  * Vector store for tests: vectors in a JSON column, cosine computed in PHP.
@@ -48,7 +48,7 @@ final class InMemoryVectorStore extends AbstractVectorStore
     public function upsert(iterable $vectors, string $model, int $dimensions): void
     {
         foreach ($vectors as $entry) {
-            \Murkrow\Rag\Models\Chunk::query()->whereKey($entry['id'])->update([
+            \Murkrow\FilamentAi\Models\Chunk::query()->whereKey($entry['id'])->update([
                 'embedding' => json_encode($entry['vector']),
                 'embedding_model' => $model,
                 'embedding_dimensions' => $dimensions,
@@ -63,7 +63,7 @@ final class InMemoryVectorStore extends AbstractVectorStore
             return;
         }
 
-        \Murkrow\Rag\Models\Chunk::query()->whereIn('id', $chunkIds)->update([
+        \Murkrow\FilamentAi\Models\Chunk::query()->whereIn('id', $chunkIds)->update([
             'embedding' => null,
             'embedding_model' => null,
             'embedding_dimensions' => null,
@@ -108,7 +108,7 @@ final class InMemoryVectorStore extends AbstractVectorStore
 
         $vectors = [];
 
-        $rows = \Murkrow\Rag\Models\Chunk::query()
+        $rows = \Murkrow\FilamentAi\Models\Chunk::query()
             ->whereIn('id', $chunkIds)
             ->whereNotNull('embedding')
             ->get(['id', 'embedding']);
@@ -122,7 +122,7 @@ final class InMemoryVectorStore extends AbstractVectorStore
 
     public function countEmbedded(?string $sourceKey = null): int
     {
-        return \Murkrow\Rag\Models\Chunk::query()
+        return \Murkrow\FilamentAi\Models\Chunk::query()
             ->whereNotNull('embedded_at')
             ->when($sourceKey !== null, static fn ($q) => $q->where('source_key', $sourceKey))
             ->count();

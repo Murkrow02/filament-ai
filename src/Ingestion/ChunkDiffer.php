@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Ingestion;
+namespace Murkrow\FilamentAi\Ingestion;
 
 use Illuminate\Support\Facades\DB;
-use Murkrow\Rag\Contracts\VectorStore;
-use Murkrow\Rag\Data\ChunkDraft;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Support\Tables;
+use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\Data\ChunkDraft;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Support\Tables;
 
 /**
  * Reconciles a freshly chunked document against what is already stored.

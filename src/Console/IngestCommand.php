@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Console;
+namespace Murkrow\FilamentAi\Console;
 
 use Illuminate\Console\Command;
-use Murkrow\Rag\Enums\IngestionMode;
-use Murkrow\Rag\Ingestion\CostCalculator;
-use Murkrow\Rag\Ingestion\IngestionPlanner;
-use Murkrow\Rag\Ingestion\StartIngestionRun;
-use Murkrow\Rag\Ingestion\SyncIngestionRunner;
-use Murkrow\Rag\Sources\FilterInput;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Enums\IngestionMode;
+use Murkrow\FilamentAi\Ingestion\CostCalculator;
+use Murkrow\FilamentAi\Ingestion\IngestionPlanner;
+use Murkrow\FilamentAi\Ingestion\StartIngestionRun;
+use Murkrow\FilamentAi\Ingestion\SyncIngestionRunner;
+use Murkrow\FilamentAi\Sources\FilterInput;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 use Symfony\Component\Console\Helper\ProgressBar;
 
 class IngestCommand extends Command

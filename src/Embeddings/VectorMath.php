@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Embeddings;
+namespace Murkrow\FilamentAi\Embeddings;
 
 /**
  * Small, allocation-conscious vector helpers.

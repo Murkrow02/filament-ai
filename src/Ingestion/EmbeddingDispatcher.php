@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Ingestion;
+namespace Murkrow\FilamentAi\Ingestion;
 
 use Illuminate\Bus\Batch;
 use Illuminate\Support\Facades\Bus;
-use Murkrow\Rag\Enums\RunStatus;
-use Murkrow\Rag\Jobs\EmbedChunkGroupJob;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\IngestionRun;
-use Murkrow\Rag\Models\IngestionRunItem;
+use Murkrow\FilamentAi\Enums\RunStatus;
+use Murkrow\FilamentAi\Jobs\EmbedChunkGroupJob;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\IngestionRun;
+use Murkrow\FilamentAi\Models\IngestionRunItem;
 
 /**
  * Second phase of a run: collect every chunk still missing a vector and fan

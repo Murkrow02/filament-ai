@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Contracts;
+namespace Murkrow\FilamentAi\Contracts;
 
 use Illuminate\Support\Collection;
-use Murkrow\Rag\Data\Citation;
+use Murkrow\FilamentAi\Data\Citation;
 
 interface PromptRenderer
 {

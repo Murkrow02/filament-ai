@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Events;
+namespace Murkrow\FilamentAi\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
-use Murkrow\Rag\Models\Document;
+use Murkrow\FilamentAi\Models\Document;
 
 final class DocumentIngested
 {

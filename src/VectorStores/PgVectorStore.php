@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\VectorStores;
+namespace Murkrow\FilamentAi\VectorStores;
 
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Murkrow\Rag\Contracts\ResizableVectorStore;
-use Murkrow\Rag\Data\ScoredChunk;
-use Murkrow\Rag\Data\VectorQuery;
-use Murkrow\Rag\Embeddings\VectorMath;
-use Murkrow\Rag\Exceptions\VectorDriverUnsupportedException;
-use Murkrow\Rag\Support\Tables;
+use Murkrow\FilamentAi\Contracts\ResizableVectorStore;
+use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Data\VectorQuery;
+use Murkrow\FilamentAi\Embeddings\VectorMath;
+use Murkrow\FilamentAi\Exceptions\VectorDriverUnsupportedException;
+use Murkrow\FilamentAi\Support\Tables;
 
 /**
  * pgvector-backed store: the database does the ranking.

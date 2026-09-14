@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Console;
+namespace Murkrow\FilamentAi\Console;
 
 use Illuminate\Console\Command;
-use Murkrow\Rag\Contracts\ResizableVectorStore;
-use Murkrow\Rag\Contracts\VectorStore;
-use Murkrow\Rag\Enums\DocumentStatus;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
+use Murkrow\FilamentAi\Contracts\ResizableVectorStore;
+use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\Enums\DocumentStatus;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
 
 class VectorReindexCommand extends Command
 {

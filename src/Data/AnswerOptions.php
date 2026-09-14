@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Data;
+namespace Murkrow\FilamentAi\Data;
 
-use Murkrow\Rag\Enums\QueryChannel;
+use Murkrow\FilamentAi\Enums\QueryChannel;
 
 final readonly class AnswerOptions
 {

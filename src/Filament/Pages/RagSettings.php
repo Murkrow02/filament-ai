@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Pages;
+namespace Murkrow\FilamentAi\Filament\Pages;
 
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -13,8 +13,8 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Murkrow\Rag\Filament\Concerns\HasRagNavigation;
-use Murkrow\Rag\Settings\SettingsRepository;
+use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Settings\SettingsRepository;
 
 /**
  * Runtime tuning for the whitelisted config keys.

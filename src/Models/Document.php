@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Models;
+namespace Murkrow\FilamentAi\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Murkrow\Rag\Database\Factories\DocumentFactory;
-use Murkrow\Rag\Enums\DocumentStatus;
-use Murkrow\Rag\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Database\Factories\DocumentFactory;
+use Murkrow\FilamentAi\Enums\DocumentStatus;
+use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
 
 /**
  * A host-application record mirrored into the knowledge base.

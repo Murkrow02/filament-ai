@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Resources;
+namespace Murkrow\FilamentAi\Filament\Resources;
 
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -11,12 +11,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Artisan;
-use Murkrow\Rag\Enums\RunStatus;
-use Murkrow\Rag\Filament\Concerns\HasRagNavigation;
-use Murkrow\Rag\Filament\Resources\IngestionRunResource\Pages\ListIngestionRuns;
-use Murkrow\Rag\Filament\Resources\IngestionRunResource\Pages\ViewIngestionRun;
-use Murkrow\Rag\Ingestion\CostCalculator;
-use Murkrow\Rag\Models\IngestionRun;
+use Murkrow\FilamentAi\Enums\RunStatus;
+use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource\Pages\ListIngestionRuns;
+use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource\Pages\ViewIngestionRun;
+use Murkrow\FilamentAi\Ingestion\CostCalculator;
+use Murkrow\FilamentAi\Models\IngestionRun;
 
 /**
  * Monitoring surface for ingestion.
@@ -114,7 +114,7 @@ class IngestionRunResource extends Resource
 
                 SelectFilter::make('source_key')
                     ->label('Source')
-                    ->options(static fn (): array => app(\Murkrow\Rag\Sources\SourceRegistry::class)->options()),
+                    ->options(static fn (): array => app(\Murkrow\FilamentAi\Sources\SourceRegistry::class)->options()),
             ])
             ->recordActions([
                 Action::make('cancel')

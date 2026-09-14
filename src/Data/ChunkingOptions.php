@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Data;
+namespace Murkrow\FilamentAi\Data;
 
-use Murkrow\Rag\Support\Arr;
+use Murkrow\FilamentAi\Support\Arr;
 
 /**
  * The frozen chunking parameters for one ingestion run.

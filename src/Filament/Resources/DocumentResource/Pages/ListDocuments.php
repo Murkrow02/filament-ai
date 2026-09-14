@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Resources\DocumentResource\Pages;
+namespace Murkrow\FilamentAi\Filament\Resources\DocumentResource\Pages;
 
 use Filament\Resources\Pages\ListRecords;
-use Murkrow\Rag\Filament\Resources\DocumentResource;
+use Murkrow\FilamentAi\Filament\Resources\DocumentResource;
 
 class ListDocuments extends ListRecords
 {

@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Mcp\Tools;
+namespace Murkrow\FilamentAi\Mcp\Tools;
 
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
-use Murkrow\Rag\Contracts\Answerer;
-use Murkrow\Rag\Data\AnswerOptions;
-use Murkrow\Rag\Data\Citation;
-use Murkrow\Rag\Data\RetrievalOptions;
-use Murkrow\Rag\Enums\QueryChannel;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Contracts\Answerer;
+use Murkrow\FilamentAi\Data\AnswerOptions;
+use Murkrow\FilamentAi\Data\Citation;
+use Murkrow\FilamentAi\Data\RetrievalOptions;
+use Murkrow\FilamentAi\Enums\QueryChannel;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 
 /**
  * Full server-side RAG: retrieve, ground, answer, cite.

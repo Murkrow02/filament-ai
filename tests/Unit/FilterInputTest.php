@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Sources\FilterInput;
+use Murkrow\FilamentAi\Sources\FilterInput;
 
 it('parses repeatable cli filters', function (): void {
     $parsed = FilterInput::parseCli(['id_range:1-50', 'title:garibaldi', 'malformed']);

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Data;
+namespace Murkrow\FilamentAi\Data;
 
 /**
  * Rough pre-flight estimate shown before an ingestion run is launched, so a

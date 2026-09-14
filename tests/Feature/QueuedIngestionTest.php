@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
-use Murkrow\Rag\Enums\IngestionMode;
-use Murkrow\Rag\Enums\RunItemStatus;
-use Murkrow\Rag\Enums\RunStatus;
-use Murkrow\Rag\Events\IngestionRunStarted;
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Ingestion\StartIngestionRun;
-use Murkrow\Rag\Jobs\EmbedChunkGroupJob;
-use Murkrow\Rag\Jobs\PrepareDocumentJob;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Models\IngestionRun;
-use Murkrow\Rag\Sources\SourceRegistry;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Enums\IngestionMode;
+use Murkrow\FilamentAi\Enums\RunItemStatus;
+use Murkrow\FilamentAi\Enums\RunStatus;
+use Murkrow\FilamentAi\Events\IngestionRunStarted;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Ingestion\StartIngestionRun;
+use Murkrow\FilamentAi\Jobs\EmbedChunkGroupJob;
+use Murkrow\FilamentAi\Jobs\PrepareDocumentJob;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Models\IngestionRun;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 /**
  * The queued path is the one production actually uses, and it is the one where
@@ -209,8 +209,8 @@ it('marks a document failed without taking the whole run down', function (): voi
     // Run one job by hand against a document that no longer exists.
     $job = new PrepareDocumentJob($ingestion->id, '999999');
 
-    expect(fn () => $job->handle(app(SourceRegistry::class), app(\Murkrow\Rag\Ingestion\DocumentIngestor::class)))
-        ->toThrow(\Murkrow\Rag\Exceptions\IngestionException::class);
+    expect(fn () => $job->handle(app(SourceRegistry::class), app(\Murkrow\FilamentAi\Ingestion\DocumentIngestor::class)))
+        ->toThrow(\Murkrow\FilamentAi\Exceptions\IngestionException::class);
 
     expect($ingestion->refresh()->documents_failed)->toBe(1);
 });
@@ -224,7 +224,7 @@ it('is idempotent when an embedding job is retried', function (): void {
     $embeddedAt = Chunk::query()->orderBy('id')->pluck('embedded_at', 'id');
 
     // Replaying the same job must not re-embed, and so must not re-charge.
-    (new EmbedChunkGroupJob($chunkIds))->handle(app(\Murkrow\Rag\Ingestion\ChunkEmbedder::class));
+    (new EmbedChunkGroupJob($chunkIds))->handle(app(\Murkrow\FilamentAi\Ingestion\ChunkEmbedder::class));
 
     foreach (Chunk::query()->orderBy('id')->get() as $chunk) {
         expect($chunk->embedded_at->timestamp)->toBe($embeddedAt[$chunk->id]->timestamp);
@@ -243,8 +243,8 @@ it('stops a cancelled run from doing further work', function (): void {
         ->and($run->finished_at)->not->toBeNull();
 
     // The finalizer must not resurrect a cancelled run.
-    (new \Murkrow\Rag\Jobs\FinalizeIngestionRunJob($run->id))
-        ->handle(app(\Murkrow\Rag\Ingestion\EmbeddingDispatcher::class));
+    (new \Murkrow\FilamentAi\Jobs\FinalizeIngestionRunJob($run->id))
+        ->handle(app(\Murkrow\FilamentAi\Ingestion\EmbeddingDispatcher::class));
 
     expect($run->refresh()->status)->toBe(RunStatus::Cancelled);
 });

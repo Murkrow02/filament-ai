@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Http\Controllers;
+namespace Murkrow\FilamentAi\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use Murkrow\Rag\Chat\ChatAbilities;
-use Murkrow\Rag\Chat\ChatPayload;
-use Murkrow\Rag\Http\Concerns\InteractsWithConversations;
-use Murkrow\Rag\Models\Conversation;
-use Murkrow\Rag\Models\QueryLog;
+use Murkrow\FilamentAi\Chat\ChatAbilities;
+use Murkrow\FilamentAi\Chat\ChatPayload;
+use Murkrow\FilamentAi\Http\Concerns\InteractsWithConversations;
+use Murkrow\FilamentAi\Models\Conversation;
+use Murkrow\FilamentAi\Models\QueryLog;
 
 /**
  * The chat page and everything around a conversation except asking.

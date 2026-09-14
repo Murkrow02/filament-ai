@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Sources;
+namespace Murkrow\FilamentAi\Sources;
 
 use Closure;
 use Generator;
 use Illuminate\Support\LazyCollection;
-use Murkrow\Rag\Contracts\KnowledgeSource;
-use Murkrow\Rag\Contracts\SourceFilter;
-use Murkrow\Rag\Data\DocumentDraft;
-use Murkrow\Rag\Data\Segment;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
+use Murkrow\FilamentAi\Contracts\KnowledgeSource;
+use Murkrow\FilamentAi\Contracts\SourceFilter;
+use Murkrow\FilamentAi\Data\DocumentDraft;
+use Murkrow\FilamentAi\Data\Segment;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
 
 /**
  * Escape hatch for knowledge that is not an Eloquent relation: an API, a

@@ -5,8 +5,8 @@ declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Murkrow\Rag\Contracts\VectorStore;
-use Murkrow\Rag\Support\Tables;
+use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\Support\Tables;
 
 /**
  * The vector payload is driver-specific, so this migration hardcodes nothing:

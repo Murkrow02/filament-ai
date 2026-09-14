@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Models\Conversation;
-use Murkrow\Rag\Models\QueryLog;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Models\Conversation;
+use Murkrow\FilamentAi\Models\QueryLog;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 function seedChatCorpus(): void
 {
@@ -87,7 +87,7 @@ it('replays previous turns into the prompt', function (): void {
         'conversation' => $uuid,
     ])->assertOk();
 
-    $prompts = app(\Murkrow\Rag\Contracts\LanguageModel::class)->received();
+    $prompts = app(\Murkrow\FilamentAi\Contracts\LanguageModel::class)->received();
 
     expect($prompts)->toHaveCount(2)
         ->and($prompts[1]['user'])->toContain('Chi convoco il consiglio?');

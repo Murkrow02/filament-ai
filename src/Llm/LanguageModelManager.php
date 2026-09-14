@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Llm;
+namespace Murkrow\FilamentAi\Llm;
 
 use Closure;
 use Illuminate\Support\Manager;
-use Murkrow\Rag\Contracts\LanguageModel;
+use Murkrow\FilamentAi\Contracts\LanguageModel;
 
 /**
  * @method LanguageModel driver(string|null $driver = null)
@@ -15,9 +15,17 @@ final class LanguageModelManager extends Manager
 {
     public function getDefaultDriver(): string
     {
-        return (string) $this->config->get('rag.llm.driver', 'prism');
+        return (string) $this->config->get('rag.llm.driver', 'laravel-ai');
     }
 
+    public function createLaravelAiDriver(): LanguageModel
+    {
+        return LaravelAiLanguageModel::fromConfig();
+    }
+
+    /**
+     * @deprecated Use the laravel-ai driver. Removed in the next minor release.
+     */
     public function createPrismDriver(): LanguageModel
     {
         return PrismLanguageModel::fromConfig();

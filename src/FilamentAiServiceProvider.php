@@ -2,36 +2,36 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag;
+namespace Murkrow\FilamentAi;
 
 use Illuminate\Contracts\Foundation\CachesConfiguration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use Murkrow\Rag\Answering\BladePromptRenderer;
-use Murkrow\Rag\Answering\DefaultAnswerer;
-use Murkrow\Rag\Chat\ChatAbilities;
-use Murkrow\Rag\Chunking\SlidingWindowChunker;
-use Murkrow\Rag\Chunking\TokenEstimatorFactory;
-use Murkrow\Rag\Console;
-use Murkrow\Rag\Contracts\Answerer;
-use Murkrow\Rag\Contracts\Chunker;
-use Murkrow\Rag\Contracts\EmbeddingProvider;
-use Murkrow\Rag\Contracts\LanguageModel;
-use Murkrow\Rag\Contracts\PromptRenderer;
-use Murkrow\Rag\Contracts\Retriever;
-use Murkrow\Rag\Contracts\VectorStore;
-use Murkrow\Rag\Embeddings\EmbeddingManager;
-use Murkrow\Rag\Http\Middleware\AuthorizeRagChat;
-use Murkrow\Rag\Embeddings\EmbeddingRateLimiter;
-use Murkrow\Rag\Llm\LanguageModelManager;
-use Murkrow\Rag\Mcp\KnowledgeServer;
-use Murkrow\Rag\Retrieval\DefaultRetriever;
-use Murkrow\Rag\Retrieval\Lexical\LexicalSearchManager;
-use Murkrow\Rag\Settings\SettingsRepository;
-use Murkrow\Rag\Sources\SourceRegistry;
-use Murkrow\Rag\Support\Arr;
-use Murkrow\Rag\VectorStores\VectorStoreManager;
+use Murkrow\FilamentAi\Answering\BladePromptRenderer;
+use Murkrow\FilamentAi\Answering\DefaultAnswerer;
+use Murkrow\FilamentAi\Chat\ChatAbilities;
+use Murkrow\FilamentAi\Chunking\SlidingWindowChunker;
+use Murkrow\FilamentAi\Chunking\TokenEstimatorFactory;
+use Murkrow\FilamentAi\Console;
+use Murkrow\FilamentAi\Contracts\Answerer;
+use Murkrow\FilamentAi\Contracts\Chunker;
+use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
+use Murkrow\FilamentAi\Contracts\LanguageModel;
+use Murkrow\FilamentAi\Contracts\PromptRenderer;
+use Murkrow\FilamentAi\Contracts\Retriever;
+use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\Embeddings\EmbeddingManager;
+use Murkrow\FilamentAi\Http\Middleware\AuthorizeRagChat;
+use Murkrow\FilamentAi\Embeddings\EmbeddingRateLimiter;
+use Murkrow\FilamentAi\Llm\LanguageModelManager;
+use Murkrow\FilamentAi\Mcp\KnowledgeServer;
+use Murkrow\FilamentAi\Retrieval\DefaultRetriever;
+use Murkrow\FilamentAi\Retrieval\Lexical\LexicalSearchManager;
+use Murkrow\FilamentAi\Settings\SettingsRepository;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Support\Arr;
+use Murkrow\FilamentAi\VectorStores\VectorStoreManager;
 
 /**
  * Wires the package together.
@@ -43,7 +43,7 @@ use Murkrow\Rag\VectorStores\VectorStoreManager;
  * during registration -- `migrate` has to be able to run on a schema that does
  * not exist yet.
  */
-class RagServiceProvider extends ServiceProvider
+class FilamentAiServiceProvider extends ServiceProvider
 {
     public function register(): void
     {

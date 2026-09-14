@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Retrieval\Lexical;
+namespace Murkrow\FilamentAi\Retrieval\Lexical;
 
-use Murkrow\Rag\Contracts\LexicalSearch;
-use Murkrow\Rag\Data\VectorQuery;
+use Murkrow\FilamentAi\Contracts\LexicalSearch;
+use Murkrow\FilamentAi\Data\VectorQuery;
 
 /**
  * The default: hybrid retrieval off.

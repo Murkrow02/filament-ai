@@ -1,10 +1,12 @@
-# CLAUDE.md — working on `murkrow/laravel-rag`
+# CLAUDE.md — working on `murkrow/filament-ai`
 
 Handoff notes for an AI agent continuing this package. Read `README.md` first for what it does; this file is about how it is built and what will bite you.
 
 ## Status
 
-Complete and green. 202 tests, 696 assertions.
+Mid-migration to `murkrow/filament-ai` on branch `feat/filament-ai`: Filament v5 and laravel/ai drivers are in, the agent layer (resource-derived tools, in-panel chat, MCP parity) is not built yet. Green: 206 tests on SQLite + 14 pgvector.
+
+**Do not merge this branch to `main` as-is.** `release.yml` would tag it as a *patch* of `murkrow/laravel-rag`, and the renamed `name` in `composer.json` conflicts with that repo's Packagist entry. Settle the new repository/Packagist package and tag a major by hand first. Hosts pinned to `murkrow/laravel-rag ^1.0` (Filament 4) stay on 1.x.
 
 ```bash
 composer install
@@ -35,7 +37,7 @@ Break any of these and the package stops being what it is.
 
 **1. No host application classes.** Nothing under `src/` may name `App\Models\Book` or anything like it. Host models are reached only from a source class the *application* writes (`app/Knowledge/BookSource.php`, extending `EloquentSource`), listed as a class-string in `config/rag.php` under `sources`. The test fixtures (`tests/Fixtures/TestBook.php`, `TestBookSource.php`) exist to prove this: if they are enough to exercise every path, the package is genuinely generic.
 
-**2. Optional integrations stay optional.** Filament, `laravel/mcp` and Scout are `require-dev` + `suggest`, never `require`. Every reference to them is behind `class_exists()` plus a config toggle, so a host without them boots normally and a breaking upgrade downstream degrades to "feature off" rather than a fatal error. `laravel/mcp` is a **beta**; treat its API as movable.
+**2. Optional integrations stay optional, and laravel/ai stays contained.** Filament ^5 and `laravel/ai` are `require`d: the package is a Filament plugin and its agent layer is laravel/ai. `laravel/mcp` and Scout stay `require-dev` + `suggest`; every reference to them is behind `class_exists()` plus a config toggle, so a host without them boots normally and a breaking upgrade downstream degrades to "feature off" rather than a fatal error. `laravel/ai` is **0.x**: nothing outside `src/Llm/LaravelAiLanguageModel.php`, `src/Llm/LaravelAi/` and `src/Embeddings/LaravelAiEmbeddingProvider.php` may depend on its request, response or event shapes — everything else goes through the `LanguageModel` / `EmbeddingProvider` contracts.
 
 **3. Nothing touches the database during `register()`.** `migrate` has to run against a schema that does not exist yet. `SettingsRepository::available()` guards on `Schema::hasTable()` inside a try/catch for exactly this reason, and settings are applied in `$this->app->booted()`.
 
@@ -54,7 +56,8 @@ Source (class)   →  DocumentIngestor  →  Chunker  →  ChunkDiffer  →  Chu
 - `src/Ingestion/` — `ChunkDiffer` is the reason re-indexing is cheap. `RunProgress` uses atomic `incrementEach`, never read-modify-write, because several workers report on the same run. `ChunkEmbedder` splits a job's group into `maxBatchSize()` calls but writes every vector in one upsert at the end: a group that fails half-way leaves nothing written, so the retry's progress accounting stays exact.
 - `src/VectorStores/` — only `PgVectorStore` ships. `AbstractVectorStore::baseQuery()` owns filter compilation for every driver. `Contracts\\ResizableVectorStore` is a second, optional contract (installed column width, in-place resize) so `rag:vector:reindex` can repair a dimensions change without widening `VectorStore` for third-party drivers.
 - `src/Retrieval/`, `src/Answering/` — pipeline and grounding.
-- `src/Filament/`, `src/Mcp/` — two optional surfaces.
+- `src/Filament/` — the panel surface (Filament is required). `src/Mcp/` — the optional MCP surface.
+- `src/Llm/`, `src/Embeddings/` — `laravel-ai` is the default driver, `prism` is deprecated and goes in the next minor, `fake` is for tests.
 - `src/Chat/`, `src/Http/`, `routes/chat.php`, `resources/views/chat/`, `resources/dist/` — the standalone chat page. Filament-free by construction: it is the surface for someone who wants an answer, not a retriever to tune. `ChatAbilities` is its whole authorization vocabulary; `ChatPayload` is the only thing that decides what reaches the browser.
 
 ## Decisions that look odd and are not
@@ -72,7 +75,7 @@ Source (class)   →  DocumentIngestor  →  Chunker  →  ChunkDiffer  →  Chu
 - **Config is merged recursively, not by `mergeConfigFrom`.** Laravel's merges the top level only, so a published `config/rag.php` would have to repeat every nested default or silently lose it. `mergeRagConfig()` merges deep with list arrays replaced wholesale (`Support\Arr::mergeConfig`), which is what lets the host file carry only its overrides — and why `rag.sources`, a list, replaces rather than appends.
 - **A filter's name is not its column.** Two filters routinely narrow the same column (`ids` and `id_range` both hit `id`); the name is what `--filter=` and the form state path address, so `FilterSet` keys on it.
 - **`Filter::boolean(..., default: false)` constrains every run.** `FilterSet` skips only blank values, and `false` is not blank. That is deliberate: "exclude the bad rows unless asked" is one line, and the toggle in the form is what opts back in.
-- **`RagServiceProvider` registers pgvector's Blueprint macros itself.** pgvector's own provider does it, but is not discovered under Testbench or with discovery disabled.
+- **`FilamentAiServiceProvider` registers pgvector's Blueprint macros itself.** pgvector's own provider does it, but is not discovered under Testbench or with discovery disabled.
 - **Component views live in `resources/views/components/`, not under `filament/`.** With the `rag` view namespace registered, Laravel resolves `<x-rag::chunk-card />` to `rag::components.chunk-card`. An earlier version called `Blade::anonymousComponentNamespace('filament.components', 'rag')`, which resolves against the *application's* view paths — so it worked only in the test suite, whose base case had put the package's view directory on those paths. That was a false green; the test now asserts the view resolves by namespace instead.
 - **Nothing polls unless a run is in flight.** The host panel here runs `AuthenticateSession`, and several Livewire components refreshing at once can race it into regenerating the session, leaving the other in-flight requests with a stale CSRF token — which the browser reports as "Page Expired", and refreshing re-arms the pollers into a loop. `ragPollIntervalWhileRunning()` and `LatestRunsTable::pollInterval()` return null when no run is active; `rag.filament.poll_interval` set to null disables polling entirely.
 - **The chat's assets are served by a route, not published.** `publishes()` puts a copy in `public/` that nothing updates when the package does, and the failure mode is a page silently rendering against last month's CSS. `AssetController` streams them from `resources/dist/` with a content hash in the URL and a year-long immutable cache, so it costs one request per deploy. The publish tag still exists for hosts that would rather serve them.
@@ -83,6 +86,7 @@ Source (class)   →  DocumentIngestor  →  Chunker  →  ChunkDiffer  →  Chu
 - **The chat's `conversation_id` foreign key is skipped on SQLite.** SQLite cannot attach one to a table that already exists, and the test suite runs on SQLite. `Conversation`'s `deleting` hook deletes the turns itself, so a deleted thread never leaves orphaned answers on either driver.
 - **The chat's front end is plain DOM code, not Alpine or Livewire.** Livewire would make the package depend on it; Alpine is not on the page outside a Filament panel. A few hundred lines of vanilla JS is what lets the page work in a host with no build step at all.
 - **`PrismLanguageModel::stream()` reads `$event->delta`, not `$event->text`.** Prism streams typed events (`TextDeltaEvent`, `StreamEndEvent`, ...); older releases yielded chunks with `text`. Reading only one shape yields zero deltas, an empty accumulated answer, and therefore an answer citing nothing -- which `looksRefused()` correctly reports as a refusal. The symptom is *every* streamed question refusing while the non-streaming path answers fine, and nothing in the suite catches it because `FakeLanguageModel` yields plain strings. `PrismStreamEventTest` pins both shapes.
+- **`LaravelAiLanguageModel` prompts a one-off `CompletionAgent`.** laravel/ai only prompts agents, and reads temperature and max tokens from class attributes *or* same-named methods. Config values cannot be attributes, so they are methods, and a null temperature must stay null (`LaravelAiDriversTest > it leaves a null temperature out of the request`). Its stream reads `TextDelta::$delta` and sums `StreamEnd` usage; the zero-deltas-means-every-streamed-answer-refuses trap above applies unchanged, which is why that test joins the deltas and compares them to the answer.
 - **Every inline SVG on the chat page needs an explicit size.** An `<svg>` with a `viewBox` and no width/height is 300x150, not "as tall as the text". `.rag svg` sets the default once; a new icon in a new context inherits it instead of blowing up the layout.
 - **The collapsed sidebar is one grid column, not a zero-width first one.** `.rag-sidebar` is `display: none` when closed, so it stops being a grid item and `.rag-main` slides into whatever the first track is. A `0` first track therefore squeezes the conversation to nothing.
 - **The chat's CSS custom properties live on `:root`.** They were on `.rag` once, and `body` is its *ancestor*: custom properties inherit downwards only, so every `var()` on `body` was invalid and the whole page fell back to the browser's default serif.
@@ -105,6 +109,8 @@ Source (class)   →  DocumentIngestor  →  Chunker  →  ChunkDiffer  →  Chu
 - `TestCase::defineEnvironment()` sets `rag.retrieval.min_score` to `0.0`. `FakeEmbeddingProvider` is deterministic but not semantic, so the score floor tuned for a real model would reject everything.
 - `QueuedIngestionTest` uses the **database** queue driver and `drainQueue()`, not `sync`. The sync driver runs batch jobs inside `Batch::add()`, before the pending count settles, so completion callbacks never fire the way they do in production — which is precisely the behaviour under test.
 - `getPackageProviders()` deliberately omits `PgvectorServiceProvider`: it ships a `CREATE EXTENSION` migration SQLite cannot run.
+- `getPackageProviders()` lists `Laravel\Ai\AiServiceProvider` explicitly. Without it `CompletionAgent::fake()` and `Embeddings::fake()` have no manager to swap their gateways on.
+- `rag:install` publishes `config/rag.php` into Testbench's skeleton under `vendor/`, which outlives the run. `CommandsTest` deletes it in `afterEach`: a stale copy wins the recursive config merge and silently overrides every later change to the defaults. After the namespace rename it pointed the normalizers at classes that no longer existed and failed 42 unrelated tests.
 - Filament widgets use `protected ?string $pollingInterval` — **not** `static`. Redeclaring the parent's non-static property as static is a fatal error.
 - Livewire component state must be scalars or arrays. `IngestKnowledge::$estimate` is an array for this reason, not the DTO the planner returns.
 

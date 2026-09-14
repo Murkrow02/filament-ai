@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Resources\IngestionRunResource\Pages;
+namespace Murkrow\FilamentAi\Filament\Resources\IngestionRunResource\Pages;
 
 use Filament\Actions\Action;
 use Filament\Infolists\Components\TextEntry;
@@ -10,10 +10,10 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Murkrow\Rag\Enums\RunStatus;
-use Murkrow\Rag\Filament\Resources\IngestionRunResource;
-use Murkrow\Rag\Ingestion\CostCalculator;
-use Murkrow\Rag\Models\IngestionRun;
+use Murkrow\FilamentAi\Enums\RunStatus;
+use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource;
+use Murkrow\FilamentAi\Ingestion\CostCalculator;
+use Murkrow\FilamentAi\Models\IngestionRun;
 
 class ViewIngestionRun extends ViewRecord
 {

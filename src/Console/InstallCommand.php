@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Console;
+namespace Murkrow\FilamentAi\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
-use Murkrow\Rag\Contracts\VectorStore;
-use Murkrow\Rag\Sources\SourceRegistry;
-use Murkrow\Rag\Support\Tables;
-use Murkrow\Rag\VectorStores\PgVectorStore;
+use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Support\Tables;
+use Murkrow\FilamentAi\VectorStores\PgVectorStore;
 use Throwable;
 
 /**
@@ -29,7 +29,7 @@ class InstallCommand extends Command
 
     public function handle(VectorStore $store): int
     {
-        $this->components->info('Installing murkrow/laravel-rag');
+        $this->components->info('Installing murkrow/filament-ai');
 
         $this->publishConfig();
 

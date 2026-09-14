@@ -1,8 +1,8 @@
 # Laravel RAG
 
 [![Tests](https://github.com/Murkrow02/laravel-rag/actions/workflows/tests.yml/badge.svg)](https://github.com/Murkrow02/laravel-rag/actions/workflows/tests.yml)
-[![Latest Version](https://img.shields.io/packagist/v/murkrow/laravel-rag.svg)](https://packagist.org/packages/murkrow/laravel-rag)
-[![License](https://img.shields.io/packagist/l/murkrow/laravel-rag.svg)](LICENSE.md)
+[![Latest Version](https://img.shields.io/packagist/v/murkrow/filament-ai.svg)](https://packagist.org/packages/murkrow/filament-ai)
+[![License](https://img.shields.io/packagist/l/murkrow/filament-ai.svg)](LICENSE.md)
 
 A configuration-driven RAG toolkit for Laravel: chunking, embeddings, pgvector retrieval, grounded answering, an MCP server and a Filament control panel.
 
@@ -17,11 +17,12 @@ Rag::ask('Who convened the council, and when?')->answer;
 
 | | |
 |---|---|
-| PHP | 8.2+ |
+| PHP | 8.3+ |
 | Laravel | 12 or 13 |
 | Database | **PostgreSQL with the `vector` extension** (pgvector 0.5+) |
-| Embeddings & generation | any provider [Prism](https://prismphp.com) supports — OpenAI, Ollama, VoyageAI, Bedrock, Mistral… |
-| Optional | `filament/filament` ^4 for the panel, `laravel/mcp` ^1 for the MCP server, `laravel/scout` for hybrid retrieval |
+| Embeddings & generation | any provider [laravel/ai](https://laravel.com/docs/ai-sdk) supports — OpenAI, Anthropic, Gemini, Ollama, VoyageAI, Bedrock, Mistral… |
+| Panel | `filament/filament` ^5 |
+| Optional | `laravel/mcp` ^1 for the MCP server, `laravel/scout` for hybrid retrieval |
 
 The easiest way to get pgvector is the official image: `pgvector/pgvector:pg17`. A stock `postgres:17` does **not** ship the extension.
 
@@ -41,14 +42,14 @@ RUN apk add --no-cache --virtual .build build-base git postgresql17-dev \
 ## Installation
 
 ```bash
-composer require murkrow/laravel-rag
+composer require murkrow/filament-ai
 php artisan rag:install     # verifies the extension, publishes the config
 php artisan migrate
 ```
 
 `rag:install` tells you, in plain language, what is missing before anything else can go wrong — a database that cannot host vectors, a missing `job_batches` table, a corpus with no source configured.
 
-Add your provider key and pick your models:
+Add your provider key and pick your models. Credentials and base URLs live in laravel/ai's `config/ai.php` (`php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"`); `RAG_EMBEDDING_PROVIDER` and `RAG_LLM_PROVIDER` name one of its `providers` and fall back to its defaults when unset:
 
 ```dotenv
 OPENAI_API_KEY=sk-...
@@ -92,7 +93,7 @@ namespace App\Knowledge;
 
 use App\Models\Book;
 use Illuminate\Database\Eloquent\Builder;
-use Murkrow\Rag\Sources\{EloquentSource, Filter, PositionLabels, SegmentMap};
+use Murkrow\FilamentAi\Sources\{EloquentSource, Filter, PositionLabels, SegmentMap};
 
 final class BookSource extends EloquentSource
 {
@@ -256,7 +257,7 @@ Ingestion only ever walks what a source still returns, so it cannot notice that 
 Immediately, from wherever the host deletes the record — a model observer is the place that cannot be bypassed:
 
 ```php
-use Murkrow\Rag\Facades\Rag;
+use Murkrow\FilamentAi\Facades\Rag;
 
 public function deleted(Book $book): void
 {
@@ -300,8 +301,8 @@ Every parameter is configurable per source, and the chunker is deterministic: th
 ## Searching and answering
 
 ```php
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Data\{AnswerOptions, RetrievalOptions};
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Data\{AnswerOptions, RetrievalOptions};
 
 // Retrieval only — no model call, no cost.
 $chunks = Rag::search('who convened the council?');
@@ -393,7 +394,7 @@ Restrict what MCP can reach with `rag.mcp.sources`. An empty allow-list exposes 
 
 ```php
 // app/Providers/Filament/AdminPanelProvider.php
-->plugin(\Murkrow\Rag\Filament\RagPlugin::make())
+->plugin(\Murkrow\FilamentAi\Filament\RagPlugin::make())
 ```
 
 That is the whole installation. Add `'Knowledge'` to your panel's `navigationGroups()`, or point `rag.filament.navigation_group` at a group you already have.
@@ -537,8 +538,8 @@ Everything behind a contract can be replaced by binding your own implementation:
 | Contract | Default | Why you might swap it |
 |---|---|---|
 | `VectorStore` | `PgVectorStore` | another vector database |
-| `EmbeddingProvider` | Prism | an in-house inference service |
-| `LanguageModel` | Prism | a bespoke client |
+| `EmbeddingProvider` | laravel/ai | an in-house inference service |
+| `LanguageModel` | laravel/ai | a bespoke client |
 | `Chunker` | `SlidingWindowChunker` | structure-aware splitting |
 | `Retriever` / `Answerer` | defaults | a different pipeline |
 | `LexicalSearch` | none | your own keyword engine |
@@ -568,7 +569,7 @@ docker run -d --name rag-test-pg -e POSTGRES_USER=rag -e POSTGRES_PASSWORD=rag \
   -e POSTGRES_DB=rag_test -p 55432:5432 pgvector/pgvector:pg17
 ```
 
-CI runs the whole suite, pgvector included, on PHP 8.2–8.4 for every push and pull request.
+CI runs the whole suite, pgvector included, on PHP 8.3–8.4 for every push and pull request.
 
 ---
 

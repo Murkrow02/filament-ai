@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament;
+namespace Murkrow\FilamentAi\Filament;
 
 use Filament\Contracts\Plugin;
 use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\Support\Facades\FilamentView;
 use Illuminate\Support\Facades\Route;
-use Murkrow\Rag\Chat\ChatAbilities;
-use Murkrow\Rag\Filament\Pages\IngestKnowledge;
-use Murkrow\Rag\Filament\Pages\RagDashboard;
-use Murkrow\Rag\Filament\Pages\RagPlayground;
-use Murkrow\Rag\Filament\Pages\RagSettings;
-use Murkrow\Rag\Filament\Resources\DocumentResource;
-use Murkrow\Rag\Filament\Resources\IngestionRunResource;
-use Murkrow\Rag\Filament\Resources\QueryResource;
-use Murkrow\Rag\Filament\Widgets\IngestionThroughputChart;
-use Murkrow\Rag\Filament\Widgets\KnowledgeStatsOverview;
-use Murkrow\Rag\Filament\Widgets\LatestRunsTable;
-use Murkrow\Rag\Filament\Widgets\SourceCoverageChart;
+use Murkrow\FilamentAi\Chat\ChatAbilities;
+use Murkrow\FilamentAi\Filament\Pages\IngestKnowledge;
+use Murkrow\FilamentAi\Filament\Pages\RagDashboard;
+use Murkrow\FilamentAi\Filament\Pages\RagPlayground;
+use Murkrow\FilamentAi\Filament\Pages\RagSettings;
+use Murkrow\FilamentAi\Filament\Resources\DocumentResource;
+use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource;
+use Murkrow\FilamentAi\Filament\Resources\QueryResource;
+use Murkrow\FilamentAi\Filament\Widgets\IngestionThroughputChart;
+use Murkrow\FilamentAi\Filament\Widgets\KnowledgeStatsOverview;
+use Murkrow\FilamentAi\Filament\Widgets\LatestRunsTable;
+use Murkrow\FilamentAi\Filament\Widgets\SourceCoverageChart;
 
 /**
  * The control panel.
@@ -29,7 +29,7 @@ use Murkrow\Rag\Filament\Widgets\SourceCoverageChart;
  * `discoverResources()` only scans its own app directories -- a package's
  * classes are invisible to it.
  *
- *     ->plugin(\Murkrow\Rag\Filament\RagPlugin::make())
+ *     ->plugin(\Murkrow\FilamentAi\Filament\RagPlugin::make())
  *
  * Every page and resource is individually switchable in config, so a host can
  * expose the dashboard to operators while keeping ingestion controls to itself.

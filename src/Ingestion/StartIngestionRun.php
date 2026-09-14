@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Ingestion;
+namespace Murkrow\FilamentAi\Ingestion;
 
 use Illuminate\Support\Facades\Bus;
-use Murkrow\Rag\Contracts\KnowledgeSource;
-use Murkrow\Rag\Enums\IngestionMode;
-use Murkrow\Rag\Enums\RunStatus;
-use Murkrow\Rag\Events\IngestionRunFailed;
-use Murkrow\Rag\Events\IngestionRunStarted;
-use Murkrow\Rag\Jobs\FinalizeIngestionRunJob;
-use Murkrow\Rag\Jobs\PrepareDocumentJob;
-use Murkrow\Rag\Models\IngestionRun;
-use Murkrow\Rag\Models\IngestionRunItem;
+use Murkrow\FilamentAi\Contracts\KnowledgeSource;
+use Murkrow\FilamentAi\Enums\IngestionMode;
+use Murkrow\FilamentAi\Enums\RunStatus;
+use Murkrow\FilamentAi\Events\IngestionRunFailed;
+use Murkrow\FilamentAi\Events\IngestionRunStarted;
+use Murkrow\FilamentAi\Jobs\FinalizeIngestionRunJob;
+use Murkrow\FilamentAi\Jobs\PrepareDocumentJob;
+use Murkrow\FilamentAi\Models\IngestionRun;
+use Murkrow\FilamentAi\Models\IngestionRunItem;
 use Throwable;
 
 /**
@@ -105,7 +105,7 @@ final class StartIngestionRun
      */
     private function attachExistingDocuments(IngestionRun $run): void
     {
-        $documents = \Murkrow\Rag\Models\Document::query()
+        $documents = \Murkrow\FilamentAi\Models\Document::query()
             ->where('source_key', $run->source_key)
             ->pluck('id', 'external_id');
 

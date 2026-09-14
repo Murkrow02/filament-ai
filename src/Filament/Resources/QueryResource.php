@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Resources;
+namespace Murkrow\FilamentAi\Filament\Resources;
 
 use Filament\Resources\Resource;
 use Filament\Tables\Columns\IconColumn;
@@ -10,12 +10,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Murkrow\Rag\Enums\QueryChannel;
-use Murkrow\Rag\Filament\Concerns\HasRagNavigation;
-use Murkrow\Rag\Filament\Resources\QueryResource\Pages\ListQueries;
-use Murkrow\Rag\Filament\Resources\QueryResource\Pages\ViewQuery;
-use Murkrow\Rag\Ingestion\CostCalculator;
-use Murkrow\Rag\Models\QueryLog;
+use Murkrow\FilamentAi\Enums\QueryChannel;
+use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Resources\QueryResource\Pages\ListQueries;
+use Murkrow\FilamentAi\Filament\Resources\QueryResource\Pages\ViewQuery;
+use Murkrow\FilamentAi\Ingestion\CostCalculator;
+use Murkrow\FilamentAi\Models\QueryLog;
 
 /**
  * The question log.

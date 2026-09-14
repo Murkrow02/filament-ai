@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Http\Requests;
+namespace Murkrow\FilamentAi\Http\Requests;
 
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
-use Murkrow\Rag\Chat\ChatAbilities;
-use Murkrow\Rag\Data\RetrievalOptions;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Chat\ChatAbilities;
+use Murkrow\FilamentAi\Data\RetrievalOptions;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 
 /**
  * The one place a chat question turns into retrieval options.

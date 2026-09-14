@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Jobs;
+namespace Murkrow\FilamentAi\Jobs;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Murkrow\Rag\Enums\RunStatus;
-use Murkrow\Rag\Events\IngestionRunFinished;
-use Murkrow\Rag\Ingestion\EmbeddingDispatcher;
-use Murkrow\Rag\Jobs\Concerns\InteractsWithRagQueue;
-use Murkrow\Rag\Models\IngestionRun;
+use Murkrow\FilamentAi\Enums\RunStatus;
+use Murkrow\FilamentAi\Events\IngestionRunFinished;
+use Murkrow\FilamentAi\Ingestion\EmbeddingDispatcher;
+use Murkrow\FilamentAi\Jobs\Concerns\InteractsWithRagQueue;
+use Murkrow\FilamentAi\Models\IngestionRun;
 
 /**
  * Bridges the two phases of a run.

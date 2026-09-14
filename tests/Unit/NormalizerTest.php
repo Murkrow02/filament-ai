@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Chunking\Normalizers\CollapseWhitespace;
-use Murkrow\Rag\Chunking\Normalizers\DehyphenateLineBreaks;
-use Murkrow\Rag\Chunking\Normalizers\FixOcrLigatures;
-use Murkrow\Rag\Chunking\Normalizers\NormalizerPipeline;
-use Murkrow\Rag\Chunking\Normalizers\StripControlChars;
+use Murkrow\FilamentAi\Chunking\Normalizers\CollapseWhitespace;
+use Murkrow\FilamentAi\Chunking\Normalizers\DehyphenateLineBreaks;
+use Murkrow\FilamentAi\Chunking\Normalizers\FixOcrLigatures;
+use Murkrow\FilamentAi\Chunking\Normalizers\NormalizerPipeline;
+use Murkrow\FilamentAi\Chunking\Normalizers\StripControlChars;
 
 it('expands typographic ligatures', function (): void {
     expect((new FixOcrLigatures)->normalize("\u{FB01}renze e \u{FB02}otta"))->toBe('firenze e flotta');

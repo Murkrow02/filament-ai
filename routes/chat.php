@@ -20,9 +20,9 @@ declare(strict_types=1);
 */
 
 use Illuminate\Support\Facades\Route;
-use Murkrow\Rag\Http\Controllers\AskController;
-use Murkrow\Rag\Http\Controllers\AssetController;
-use Murkrow\Rag\Http\Controllers\ChatController;
+use Murkrow\FilamentAi\Http\Controllers\AskController;
+use Murkrow\FilamentAi\Http\Controllers\AssetController;
+use Murkrow\FilamentAi\Http\Controllers\ChatController;
 
 Route::get('/', [ChatController::class, 'index'])->name('index');
 

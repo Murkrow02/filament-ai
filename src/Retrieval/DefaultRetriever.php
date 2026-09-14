@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Retrieval;
+namespace Murkrow\FilamentAi\Retrieval;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Murkrow\Rag\Contracts\EmbeddingProvider;
-use Murkrow\Rag\Contracts\Retriever;
-use Murkrow\Rag\Contracts\VectorStore;
-use Murkrow\Rag\Data\RetrievalOptions;
-use Murkrow\Rag\Data\RetrievalResult;
-use Murkrow\Rag\Data\ScoredChunk;
-use Murkrow\Rag\Data\VectorQuery;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Retrieval\Lexical\LexicalSearchManager;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
+use Murkrow\FilamentAi\Contracts\Retriever;
+use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\Data\RetrievalOptions;
+use Murkrow\FilamentAi\Data\RetrievalResult;
+use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Data\VectorQuery;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Retrieval\Lexical\LexicalSearchManager;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 
 /**
  * The retrieval pipeline.

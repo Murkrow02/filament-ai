@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Murkrow\Rag\Support\Tables;
+use Murkrow\FilamentAi\Support\Tables;
 
 /**
  * Everything about a chunk except the vector payload, which the driver-aware

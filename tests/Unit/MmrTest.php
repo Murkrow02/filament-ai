@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Data\ScoredChunk;
-use Murkrow\Rag\Embeddings\VectorMath;
-use Murkrow\Rag\Retrieval\Deduplicator;
-use Murkrow\Rag\Retrieval\Mmr;
+use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Embeddings\VectorMath;
+use Murkrow\FilamentAi\Retrieval\Deduplicator;
+use Murkrow\FilamentAi\Retrieval\Mmr;
 
 function scored(int $id, float $score, array $vector, ?string $hash = null): ScoredChunk
 {

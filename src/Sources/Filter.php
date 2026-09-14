@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Sources;
+namespace Murkrow\FilamentAi\Sources;
 
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Murkrow\Rag\Sources\Filters\BooleanFilter;
-use Murkrow\Rag\Sources\Filters\CallbackFilter;
-use Murkrow\Rag\Sources\Filters\DateRangeFilter;
-use Murkrow\Rag\Sources\Filters\EqualsFilter;
-use Murkrow\Rag\Sources\Filters\IdsFilter;
-use Murkrow\Rag\Sources\Filters\InFilter;
-use Murkrow\Rag\Sources\Filters\LikeFilter;
-use Murkrow\Rag\Sources\Filters\NullFilter;
-use Murkrow\Rag\Sources\Filters\RangeFilter;
+use Murkrow\FilamentAi\Sources\Filters\BooleanFilter;
+use Murkrow\FilamentAi\Sources\Filters\CallbackFilter;
+use Murkrow\FilamentAi\Sources\Filters\DateRangeFilter;
+use Murkrow\FilamentAi\Sources\Filters\EqualsFilter;
+use Murkrow\FilamentAi\Sources\Filters\IdsFilter;
+use Murkrow\FilamentAi\Sources\Filters\InFilter;
+use Murkrow\FilamentAi\Sources\Filters\LikeFilter;
+use Murkrow\FilamentAi\Sources\Filters\NullFilter;
+use Murkrow\FilamentAi\Sources\Filters\RangeFilter;
 
 /**
  * Named constructors for the shipped filters.

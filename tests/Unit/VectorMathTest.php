@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Embeddings\VectorMath;
+use Murkrow\FilamentAi\Embeddings\VectorMath;
 
 it('normalises a vector to unit length', function (): void {
     $normalized = VectorMath::normalize([3.0, 4.0]);

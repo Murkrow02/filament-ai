@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Sources;
+namespace Murkrow\FilamentAi\Sources;
 
 use Closure;
-use Murkrow\Rag\Contracts\KnowledgeSource;
-use Murkrow\Rag\Exceptions\InvalidSourceConfigurationException;
-use Murkrow\Rag\Exceptions\UnknownSourceException;
+use Murkrow\FilamentAi\Contracts\KnowledgeSource;
+use Murkrow\FilamentAi\Exceptions\InvalidSourceConfigurationException;
+use Murkrow\FilamentAi\Exceptions\UnknownSourceException;
 
 /**
  * Every knowledge source the application exposes.

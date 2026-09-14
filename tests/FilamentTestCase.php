@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Tests;
+namespace Murkrow\FilamentAi\Tests;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Auth\User as AuthUser;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Murkrow\Rag\Tests\Fixtures\TestPanelProvider;
+use Murkrow\FilamentAi\Tests\Fixtures\TestPanelProvider;
 
 /**
  * Boots a real Filament panel with the plugin registered exactly the way a

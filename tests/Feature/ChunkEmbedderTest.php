@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Contracts\EmbeddingProvider;
-use Murkrow\Rag\Contracts\VectorStore;
-use Murkrow\Rag\Data\EmbeddingBatch;
-use Murkrow\Rag\Embeddings\FakeEmbeddingProvider;
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Ingestion\ChunkEmbedder;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
+use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\Data\EmbeddingBatch;
+use Murkrow\FilamentAi\Embeddings\FakeEmbeddingProvider;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Ingestion\ChunkEmbedder;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 /**
  * Records the size of every embedBatch() call, and can fail on a given one.

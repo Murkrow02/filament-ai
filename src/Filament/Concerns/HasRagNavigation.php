@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Concerns;
+namespace Murkrow\FilamentAi\Filament\Concerns;
 
 use Illuminate\Support\Facades\Auth;
 use UnitEnum;
@@ -77,7 +77,7 @@ trait HasRagNavigation
             return null;
         }
 
-        return \Murkrow\Rag\Models\IngestionRun::query()->running()->exists()
+        return \Murkrow\FilamentAi\Models\IngestionRun::query()->running()->exists()
             ? $interval
             : null;
     }

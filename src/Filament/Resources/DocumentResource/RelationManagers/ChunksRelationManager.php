@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Resources\DocumentResource\RelationManagers;
+namespace Murkrow\FilamentAi\Filament\Resources\DocumentResource\RelationManagers;
 
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 
 /**
  * The chunks a document was split into.

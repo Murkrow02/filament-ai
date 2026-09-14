@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Chat\ChatAbilities;
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Models\Conversation;
-use Murkrow\Rag\Models\QueryLog;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Chat\ChatAbilities;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Models\Conversation;
+use Murkrow\FilamentAi\Models\QueryLog;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 function seedAuthCorpus(): void
 {

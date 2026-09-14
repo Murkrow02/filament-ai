@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Chunking;
+namespace Murkrow\FilamentAi\Chunking;
 
 /**
  * Internal unit of the chunker: one sentence, tagged with the segment (page)

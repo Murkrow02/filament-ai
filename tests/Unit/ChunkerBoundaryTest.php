@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Chunking\Normalizers\CollapseWhitespace;
-use Murkrow\Rag\Chunking\Normalizers\DehyphenateLineBreaks;
-use Murkrow\Rag\Chunking\Normalizers\FixOcrLigatures;
-use Murkrow\Rag\Chunking\Normalizers\StripControlChars;
-use Murkrow\Rag\Chunking\SlidingWindowChunker;
-use Murkrow\Rag\Chunking\TokenEstimatorFactory;
-use Murkrow\Rag\Data\ChunkDraft;
-use Murkrow\Rag\Data\ChunkingOptions;
-use Murkrow\Rag\Data\Segment;
+use Murkrow\FilamentAi\Chunking\Normalizers\CollapseWhitespace;
+use Murkrow\FilamentAi\Chunking\Normalizers\DehyphenateLineBreaks;
+use Murkrow\FilamentAi\Chunking\Normalizers\FixOcrLigatures;
+use Murkrow\FilamentAi\Chunking\Normalizers\StripControlChars;
+use Murkrow\FilamentAi\Chunking\SlidingWindowChunker;
+use Murkrow\FilamentAi\Chunking\TokenEstimatorFactory;
+use Murkrow\FilamentAi\Data\ChunkDraft;
+use Murkrow\FilamentAi\Data\ChunkingOptions;
+use Murkrow\FilamentAi\Data\Segment;
 
 /**
  * The chunker is the component whose bugs are hardest to notice: bad chunks do

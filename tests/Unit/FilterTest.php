@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Sources\Filter;
-use Murkrow\Rag\Sources\Filters\FilterValue;
-use Murkrow\Rag\Sources\FilterSet;
+use Murkrow\FilamentAi\Sources\Filter;
+use Murkrow\FilamentAi\Sources\Filters\FilterValue;
+use Murkrow\FilamentAi\Sources\FilterSet;
 
 it('keys a set by filter name, not by column', function (): void {
     $set = new FilterSet(

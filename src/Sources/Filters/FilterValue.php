@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Sources\Filters;
+namespace Murkrow\FilamentAi\Sources\Filters;
 
 /**
  * Coercions shared by the filter implementations.

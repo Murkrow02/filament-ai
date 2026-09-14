@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Support;
+namespace Murkrow\FilamentAi\Support;
 
 use Illuminate\Support\Arr as IlluminateArr;
 

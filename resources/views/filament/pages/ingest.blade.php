@@ -30,7 +30,7 @@
             <p style="margin-top:1rem;font-size:.875rem;color:var(--rag-muted);">
                 Estimated embedding cost:
                 <span style="font-weight:600;color:var(--rag-strong);">
-                    {{ \Murkrow\Rag\Ingestion\CostCalculator::format((int) $estimate['cost_micros'], 4) }}
+                    {{ \Murkrow\FilamentAi\Ingestion\CostCalculator::format((int) $estimate['cost_micros'], 4) }}
                 </span>
                 using {{ config('rag.embeddings.model') }}.
             </p>

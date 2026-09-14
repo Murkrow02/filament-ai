@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Resources\QueryResource\Pages;
+namespace Murkrow\FilamentAi\Filament\Resources\QueryResource\Pages;
 
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Murkrow\Rag\Filament\Resources\QueryResource;
-use Murkrow\Rag\Ingestion\CostCalculator;
-use Murkrow\Rag\Models\QueryLog;
-use Murkrow\Rag\Models\QueryCitation;
+use Murkrow\FilamentAi\Filament\Resources\QueryResource;
+use Murkrow\FilamentAi\Ingestion\CostCalculator;
+use Murkrow\FilamentAi\Models\QueryLog;
+use Murkrow\FilamentAi\Models\QueryCitation;
 
 class ViewQuery extends ViewRecord
 {

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Enums\DocumentStatus;
-use Murkrow\Rag\Enums\IngestionMode;
-use Murkrow\Rag\Enums\RunStatus;
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Enums\DocumentStatus;
+use Murkrow\FilamentAi\Enums\IngestionMode;
+use Murkrow\FilamentAi\Enums\RunStatus;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 function pagesOfProse(int $count, int $sentences = 8): array
 {

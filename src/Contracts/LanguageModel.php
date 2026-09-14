@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Contracts;
+namespace Murkrow\FilamentAi\Contracts;
 
 use Generator;
-use Murkrow\Rag\Data\Usage;
+use Murkrow\FilamentAi\Data\Usage;
 
 interface LanguageModel
 {

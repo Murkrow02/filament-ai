@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Contracts\Answerer;
-use Murkrow\Rag\Contracts\LanguageModel;
-use Murkrow\Rag\Data\AnswerOptions;
-use Murkrow\Rag\Data\RetrievalOptions;
-use Murkrow\Rag\Enums\QueryChannel;
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Llm\FakeLanguageModel;
-use Murkrow\Rag\Models\QueryLog;
-use Murkrow\Rag\Models\QueryCitation;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Contracts\Answerer;
+use Murkrow\FilamentAi\Contracts\LanguageModel;
+use Murkrow\FilamentAi\Data\AnswerOptions;
+use Murkrow\FilamentAi\Data\RetrievalOptions;
+use Murkrow\FilamentAi\Enums\QueryChannel;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Llm\FakeLanguageModel;
+use Murkrow\FilamentAi\Models\QueryLog;
+use Murkrow\FilamentAi\Models\QueryCitation;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 function seedCorpus(): void
 {

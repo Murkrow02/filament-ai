@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Models\Conversation;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Models\Conversation;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 function seedStreamCorpus(): void
 {
@@ -57,5 +57,5 @@ it('runs retrieval without calling the model when asked to', function (): void {
 
     expect($response->json('passages'))->not->toBeEmpty()
         ->and($response->json('cost_usd'))->toBeNull()
-        ->and(app(\Murkrow\Rag\Contracts\LanguageModel::class)->received())->toBe([]);
+        ->and(app(\Murkrow\FilamentAi\Contracts\LanguageModel::class)->received())->toBe([]);
 });

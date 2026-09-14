@@ -1,5 +1,5 @@
 @php
-    use Murkrow\Rag\Http\Controllers\AssetController;
+    use Murkrow\FilamentAi\Http\Controllers\AssetController;
 
     /** @var array<string, mixed> $payload */
     /** @var array<string, bool> $abilities */

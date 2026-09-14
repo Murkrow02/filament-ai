@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Chunking\HeuristicTokenEstimator;
-use Murkrow\Rag\Chunking\Normalizers\CollapseWhitespace;
-use Murkrow\Rag\Chunking\Normalizers\DehyphenateLineBreaks;
-use Murkrow\Rag\Chunking\Normalizers\FixOcrLigatures;
-use Murkrow\Rag\Chunking\Normalizers\NormalizerPipeline;
-use Murkrow\Rag\Chunking\Normalizers\StripControlChars;
-use Murkrow\Rag\Chunking\Sentence;
-use Murkrow\Rag\Chunking\SentenceSplitter;
-use Murkrow\Rag\Data\ChunkingOptions;
-use Murkrow\Rag\Data\Segment;
+use Murkrow\FilamentAi\Chunking\HeuristicTokenEstimator;
+use Murkrow\FilamentAi\Chunking\Normalizers\CollapseWhitespace;
+use Murkrow\FilamentAi\Chunking\Normalizers\DehyphenateLineBreaks;
+use Murkrow\FilamentAi\Chunking\Normalizers\FixOcrLigatures;
+use Murkrow\FilamentAi\Chunking\Normalizers\NormalizerPipeline;
+use Murkrow\FilamentAi\Chunking\Normalizers\StripControlChars;
+use Murkrow\FilamentAi\Chunking\Sentence;
+use Murkrow\FilamentAi\Chunking\SentenceSplitter;
+use Murkrow\FilamentAi\Data\ChunkingOptions;
+use Murkrow\FilamentAi\Data\Segment;
 
 function splitter(): SentenceSplitter
 {

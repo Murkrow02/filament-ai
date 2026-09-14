@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Contracts;
+namespace Murkrow\FilamentAi\Contracts;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Collection;
-use Murkrow\Rag\Data\ScoredChunk;
-use Murkrow\Rag\Data\VectorQuery;
+use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Data\VectorQuery;
 
 /**
  * A backend capable of storing and ranking embedding vectors.

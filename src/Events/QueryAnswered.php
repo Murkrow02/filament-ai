@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Events;
+namespace Murkrow\FilamentAi\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
-use Murkrow\Rag\Data\AnswerResult;
-use Murkrow\Rag\Enums\QueryChannel;
+use Murkrow\FilamentAi\Data\AnswerResult;
+use Murkrow\FilamentAi\Enums\QueryChannel;
 
 final class QueryAnswered
 {

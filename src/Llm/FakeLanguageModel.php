@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Llm;
+namespace Murkrow\FilamentAi\Llm;
 
 use Generator;
-use Murkrow\Rag\Contracts\LanguageModel;
-use Murkrow\Rag\Data\Usage;
+use Murkrow\FilamentAi\Contracts\LanguageModel;
+use Murkrow\FilamentAi\Data\Usage;
 
 /**
  * Offline stand-in for the generation model.

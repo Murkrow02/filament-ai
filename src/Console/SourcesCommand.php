@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Console;
+namespace Murkrow\FilamentAi\Console;
 
 use Illuminate\Console\Command;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 use Throwable;
 
 class SourcesCommand extends Command

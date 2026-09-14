@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Data;
+namespace Murkrow\FilamentAi\Data;
 
-use Murkrow\Rag\Models\Document;
+use Murkrow\FilamentAi\Models\Document;
 
 final readonly class DocumentIngestionResult
 {

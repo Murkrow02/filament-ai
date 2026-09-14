@@ -1,6 +1,6 @@
 {
-    "name": "murkrow/laravel-rag",
-    "description": "Generic, configuration-driven RAG toolkit for Laravel: chunking, embeddings, pgvector retrieval, grounded answering, an MCP server and a Filament control panel.",
+    "name": "murkrow/filament-ai",
+    "description": "AI agents and a grounded knowledge base for Filament panels: resource-derived tools, retrieval with citations, native chat, metrics and an MCP server.",
     "keywords": [
         "laravel",
         "rag",
@@ -23,7 +23,8 @@
         "source": "https://github.com/Murkrow02/laravel-rag"
     },
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
+        "filament/filament": "^5.0",
         "illuminate/bus": "^12.0|^13.0",
         "illuminate/console": "^12.0|^13.0",
         "illuminate/contracts": "^12.0|^13.0",
@@ -34,32 +35,31 @@
         "illuminate/session": "^12.0|^13.0",
         "illuminate/support": "^12.0|^13.0",
         "illuminate/view": "^12.0|^13.0",
+        "laravel/ai": "^0.11",
         "pgvector/pgvector": "^0.2",
         "prism-php/prism": "^0.100"
     },
     "require-dev": {
-        "filament/filament": "^4.0",
-        "laravel/mcp": "^1.0@beta",
-        "laravel/scout": "^10.4",
-        "orchestra/testbench": "^10.0",
-        "pestphp/pest": "^3.0",
-        "pestphp/pest-plugin-laravel": "^3.0"
+        "laravel/mcp": "^1.0",
+        "laravel/scout": "^10.4|^11.0",
+        "orchestra/testbench": "^10.0|^11.0",
+        "pestphp/pest": "^3.0|^4.0",
+        "pestphp/pest-plugin-laravel": "^3.0|^4.0"
     },
     "suggest": {
-        "filament/filament": "Required for the RAG control panel (dashboard, ingestion form, playground).",
         "laravel/mcp": "Required to expose the knowledge base to MCP clients.",
         "laravel/scout": "Enables the 'scout' hybrid lexical retrieval driver.",
         "yethee/tiktoken": "Enables exact BPE token counting instead of the heuristic estimator."
     },
     "autoload": {
         "psr-4": {
-            "Murkrow\\Rag\\": "src/",
-            "Murkrow\\Rag\\Database\\Factories\\": "database/factories/"
+            "Murkrow\\FilamentAi\\": "src/",
+            "Murkrow\\FilamentAi\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Murkrow\\Rag\\Tests\\": "tests/"
+            "Murkrow\\FilamentAi\\Tests\\": "tests/"
         }
     },
     "scripts": {
@@ -69,10 +69,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Murkrow\\Rag\\RagServiceProvider"
+                "Murkrow\\FilamentAi\\FilamentAiServiceProvider"
             ],
             "aliases": {
-                "Rag": "Murkrow\\Rag\\Facades\\Rag"
+                "Rag": "Murkrow\\FilamentAi\\Facades\\Rag"
             }
         }
     },

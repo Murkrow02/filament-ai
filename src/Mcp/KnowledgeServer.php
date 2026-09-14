@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Mcp;
+namespace Murkrow\FilamentAi\Mcp;
 
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Version;
-use Murkrow\Rag\Mcp\Prompts\GroundedAnswerPrompt;
-use Murkrow\Rag\Mcp\Resources\DocumentsResource;
-use Murkrow\Rag\Mcp\Tools\AnswerQuestionTool;
-use Murkrow\Rag\Mcp\Tools\FetchDocumentTool;
-use Murkrow\Rag\Mcp\Tools\SearchKnowledgeTool;
+use Murkrow\FilamentAi\Mcp\Prompts\GroundedAnswerPrompt;
+use Murkrow\FilamentAi\Mcp\Resources\DocumentsResource;
+use Murkrow\FilamentAi\Mcp\Tools\AnswerQuestionTool;
+use Murkrow\FilamentAi\Mcp\Tools\FetchDocumentTool;
+use Murkrow\FilamentAi\Mcp\Tools\SearchKnowledgeTool;
 
 /**
  * Exposes the knowledge base to MCP clients.

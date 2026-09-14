@@ -2,10 +2,17 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
+
+// rag:install publishes config/rag.php into Testbench's skeleton, which lives
+// in vendor/ and outlives the run. Left behind, the recursive config merge
+// lets that stale copy override every later change to the package defaults.
+afterEach(function (): void {
+    @unlink(config_path('rag.php'));
+});
 
 function seedForCommands(string $title = 'Cronaca cittadina'): TestBook
 {
@@ -161,7 +168,7 @@ it('runs the installer against a supported store', function (): void {
 
 it('warns when no source is configured', function (): void {
     config()->set('rag.sources', []);
-    app(\Murkrow\Rag\Sources\SourceRegistry::class)->flush();
+    app(\Murkrow\FilamentAi\Sources\SourceRegistry::class)->flush();
 
     $this->artisan('rag:install', ['--skip-extension' => true])
         ->expectsOutputToContain('none - generate one with rag:make:source')

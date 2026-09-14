@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\VectorStores;
+namespace Murkrow\FilamentAi\VectorStores;
 
 use Illuminate\Database\Eloquent\Builder;
-use Murkrow\Rag\Contracts\VectorStore;
-use Murkrow\Rag\Data\ScoredChunk;
-use Murkrow\Rag\Data\VectorQuery;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Support\Tables;
+use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Data\VectorQuery;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Support\Tables;
 
 /**
  * Filter compilation shared by every driver.

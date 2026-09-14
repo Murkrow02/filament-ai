@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Retrieval\Lexical;
+namespace Murkrow\FilamentAi\Retrieval\Lexical;
 
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
-use Murkrow\Rag\Contracts\LexicalSearch;
-use Murkrow\Rag\Data\VectorQuery;
-use Murkrow\Rag\Support\Tables;
+use Murkrow\FilamentAi\Contracts\LexicalSearch;
+use Murkrow\FilamentAi\Data\VectorQuery;
+use Murkrow\FilamentAi\Support\Tables;
 
 /**
  * Postgres full-text search over the chunk table.

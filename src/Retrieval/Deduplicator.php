@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Retrieval;
+namespace Murkrow\FilamentAi\Retrieval;
 
 use Illuminate\Support\Collection;
-use Murkrow\Rag\Data\ScoredChunk;
-use Murkrow\Rag\Embeddings\VectorMath;
+use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Embeddings\VectorMath;
 
 /**
  * Collapses duplicate and near-duplicate hits.

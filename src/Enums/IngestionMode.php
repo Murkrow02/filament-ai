@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Enums;
+namespace Murkrow\FilamentAi\Enums;
 
 enum IngestionMode: string
 {

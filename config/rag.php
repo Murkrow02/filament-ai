@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Chunking\HeuristicTokenEstimator;
-use Murkrow\Rag\Chunking\Normalizers\CollapseWhitespace;
-use Murkrow\Rag\Chunking\Normalizers\DehyphenateLineBreaks;
-use Murkrow\Rag\Chunking\Normalizers\FixOcrLigatures;
-use Murkrow\Rag\Chunking\Normalizers\StripControlChars;
+use Murkrow\FilamentAi\Chunking\HeuristicTokenEstimator;
+use Murkrow\FilamentAi\Chunking\Normalizers\CollapseWhitespace;
+use Murkrow\FilamentAi\Chunking\Normalizers\DehyphenateLineBreaks;
+use Murkrow\FilamentAi\Chunking\Normalizers\FixOcrLigatures;
+use Murkrow\FilamentAi\Chunking\Normalizers\StripControlChars;
 
 return [
 
@@ -43,17 +43,22 @@ return [
     | Embeddings
     |--------------------------------------------------------------------------
     |
-    | Provider agnostic: anything Prism supports (OpenAI, Ollama, VoyageAI,
-    | Bedrock, Mistral, ...) works by changing "prism_provider" and "model".
+    | Provider agnostic through laravel/ai: "provider" names an entry of
+    | config/ai.php's "providers" (null uses ai.default_for_embeddings), so
+    | keys and base URLs are configured once for the whole application.
     | "dimensions" MUST match what the model returns -- it defines the width of
     | the pgvector column, so changing it requires `rag:vector:reindex`.
     |
     */
 
     'embeddings' => [
-        'driver' => env('RAG_EMBEDDING_DRIVER', 'prism'), // prism | fake
+        'driver' => env('RAG_EMBEDDING_DRIVER', 'laravel-ai'), // laravel-ai | prism (deprecated) | fake
+        'provider' => env('RAG_EMBEDDING_PROVIDER'),
+        // Read only by the deprecated prism driver.
         'prism_provider' => env('RAG_EMBEDDING_PROVIDER', 'openai'),
         'model' => env('RAG_EMBEDDING_MODEL', 'text-embedding-3-small'),
+        // Seconds per request; null keeps laravel/ai's default.
+        'timeout' => env('RAG_EMBEDDING_TIMEOUT'),
         'dimensions' => (int) env('RAG_EMBEDDING_DIMENSIONS', 1536),
         // Texts per embedding request. A queued job carries
         // rag.queue.chunks_per_job chunks and sends them in requests of this
@@ -90,12 +95,17 @@ return [
     */
 
     'llm' => [
-        'driver' => env('RAG_LLM_DRIVER', 'prism'), // prism | fake
+        'driver' => env('RAG_LLM_DRIVER', 'laravel-ai'), // laravel-ai | prism (deprecated) | fake
+        // An entry of config/ai.php's "providers"; null uses ai.default.
+        'provider' => env('RAG_LLM_PROVIDER'),
+        // Read only by the deprecated prism driver.
         'prism_provider' => env('RAG_LLM_PROVIDER', 'openai'),
         'model' => env('RAG_LLM_MODEL', 'gpt-4o-mini'),
+        // Seconds per request; null keeps laravel/ai's default.
+        'timeout' => env('RAG_LLM_TIMEOUT'),
 
         // Selectable at query time (e.g. the Filament Playground's model
-        // dropdown). All options share the single provider above -- Prism's
+        // dropdown). All options share the single provider above -- a
         // per-call `model` override, not a provider override. Empty means no
         // picker: callers just get the 'model' key above.
         'available_models' => [],

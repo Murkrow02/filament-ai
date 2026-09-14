@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Mcp\Tools;
+namespace Murkrow\FilamentAi\Mcp\Tools;
 
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
-use Murkrow\Rag\Contracts\Retriever;
-use Murkrow\Rag\Data\RetrievalOptions;
-use Murkrow\Rag\Data\ScoredChunk;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Contracts\Retriever;
+use Murkrow\FilamentAi\Data\RetrievalOptions;
+use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 
 /**
  * Semantic search, exposed as a tool.

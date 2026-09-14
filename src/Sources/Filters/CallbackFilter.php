@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Sources\Filters;
+namespace Murkrow\FilamentAi\Sources\Filters;
 
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use Murkrow\Rag\Contracts\SourceFilter;
+use Murkrow\FilamentAi\Contracts\SourceFilter;
 
 /**
  * Escape hatch for a constraint no descriptor can express: a join, a subquery,

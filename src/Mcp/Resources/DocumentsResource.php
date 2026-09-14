@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Mcp\Resources;
+namespace Murkrow\FilamentAi\Mcp\Resources;
 
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Resource;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 
 /**
  * The discovery surface: what is actually in the knowledge base.

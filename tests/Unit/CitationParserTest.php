@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Answering\CitationParser;
-use Murkrow\Rag\Data\Citation;
-use Murkrow\Rag\Data\ScoredChunk;
+use Murkrow\FilamentAi\Answering\CitationParser;
+use Murkrow\FilamentAi\Data\Citation;
+use Murkrow\FilamentAi\Data\ScoredChunk;
 
 function citation(int $marker): Citation
 {

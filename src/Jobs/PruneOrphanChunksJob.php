@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Jobs;
+namespace Murkrow\FilamentAi\Jobs;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Murkrow\Rag\Contracts\KnowledgeSource;
-use Murkrow\Rag\Jobs\Concerns\InteractsWithRagQueue;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Contracts\KnowledgeSource;
+use Murkrow\FilamentAi\Jobs\Concerns\InteractsWithRagQueue;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 
 /**
  * Removes indexed documents whose host record no longer exists.

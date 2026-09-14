@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Models;
+namespace Murkrow\FilamentAi\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Murkrow\Rag\Database\Factories\ChunkFactory;
-use Murkrow\Rag\Models\Concerns\UsesRagConnection;
-use Murkrow\Rag\Support\Text;
+use Murkrow\FilamentAi\Database\Factories\ChunkFactory;
+use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Support\Text;
 use Pgvector\Laravel\Vector;
 
 /**

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Retrieval\Lexical;
+namespace Murkrow\FilamentAi\Retrieval\Lexical;
 
 use Laravel\Scout\Searchable;
-use Murkrow\Rag\Contracts\LexicalSearch;
-use Murkrow\Rag\Data\VectorQuery;
-use Murkrow\Rag\Models\Chunk;
+use Murkrow\FilamentAi\Contracts\LexicalSearch;
+use Murkrow\FilamentAi\Data\VectorQuery;
+use Murkrow\FilamentAi\Models\Chunk;
 
 /**
  * Lexical leg backed by whichever engine Scout is configured with.

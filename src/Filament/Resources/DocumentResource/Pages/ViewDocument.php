@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Resources\DocumentResource\Pages;
+namespace Murkrow\FilamentAi\Filament\Resources\DocumentResource\Pages;
 
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Murkrow\Rag\Filament\Resources\DocumentResource;
-use Murkrow\Rag\Models\Document;
+use Murkrow\FilamentAi\Filament\Resources\DocumentResource;
+use Murkrow\FilamentAi\Models\Document;
 
 class ViewDocument extends ViewRecord
 {

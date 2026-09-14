@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Mcp\Prompts;
+namespace Murkrow\FilamentAi\Mcp\Prompts;
 
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;

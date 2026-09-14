@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Http\Controllers;
+namespace Murkrow\FilamentAi\Http\Controllers;
 
 use Symfony\Component\HttpFoundation\Response;
 

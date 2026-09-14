@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Jobs\Concerns;
+namespace Murkrow\FilamentAi\Jobs\Concerns;
 
 /**
  * Pulls queue behaviour from config instead of hardcoding it, so a host can

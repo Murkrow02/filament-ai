@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Resources\IngestionRunResource\Pages;
+namespace Murkrow\FilamentAi\Filament\Resources\IngestionRunResource\Pages;
 
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
-use Murkrow\Rag\Filament\Pages\IngestKnowledge;
-use Murkrow\Rag\Filament\Resources\IngestionRunResource;
+use Murkrow\FilamentAi\Filament\Pages\IngestKnowledge;
+use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource;
 
 class ListIngestionRuns extends ListRecords
 {

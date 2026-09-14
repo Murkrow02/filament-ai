@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Support;
+namespace Murkrow\FilamentAi\Support;
 
 /**
  * Resolves the package's table names from configuration.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Tests\Fixtures;
+namespace Murkrow\FilamentAi\Tests\Fixtures;
 
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -13,7 +13,7 @@ use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Murkrow\Rag\Filament\RagPlugin;
+use Murkrow\FilamentAi\Filament\RagPlugin;
 
 /**
  * A minimal host panel, so the plugin is exercised the way a real application

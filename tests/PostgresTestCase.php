@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Tests;
+namespace Murkrow\FilamentAi\Tests;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -53,10 +53,10 @@ abstract class PostgresTestCase extends TestCase
 
         // The real driver, against the real extension.
         $app['config']->set('rag.vector.driver', 'pgvector');
-        $app->forgetInstance(\Murkrow\Rag\Contracts\VectorStore::class);
+        $app->forgetInstance(\Murkrow\FilamentAi\Contracts\VectorStore::class);
         $app->singleton(
-            \Murkrow\Rag\Contracts\VectorStore::class,
-            static fn (): \Murkrow\Rag\Contracts\VectorStore => new \Murkrow\Rag\VectorStores\PgVectorStore,
+            \Murkrow\FilamentAi\Contracts\VectorStore::class,
+            static fn (): \Murkrow\FilamentAi\Contracts\VectorStore => new \Murkrow\FilamentAi\VectorStores\PgVectorStore,
         );
     }
 

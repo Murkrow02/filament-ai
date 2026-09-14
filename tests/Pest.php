@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Tests\FilamentTestCase;
-use Murkrow\Rag\Tests\PostgresTestCase;
-use Murkrow\Rag\Tests\TestCase;
-use Murkrow\Rag\Tests\WebTestCase;
+use Murkrow\FilamentAi\Tests\FilamentTestCase;
+use Murkrow\FilamentAi\Tests\PostgresTestCase;
+use Murkrow\FilamentAi\Tests\TestCase;
+use Murkrow\FilamentAi\Tests\WebTestCase;
 
 uses(TestCase::class)->in('Feature');
 
