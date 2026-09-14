@@ -51,6 +51,16 @@ final class RecordPresenter
         return $data;
     }
 
+    /**
+     * The resource's title for a record, as plain text.
+     *
+     * @param  class-string<\Filament\Resources\Resource>  $resource
+     */
+    public static function titleFor(string $resource, Model $record): ?string
+    {
+        return self::title($resource::getRecordTitle($record));
+    }
+
     private static function title(string|Htmlable|null $title): ?string
     {
         if ($title instanceof Htmlable) {

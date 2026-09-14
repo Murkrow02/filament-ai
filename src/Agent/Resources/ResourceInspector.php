@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Agent\Resources;
 
+use Filament\Forms\Components\Field;
 use Filament\Resources\Pages\PageRegistration;
+use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Contracts\HasTable;
@@ -18,17 +20,19 @@ use Throwable;
  * `ResourceBlueprint` for the agent tools.
  *
  * A resource's table and form are configured against a Livewire component, and
- * none is mounted when the agent runs. The table is therefore built against an
- * unmounted instance of the resource's own table page, and the form against no
- * component at all. Only static facts are read -- names, searchability -- never
- * state. Anything that cannot be read degrades to "not derived" rather than
- * failing: a resource with an exotic table still gets a working tool, just a
- * less informed one.
+ * none is mounted when the agent runs. Both are therefore built against an
+ * unmounted instance of one of the resource's own pages. Only static facts
+ * are read -- names, searchability, rules -- never state. Anything that
+ * cannot be read degrades to "not derived" rather
+ * than failing: a resource with an exotic table still gets a working tool, just
+ * a less informed one.
  */
 final class ResourceInspector
 {
     /** @var array<string, list<string>> */
     private array $columnListings = [];
+
+    public function __construct(private readonly FormFieldMapper $fields) {}
 
     /**
      * @param  class-string<\Filament\Resources\Resource>  $resource
@@ -39,7 +43,8 @@ final class ResourceInspector
         $model = app($resource::getModel());
         $columns = $this->tableColumns($resource);
         $tableNames = array_values(array_map(static fn (Column $column): string => $column->getName(), $columns));
-        $formNames = $this->formFieldNames($resource);
+        $formFields = $this->formFields($resource);
+        $formNames = array_values(array_unique(array_map(static fn (Field $field): string => $field->getName(), $formFields)));
 
         $searchColumns = $tools->searchColumns()
             ?? $this->searchableColumns($columns, $model)
@@ -61,6 +66,8 @@ final class ResourceInspector
             viewAttributes: $configured ?? array_values(array_unique([...$tableNames, ...$formNames])),
             maxRecords: $tools->maxRecords(),
             description: $tools->description(),
+            fields: array_values(array_filter(array_map($this->fields->map(...), $formFields))),
+            unapprovedAbilities: $tools->unapprovedAbilities(),
         );
     }
 
@@ -93,10 +100,24 @@ final class ResourceInspector
      */
     private function tablePage(string $resource): ?HasTable
     {
+        $page = $this->pageImplementing($resource, HasTable::class);
+
+        return $page instanceof HasTable ? $page : null;
+    }
+
+    /**
+     * An unmounted instance of the first page of the resource that implements
+     * the given contract, or null.
+     *
+     * @param  class-string<\Filament\Resources\Resource>  $resource
+     * @param  class-string  $contract
+     */
+    private function pageImplementing(string $resource, string $contract): ?object
+    {
         foreach ($resource::getPages() as $registration) {
             $page = $registration instanceof PageRegistration ? $registration->getPage() : null;
 
-            if ($page !== null && is_subclass_of($page, HasTable::class)) {
+            if ($page !== null && is_subclass_of($page, $contract)) {
                 try {
                     return app($page);
                 } catch (Throwable) {
@@ -110,27 +131,32 @@ final class ResourceInspector
 
     /**
      * @param  class-string<\Filament\Resources\Resource>  $resource
-     * @return list<string>
+     * @return list<Field>
      */
-    private function formFieldNames(string $resource): array
+    private function formFields(string $resource): array
     {
+        // A schema resolves its components through its Livewire component and
+        // throws a TypeError without one, so the form is built against an
+        // unmounted page of the resource, the same way the table is.
+        $livewire = $this->pageImplementing($resource, HasSchemas::class);
+
+        if (! $livewire instanceof HasSchemas) {
+            return [];
+        }
+
         try {
-            $fields = $resource::form(Schema::make())->getFlatFields(withHidden: true);
+            $fields = $resource::form(Schema::make($livewire))->getFlatFields(withHidden: true);
         } catch (Throwable) {
             return [];
         }
 
-        $names = [];
-
-        foreach ($fields as $field) {
+        return array_values(array_filter($fields, static function (mixed $field): bool {
             try {
-                $names[] = $field->getName();
+                return $field instanceof Field && $field->getName() !== '';
             } catch (Throwable) {
-                continue;
+                return false;
             }
-        }
-
-        return array_values(array_unique($names));
+        }));
     }
 
     /**
@@ -178,7 +204,7 @@ final class ResourceInspector
         }
 
         // Provider tool names allow [A-Za-z0-9_-] and at most 64 characters;
-        // the longest suffix appended is "_list".
-        return Str::of($slug)->replaceMatches('/[^A-Za-z0-9]+/', '_')->trim('_')->substr(0, 58)->toString();
+        // the longest suffix appended is "_delete".
+        return Str::of($slug)->replaceMatches('/[^A-Za-z0-9]+/', '_')->trim('_')->substr(0, 57)->toString();
     }
 }

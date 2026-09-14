@@ -7,6 +7,9 @@ namespace Murkrow\FilamentAi\Agent\Resources;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Laravel\Ai\Contracts\Tool;
+use Murkrow\FilamentAi\Agent\Resources\Tools\CreateRecordTool;
+use Murkrow\FilamentAi\Agent\Resources\Tools\DeleteRecordTool;
+use Murkrow\FilamentAi\Agent\Resources\Tools\EditRecordTool;
 use Murkrow\FilamentAi\Agent\Resources\Tools\ListRecordsTool;
 use Murkrow\FilamentAi\Agent\Resources\Tools\ViewRecordTool;
 
@@ -14,10 +17,11 @@ use Murkrow\FilamentAi\Agent\Resources\Tools\ViewRecordTool;
  * The resource tools the current user's agent may call in one panel.
  *
  * Only resources implementing `AgentResource` are considered. A resource whose
- * `viewAny` policy denies the current user is left out entirely, so the model
- * is not told about records it cannot read -- but the tools still check the
- * policy on every call, because this list is built once per prompt and a
- * conversation can outlive a permission change.
+ * `viewAny` policy denies the current user is left out entirely, and a create
+ * tool is left out when `create` is denied, so the model is not told about
+ * what it cannot do -- but every tool still checks its policy when called,
+ * because this list is built once per prompt and a conversation can outlive a
+ * permission change.
  */
 final class ResourceToolRegistry
 {
@@ -78,13 +82,40 @@ final class ResourceToolRegistry
         $tools = [];
 
         foreach ($this->blueprints($panel) as $blueprint) {
-            if ($blueprint->allows(AgentTools::LIST)) {
-                $tools[] = new ListRecordsTool($blueprint);
-            }
+            array_push($tools, ...$this->toolsFor($blueprint));
+        }
 
-            if ($blueprint->allows(AgentTools::VIEW)) {
-                $tools[] = new ViewRecordTool($blueprint);
-            }
+        return $tools;
+    }
+
+    /**
+     * @return list<Tool>
+     */
+    public function toolsFor(ResourceBlueprint $blueprint): array
+    {
+        $resource = $blueprint->resource;
+        $tools = [];
+
+        if ($blueprint->allows(AgentTools::LIST)) {
+            $tools[] = new ListRecordsTool($blueprint);
+        }
+
+        if ($blueprint->allows(AgentTools::VIEW)) {
+            $tools[] = new ViewRecordTool($blueprint);
+        }
+
+        // Writes need something to write: a resource without a usable form
+        // gets no create or edit tool rather than one that accepts nothing.
+        if ($blueprint->allows(AgentTools::CREATE) && $blueprint->fields !== [] && $resource::canCreate()) {
+            $tools[] = new CreateRecordTool($blueprint);
+        }
+
+        if ($blueprint->allows(AgentTools::EDIT) && $blueprint->fields !== []) {
+            $tools[] = new EditRecordTool($blueprint);
+        }
+
+        if ($blueprint->allows(AgentTools::DELETE)) {
+            $tools[] = new DeleteRecordTool($blueprint);
         }
 
         return $tools;

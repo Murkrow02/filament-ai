@@ -18,6 +18,8 @@ final readonly class ResourceBlueprint
      * @param  list<string>  $searchColumns  plain columns of the model's table
      * @param  list<string>  $listAttributes  returned by the list tool
      * @param  list<string>  $viewAttributes  returned by the view tool
+     * @param  list<FieldBlueprint>  $fields  writable form fields
+     * @param  list<string>  $unapprovedAbilities  writes that run without asking
      */
     public function __construct(
         public string $resource,
@@ -30,10 +32,17 @@ final readonly class ResourceBlueprint
         public array $viewAttributes,
         public int $maxRecords,
         public ?string $description = null,
+        public array $fields = [],
+        public array $unapprovedAbilities = [],
     ) {}
 
     public function allows(string $ability): bool
     {
         return in_array($ability, $this->abilities, true);
+    }
+
+    public function requiresApproval(string $ability): bool
+    {
+        return $ability === AgentTools::DELETE || ! in_array($ability, $this->unapprovedAbilities, true);
     }
 }

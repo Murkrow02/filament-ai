@@ -394,9 +394,31 @@ public static function agentTools(AgentTools $tools): AgentTools
 What the agent can and cannot reach:
 
 - Records come from `Resource::getEloquentQuery()`, so tenant scoping and anything you narrowed for the table apply unchanged.
-- `viewAny` and `view` policies are checked on every call. A resource the user may not view is not even offered to the model.
+- The resource's policies (`viewAny`, `view`, `create`, `update`, `delete`) are checked on every call. A resource the user may not view is not even offered to the model.
 - Attributes the model hides (`$hidden`) are never returned.
-- Resources without `AgentResource` are invisible to it. It cannot change data yet.
+- Resources without `AgentResource` are invisible to it.
+
+### Changing data
+
+An opted-in resource also gets `orders_create` and `orders_edit`, built from its form: the arguments are the form's fields, validated with the form's own rules, and saved the way the panel's create and edit pages save them. `orders_delete` exists only when the resource asks for it with `->with(AgentTools::DELETE)`. Fields that are not one attribute value -- uploads, repeaters, many-to-many selects -- are not offered to the agent.
+
+No write runs on the model's word alone. The turn pauses with a pending approval that names the change (`Create order -- Customer: Acme; Total: 120`), and the tool runs only once the user decides:
+
+```php
+use Laravel\Ai\Approvals\Decision;
+use Laravel\Ai\Approvals\Decisions;
+
+$response = (new PanelAssistant)->forUser(auth()->user())->prompt('Mark order 1042 as shipped');
+
+foreach ($response->pendingApprovals as $approval) {
+    // show $approval->reason to the user, then resume with their decision:
+    (new PanelAssistant)
+        ->continue($response->conversationId, as: auth()->user())
+        ->prompt(Decisions::from([$approval->id => Decision::approve()]));
+}
+```
+
+Resuming reads the paused call back from laravel/ai's conversation tables, so publish and run its migrations, and prompt with `forUser()`. Creation and edits can skip the confirmation per resource with `->withoutApproval(AgentTools::CREATE, AgentTools::EDIT)`; a deletion is always confirmed.
 
 The agent itself works with no class of your own:
 

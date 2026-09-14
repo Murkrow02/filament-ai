@@ -64,7 +64,7 @@ function callAgentTool(string $name, array $arguments = []): array
 }
 
 it('derives tools only for resources that opted in', function (): void {
-    expect(array_keys(agentResourceTools()))->toBe(['test_books_list', 'test_books_view']);
+    expect(array_keys(agentResourceTools()))->toBe(['test_books_list', 'test_books_view', 'test_books_create', 'test_books_edit']);
 });
 
 it('derives search columns and attributes from the table and the form', function (): void {
@@ -159,8 +159,9 @@ it('never presents an attribute the model hides', function (): void {
 it('narrows abilities and rejects unknown ones', function (): void {
     $tools = new AgentTools(TestBookResource::class);
 
-    expect($tools->except(AgentTools::VIEW)->abilities())->toBe([AgentTools::LIST])
-        ->and((new AgentTools(TestBookResource::class))->only()->abilities())->toBe([]);
+    expect($tools->except(AgentTools::VIEW, AgentTools::EDIT)->abilities())->toBe([AgentTools::LIST, AgentTools::CREATE])
+        ->and((new AgentTools(TestBookResource::class))->only()->abilities())->toBe([])
+        ->and((new AgentTools(TestBookResource::class))->with(AgentTools::DELETE)->abilities())->toBe(AgentTools::ABILITIES);
 
-    (new AgentTools(TestBookResource::class))->only('delete');
+    (new AgentTools(TestBookResource::class))->only('publish');
 })->throws(InvalidArgumentException::class);

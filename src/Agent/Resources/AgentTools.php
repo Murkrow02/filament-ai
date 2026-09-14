@@ -9,8 +9,10 @@ use InvalidArgumentException;
 /**
  * What the agent may do with one resource, and how.
  *
- * Starts from everything derivable and is narrowed by the resource's
- * `agentTools()`. Anything left null is derived from the resource itself.
+ * Starts from the defaults -- list, view, create and edit; delete only when
+ * asked for -- and is narrowed by the resource's `agentTools()`. Every write
+ * is approved by the user before it runs; create and edit can opt out of that,
+ * delete cannot. Anything left null is derived from the resource itself.
  */
 final class AgentTools
 {
@@ -18,10 +20,21 @@ final class AgentTools
 
     public const VIEW = 'view';
 
-    public const ABILITIES = [self::LIST, self::VIEW];
+    public const CREATE = 'create';
+
+    public const EDIT = 'edit';
+
+    public const DELETE = 'delete';
+
+    public const ABILITIES = [self::LIST, self::VIEW, self::CREATE, self::EDIT, self::DELETE];
+
+    public const DEFAULTS = [self::LIST, self::VIEW, self::CREATE, self::EDIT];
 
     /** @var list<string> */
-    private array $abilities = self::ABILITIES;
+    private array $abilities = self::DEFAULTS;
+
+    /** @var list<string> */
+    private array $unapproved = [];
 
     /** @var list<string>|null */
     private ?array $searchColumns = null;
@@ -48,6 +61,33 @@ final class AgentTools
     public function except(string ...$abilities): self
     {
         $this->abilities = array_values(array_diff($this->abilities, $this->validated($abilities)));
+
+        return $this;
+    }
+
+    /**
+     * Add abilities to the current set, e.g. `->with(AgentTools::DELETE)`.
+     */
+    public function with(string ...$abilities): self
+    {
+        $this->abilities = array_values(array_intersect(self::ABILITIES, [...$this->abilities, ...$this->validated($abilities)]));
+
+        return $this;
+    }
+
+    /**
+     * Run these writes without asking the user first. Only for create and
+     * edit: a deletion is always approved.
+     */
+    public function withoutApproval(string ...$abilities): self
+    {
+        foreach ($this->validated($abilities) as $ability) {
+            if (! in_array($ability, [self::CREATE, self::EDIT], true)) {
+                throw new InvalidArgumentException("Only create and edit can run without approval; [{$ability}] on [{$this->resource}] cannot.");
+            }
+        }
+
+        $this->unapproved = array_values(array_unique([...$this->unapproved, ...$abilities]));
 
         return $this;
     }
@@ -110,6 +150,14 @@ final class AgentTools
     public function abilities(): array
     {
         return $this->abilities;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function unapprovedAbilities(): array
+    {
+        return $this->unapproved;
     }
 
     /**

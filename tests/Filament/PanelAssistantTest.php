@@ -9,7 +9,7 @@ use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 it('works without a subclass: knowledge plus every opted-in resource', function (): void {
     $names = array_map(fn ($tool): string => $tool->name(), [...(new PanelAssistant)->tools()]);
 
-    expect($names)->toBe(['search_knowledge', 'fetch_document', 'test_books_list', 'test_books_view']);
+    expect($names)->toBe(['search_knowledge', 'fetch_document', 'test_books_list', 'test_books_view', 'test_books_create', 'test_books_edit']);
 });
 
 it('drops the knowledge tools when no source is allowed', function (): void {
@@ -17,7 +17,7 @@ it('drops the knowledge tools when no source is allowed', function (): void {
 
     $names = array_map(fn ($tool): string => $tool->name(), [...(new PanelAssistant)->tools()]);
 
-    expect($names)->toBe(['test_books_list', 'test_books_view']);
+    expect($names)->toBe(['test_books_list', 'test_books_view', 'test_books_create', 'test_books_edit']);
 });
 
 it('tells the model who is asking, where, and what it can read', function (): void {
@@ -25,8 +25,8 @@ it('tells the model who is asking, where, and what it can read', function (): vo
 
     expect($instructions)
         ->toContain('Signed-in user: Panel user.')
-        ->toContain('test_books_list / test_books_view: test books')
-        ->toContain('You can read data but not change it.');
+        ->toContain('test_books_list / test_books_view / test_books_create / test_books_edit: test books')
+        ->toContain('The user confirms each change in the interface before it runs');
 });
 
 it('describes the record on screen so "this" resolves', function (): void {

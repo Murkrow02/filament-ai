@@ -14,7 +14,6 @@ use Laravel\Ai\Contracts\HasTools;
 use Laravel\Ai\Contracts\RemembersConversations as RemembersConversationsContract;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Promptable;
-use Murkrow\FilamentAi\Agent\Resources\AgentTools;
 use Murkrow\FilamentAi\Agent\Resources\ResourceToolRegistry;
 use Murkrow\FilamentAi\Agent\Tools\FetchDocument;
 use Murkrow\FilamentAi\Agent\Tools\SearchKnowledge;
@@ -184,16 +183,19 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
             $lines[] = '- search_knowledge / fetch_document: the indexed documents (manuals, archives, reference texts).';
         }
 
-        foreach (app(ResourceToolRegistry::class)->blueprints($this->panel()) as $blueprint) {
-            $abilities = array_map(
-                static fn (string $ability): string => $blueprint->toolPrefix.'_'.$ability,
-                array_values(array_intersect(AgentTools::ABILITIES, $blueprint->abilities)),
-            );
+        $registry = app(ResourceToolRegistry::class);
 
-            $lines[] = '- '.implode(' / ', $abilities).": {$blueprint->pluralLabel}".($blueprint->description === null ? '.' : " -- {$blueprint->description}");
+        foreach ($registry->blueprints($this->panel()) as $blueprint) {
+            $names = array_map(static fn (Tool $tool): string => $tool->name(), $registry->toolsFor($blueprint));
+
+            if ($names === []) {
+                continue;
+            }
+
+            $lines[] = '- '.implode(' / ', $names).": {$blueprint->pluralLabel}".($blueprint->description === null ? '.' : " -- {$blueprint->description}");
         }
 
-        return $lines === [] ? null : "You can read:\n".implode("\n", $lines);
+        return $lines === [] ? null : "You can use:\n".implode("\n", $lines);
     }
 
     protected function rulesSection(): string
@@ -201,7 +203,8 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
         return implode("\n", [
             'Rules:',
             '- Use the tools to look things up. Never invent records, figures or document content; if the tools return nothing, say so.',
-            '- You can read data but not change it. If the user asks for a change, tell them where in the panel to make it, linking the record when you have its url.',
+            '- You change data only through the _create, _edit and _delete tools, and only when the user asked for the change. The user confirms each change in the interface before it runs: call the tool directly with complete arguments instead of asking for confirmation in text. If a change is rejected, do not try it again.',
+            '- When no tool can make the change the user wants, tell them where in the panel to make it, linking the record when you have its url.',
             '- When you mention a record that has a url, link it in Markdown.',
             '- When an answer relies on a knowledge passage, cite its marker, e.g. [#1].',
             '- If a tool answers with "Error:", explain the problem plainly; do not retry the same call unchanged.',
