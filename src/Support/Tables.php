@@ -61,6 +61,16 @@ final class Tables
         return self::name('conversations');
     }
 
+    public static function solveRuns(): string
+    {
+        return self::name('solve_runs');
+    }
+
+    public static function solveAttempts(): string
+    {
+        return self::name('solve_attempts');
+    }
+
     public static function connection(): ?string
     {
         $connection = config('rag.database.connection');

@@ -35,6 +35,8 @@ return [
             'queries' => 'queries',
             'citations' => 'query_citations',
             'conversations' => 'conversations',
+            'solve_runs' => 'solve_runs',
+            'solve_attempts' => 'solve_attempts',
         ],
     ],
 
@@ -437,6 +439,46 @@ return [
             'topbar_button' => true,
         ],
 
+        /*
+        | Iterative solving.
+        |
+        | The assistant answers in one turn; this is the other mode, for
+        | questions that need trying: several attempts run in parallel, a
+        | verifier judges them, and the next wave starts from what was wrong
+        | with the last. Off by default -- it multiplies the cost of an answer
+        | by attempts x waves, plus one judgement each.
+        */
+        'solving' => [
+            'enabled' => (bool) env('RAG_AGENT_SOLVING', false),
+
+            'attempts_per_wave' => (int) env('RAG_AGENT_SOLVING_ATTEMPTS', 4),
+            'max_waves' => (int) env('RAG_AGENT_SOLVING_WAVES', 3),
+
+            // How far apart the attempts of one wave are told to think. Zero
+            // makes them near-copies, which wastes running several.
+            'temperature_spread' => 0.4,
+
+            // Budgets. The first one to run out ends the run, which is then
+            // reported as "no solution found" with the best attempt kept.
+            // null switches one off; leaving them all off is asking for a
+            // surprise on the invoice.
+            'max_tokens' => (int) env('RAG_AGENT_SOLVING_MAX_TOKENS', 300000),
+            'max_cost_micros' => (int) env('RAG_AGENT_SOLVING_MAX_COST', 2000000), // USD 2.00
+            'max_seconds' => (int) env('RAG_AGENT_SOLVING_MAX_SECONDS', 300),
+
+            // The judge. A cheaper model than the one doing the work is the
+            // point: null falls back to the agent's own.
+            'judge' => [
+                'provider' => env('RAG_AGENT_JUDGE_PROVIDER'),
+                'model' => env('RAG_AGENT_JUDGE_MODEL'),
+            ],
+
+            'queue' => [
+                'connection' => env('RAG_AGENT_SOLVING_QUEUE_CONNECTION', env('RAG_QUEUE_CONNECTION')),
+                'queue' => env('RAG_AGENT_SOLVING_QUEUE', env('RAG_QUEUE', 'rag')),
+            ],
+        ],
+
         // The admin page that edits everything above at runtime. It is
         // gated by rag.filament.authorize, not by rag.agent.authorize:
         // using the assistant and deciding what it may do are different
@@ -613,6 +655,11 @@ return [
             'agent.sandbox.max_output' => ['type' => 'int', 'min' => 200, 'max' => 50000],
             'agent.sandbox.max_code_characters' => ['type' => 'int', 'min' => 200, 'max' => 200000],
             'agent.max_steps' => ['type' => 'int', 'min' => 1, 'max' => 40],
+            'agent.solving.enabled' => ['type' => 'bool'],
+            'agent.solving.attempts_per_wave' => ['type' => 'int', 'min' => 1, 'max' => 16],
+            'agent.solving.max_waves' => ['type' => 'int', 'min' => 1, 'max' => 10],
+            'agent.solving.max_tokens' => ['type' => 'int', 'min' => 1000, 'max' => 5000000],
+            'agent.solving.max_seconds' => ['type' => 'int', 'min' => 10, 'max' => 3600],
             // The sandbox URL and driver are deliberately not here: a web form
             // that decides where the application posts code is an SSRF waiting
             // to happen, and whoever administers the panel is not necessarily

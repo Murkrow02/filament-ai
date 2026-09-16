@@ -63,6 +63,16 @@ return [
         'documents_description' => 'The documents currently indexed, with their identifiers, titles and coverage.',
     ],
 
+    'solving' => [
+        'stopped_waves' => 'after :waves wave(s)',
+        'stopped_tokens' => 'after :tokens tokens',
+        'stopped_cost' => 'after USD :cost',
+        'stopped_seconds' => 'after :seconds seconds',
+        'no_reason' => 'no reason was given',
+        'exhausted' => 'I could not find an answer that meets the criteria, :stop and :attempts attempts. The closest was: :answer — rejected because :reason',
+        'exhausted_empty' => 'I could not produce a usable answer, :stop.',
+    ],
+
     'assistant_settings' => [
         'title' => 'Assistant settings',
         'navigation' => 'Assistant settings',

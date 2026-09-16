@@ -63,6 +63,16 @@ return [
         'documents_description' => 'I documenti attualmente indicizzati, con identificativi, titoli e copertura.',
     ],
 
+    'solving' => [
+        'stopped_waves' => 'dopo :waves ondate',
+        'stopped_tokens' => 'dopo :tokens token',
+        'stopped_cost' => 'dopo :cost USD',
+        'stopped_seconds' => 'dopo :seconds secondi',
+        'no_reason' => 'senza motivazione',
+        'exhausted' => 'Non ho trovato una risposta che rispetti i criteri, :stop e :attempts tentativi. La piu vicina era: :answer — respinta perche :reason',
+        'exhausted_empty' => 'Non sono riuscito a produrre una risposta utilizzabile, :stop.',
+    ],
+
     'assistant_settings' => [
         'title' => 'Impostazioni assistente',
         'navigation' => 'Impostazioni assistente',

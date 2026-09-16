@@ -17,7 +17,10 @@ use Murkrow\FilamentAi\Console;
 use Murkrow\FilamentAi\Contracts\Answerer;
 use Murkrow\FilamentAi\Contracts\Chunker;
 use Murkrow\FilamentAi\Agent\Sandbox\SandboxManager;
+use Murkrow\FilamentAi\Agent\Solving\JudgeVerifier;
+use Murkrow\FilamentAi\Agent\Solving\Solver;
 use Murkrow\FilamentAi\Contracts\CodeSandbox;
+use Murkrow\FilamentAi\Contracts\Verifier;
 use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
 use Murkrow\FilamentAi\Contracts\LanguageModel;
 use Murkrow\FilamentAi\Contracts\PromptRenderer;
@@ -189,6 +192,12 @@ class FilamentAiServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(SandboxManager::class);
+
+        $this->app->singleton(Solver::class);
+
+        // The shipped verifier is a language model. An application that
+        // knows what correct means binds its own and pays nothing.
+        $this->app->bind(Verifier::class, JudgeVerifier::class);
 
         $this->app->singleton(
             CodeSandbox::class,

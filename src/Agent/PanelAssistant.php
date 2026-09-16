@@ -53,6 +53,8 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
 
     protected ?Model $pageRecord = null;
 
+    protected ?float $temperature = null;
+
     public function inPanel(?Panel $panel): static
     {
         $this->panel = $panel;
@@ -118,6 +120,31 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
         $provider = config('rag.agent.provider') ?? config('rag.llm.provider');
 
         return blank($provider) ? null : (string) $provider;
+    }
+
+    /**
+     * Answer this one at a given temperature.
+     *
+     * Iterative solving runs a wave of attempts side by side and spreads them
+     * apart with this: identical temperatures would produce near-identical
+     * answers, which is a waste of several model calls.
+     */
+    public function withTemperature(?float $temperature): static
+    {
+        $this->temperature = $temperature;
+
+        return $this;
+    }
+
+    public function temperature(): ?float
+    {
+        if ($this->temperature !== null) {
+            return $this->temperature;
+        }
+
+        $temperature = config('rag.agent.temperature') ?? config('rag.llm.temperature');
+
+        return $temperature === null || $temperature === '' ? null : (float) $temperature;
     }
 
     /**
