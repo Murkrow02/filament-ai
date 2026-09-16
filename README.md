@@ -420,6 +420,12 @@ foreach ($response->pendingApprovals as $approval) {
 
 Resuming reads the paused call back from laravel/ai's conversation tables, so publish and run its migrations, and prompt with `forUser()`. Creation and edits can skip the confirmation per resource with `->withoutApproval(AgentTools::CREATE, AgentTools::EDIT)`; a deletion is always confirmed.
 
+### Deciding what it may do, from the panel
+
+`Assistant settings` (next to the chat, gated by `rag.filament.authorize`) turns the configuration above into a form: provider and model, whether it may search documents and which sources, how many records an answer may carry, and then one section per opted-in resource -- which abilities it keeps, which writes may run without asking, how many records that resource returns.
+
+It can only narrow. A resource that never implemented `AgentResource` is not listed, an ability its class does not offer cannot be ticked, and a deletion is always confirmed by the user. Anything left exactly as the code declared it is not stored at all, so a later change to `agentTools()` is picked up instead of being shadowed by a saved row. Settings live in the same table as the knowledge settings and are layered over `config/rag.php` on boot.
+
 ### In the panel
 
 The plugin adds an **Assistant** page to the panel: the user's conversations in a sidebar, answers rendered as Markdown, and every pending change shown as a card with Approve and Reject. A button next to global search opens it about the page on screen, so "this order" means the order being viewed. History lives in laravel/ai's conversation tables -- run its migrations -- and is only ever visible to the user who wrote it.

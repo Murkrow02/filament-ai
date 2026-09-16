@@ -357,6 +357,17 @@ return [
             'enabled' => true,
             // Default cap on records per list call; AgentTools::limit() overrides it per resource.
             'max_records' => 25,
+
+            // Per-resource policies, keyed by resource class. What the
+            // panel's assistant settings page writes; a resource absent
+            // here keeps whatever its own agentTools() declared.
+            //
+            //   App\Filament\Resources\Orders\OrderResource::class => [
+            //       'abilities' => ['list', 'view', 'edit'],
+            //       'unapproved' => ['edit'],
+            //       'max_records' => 10,
+            //   ],
+            'overrides' => [],
         ],
 
         // The agent class the panel chat talks to. Extend PanelAssistant to
@@ -386,6 +397,15 @@ return [
             // A button next to global search that opens the chat about the
             // record on screen.
             'topbar_button' => true,
+        ],
+
+        // The admin page that edits everything above at runtime. It is
+        // gated by rag.filament.authorize, not by rag.agent.authorize:
+        // using the assistant and deciding what it may do are different
+        // permissions.
+        'settings' => [
+            'enabled' => true,
+            'slug' => 'assistant-settings',
         ],
     ],
 
@@ -535,6 +555,20 @@ return [
             'answering.require_citations' => ['type' => 'bool'],
             'answering.max_context_tokens' => ['type' => 'int', 'min' => 500, 'max' => 100000],
             'queue.chunks_per_job' => ['type' => 'int', 'min' => 1, 'max' => 512],
+
+            // The assistant. Edited by its own page, not by the knowledge
+            // settings form, which skips everything under "agent.".
+            'agent.enabled' => ['type' => 'bool'],
+            'agent.provider' => ['type' => 'string'],
+            'agent.model' => ['type' => 'string'],
+            'agent.knowledge.enabled' => ['type' => 'bool'],
+            'agent.knowledge.sources' => ['type' => 'json'],
+            'agent.resources.enabled' => ['type' => 'bool'],
+            'agent.resources.max_records' => ['type' => 'int', 'min' => 1, 'max' => 200],
+            'agent.resources.overrides' => ['type' => 'json'],
+            'agent.chat.enabled' => ['type' => 'bool'],
+            'agent.chat.history' => ['type' => 'int', 'min' => 1, 'max' => 100],
+            'agent.chat.topbar_button' => ['type' => 'bool'],
         ],
     ],
 ];

@@ -50,8 +50,11 @@ final class ResourceToolRegistry
                 continue;
             }
 
-            $tools = $resource::agentTools(
-                (new AgentTools($resource))->limit((int) config('rag.agent.resources.max_records', 25)),
+            $tools = ResourcePolicies::apply(
+                $resource::agentTools(
+                    (new AgentTools($resource))->limit((int) config('rag.agent.resources.max_records', 25)),
+                ),
+                $resource,
             );
 
             if ($tools->abilities() === []) {
@@ -72,6 +75,48 @@ final class ResourceToolRegistry
         }
 
         return $blueprints;
+    }
+
+    /**
+     * Every resource that opted in, as it was declared: before the
+     * administrator's overrides and without the policy check.
+     *
+     * The settings page needs this, not `blueprints()`: a resource switched
+     * off from the panel has to stay on the page, or there would be no way to
+     * switch it back on.
+     *
+     * @return list<array{resource: class-string<\Filament\Resources\Resource>, label: string, plural: string, abilities: list<string>, unapproved: list<string>, max_records: int}>
+     */
+    public function catalogue(?Panel $panel = null): array
+    {
+        $panel ??= Filament::getCurrentOrDefaultPanel();
+
+        if ($panel === null) {
+            return [];
+        }
+
+        $declared = [];
+
+        foreach ($panel->getResources() as $resource) {
+            if (! is_subclass_of($resource, AgentResource::class)) {
+                continue;
+            }
+
+            $tools = $resource::agentTools(
+                (new AgentTools($resource))->limit((int) config('rag.agent.resources.max_records', 25)),
+            );
+
+            $declared[] = [
+                'resource' => $resource,
+                'label' => (string) $resource::getModelLabel(),
+                'plural' => (string) $resource::getPluralModelLabel(),
+                'abilities' => $tools->abilities(),
+                'unapproved' => $tools->unapprovedAbilities(),
+                'max_records' => $tools->maxRecords(),
+            ];
+        }
+
+        return $declared;
     }
 
     /**

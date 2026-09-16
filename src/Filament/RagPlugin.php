@@ -10,6 +10,7 @@ use Filament\Panel;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Murkrow\FilamentAi\Agent\Chat\AssistantAccess;
+use Murkrow\FilamentAi\Filament\Pages\AgentSettings;
 use Murkrow\FilamentAi\Filament\Pages\AssistantChat;
 use Illuminate\Support\Facades\Route;
 use Murkrow\FilamentAi\Chat\ChatAbilities;
@@ -150,6 +151,11 @@ class RagPlugin implements Plugin
             config('rag.filament.pages.playground', true) ? RagPlayground::class : null,
             config('rag.filament.pages.settings', true) ? RagSettings::class : null,
             AssistantAccess::enabled() ? AssistantChat::class : null,
+            // Registered even when the chat is off: switching it back on
+            // is one of the things this page is for.
+            config('rag.enabled', true) && config('rag.agent.enabled', true) && config('rag.agent.settings.enabled', true)
+                ? AgentSettings::class
+                : null,
         ]));
     }
 
