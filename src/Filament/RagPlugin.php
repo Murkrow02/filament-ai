@@ -21,6 +21,7 @@ use Murkrow\FilamentAi\Filament\Pages\RagSettings;
 use Murkrow\FilamentAi\Filament\Resources\DocumentResource;
 use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource;
 use Murkrow\FilamentAi\Filament\Resources\QueryResource;
+use Murkrow\FilamentAi\Filament\Resources\SolveRunResource;
 use Murkrow\FilamentAi\Filament\Widgets\IngestionThroughputChart;
 use Murkrow\FilamentAi\Filament\Widgets\KnowledgeStatsOverview;
 use Murkrow\FilamentAi\Filament\Widgets\LatestRunsTable;
@@ -137,6 +138,8 @@ class RagPlugin implements Plugin
             config('rag.filament.resources.runs', true) ? IngestionRunResource::class : null,
             config('rag.filament.resources.documents', true) ? DocumentResource::class : null,
             config('rag.filament.resources.queries', true) ? QueryResource::class : null,
+            // Only worth a navigation entry where solving is switched on.
+            config('rag.agent.solving.enabled', false) ? SolveRunResource::class : null,
         ]));
     }
 

@@ -71,7 +71,9 @@ class SolveRun extends Model
             return null;
         }
 
-        return ($this->finished_at ?? now())->diffInSeconds($this->started_at, absolute: true);
+        // Carbon 3 answers in float seconds; the cast is the difference
+        // between a duration and a TypeError inside a queued job.
+        return (int) ($this->finished_at ?? now())->diffInSeconds($this->started_at, absolute: true);
     }
 
     /**
@@ -89,6 +91,29 @@ class SolveRun extends Model
         }
 
         return (int) round(100 * min(1.0, $this->wave / $this->waves_total));
+    }
+
+    /**
+     * Stop after the attempts already in flight.
+     *
+     * The batch is cancelled so no queued attempt starts, and the run is
+     * closed as exhausted rather than failed: what it found is still valid,
+     * somebody just decided it was enough.
+     */
+    public function cancel(): void
+    {
+        if ($this->status->isTerminal()) {
+            return;
+        }
+
+        if ($this->batch_id !== null) {
+            \Illuminate\Support\Facades\Bus::findBatch($this->batch_id)?->cancel();
+        }
+
+        $this->forceFill([
+            'status' => SolveStatus::Cancelled,
+            'finished_at' => now(),
+        ])->save();
     }
 
     public function scopeRunning(Builder $query): Builder

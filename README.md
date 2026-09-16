@@ -459,6 +459,36 @@ The privilege is real and belongs to the sandbox container, not the app: never p
 
 Once a sandbox is configured, the rest is on the `Assistant settings` page: whether the agent may run code at all, which of the installed languages it may use (the page asks the sandbox), the time limit, and how much of a program and of its output to keep. The url and the driver stay in `config/rag.php` -- a form that decides where the application posts code is a way in, not a setting.
 
+### Keeping at it until it works
+
+Some questions are not answered in one turn: a riddle, a puzzle, anything where the first idea is usually wrong. `Solver` runs the assistant several times over, judges the answers and starts again from what was wrong.
+
+```php
+use Murkrow\FilamentAi\Agent\Solving\Solver;
+use Murkrow\FilamentAi\Data\SolveOptions;
+
+$run = app(Solver::class)->solve(
+    goal: 'Trova la parola chiave nascosta in questo indizio: ...',
+    options: new SolveOptions(
+        criteria: 'Una sola parola italiana, nome di una città, giustificata dall\'indizio.',
+        attemptsPerWave: 4,
+        maxWaves: 3,
+    ),
+);
+
+$run->status;        // solved | exhausted | failed
+$run->best?->answer; // the closest attempt, even when nothing was accepted
+$run->message;       // what to tell the user when it gave up
+```
+
+A wave is N attempts running in parallel on the queue, each a full turn with every tool the assistant has -- resources, knowledge, the sandbox. They are spread apart by temperature and never see each other: that is where the variety comes from. Then a judge grades each answer against your criteria and, if none passes, the next wave starts with the reasons the last one failed.
+
+It always stops. Waves, tokens, cost and seconds are four independent budgets, and the first to run out ends the run as `exhausted` -- keeping the best attempt and the reason it was rejected, which is what the user is told.
+
+Off by default (`rag.agent.solving`), because it multiplies the cost of an answer by attempts × waves plus a judgement each; the panel's `Assistant settings` page carries the switches, and `Solve runs` shows every attempt with its score and the judge's reason. It needs a queue worker: the batch's completion is what starts the next wave.
+
+The judge is a `Verifier`. The shipped one is a language model; an application that already knows what correct means -- a treasure hunt holding the answer, a checksum, a test suite -- binds its own and pays nothing per attempt.
+
 ### In the panel
 
 The plugin adds an **Assistant** page to the panel: the user's conversations in a sidebar, answers rendered as Markdown, and every pending change shown as a card with Approve and Reject. A button next to global search opens it about the page on screen, so "this order" means the order being viewed. History lives in laravel/ai's conversation tables -- run its migrations -- and is only ever visible to the user who wrote it.
