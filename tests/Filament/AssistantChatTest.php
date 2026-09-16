@@ -81,6 +81,22 @@ it('asks for approval before a write and applies it once approved', function ():
     expect(TestBook::query()->sole()->title)->toBe('Statuti del comune');
 });
 
+it('renders approval buttons the browser can actually run', function (): void {
+    scriptChat([new ToolCall('call_1', 'test_books_create', ['title' => 'Statuti del comune'])]);
+
+    $html = Livewire::test(AssistantChat::class)
+        ->set('prompt', 'Add a book called Statuti del comune')
+        ->call('send')
+        ->html();
+
+    // Blade compiles no directives inside a component tag's attributes: an
+    // @js() there reached the browser verbatim and Livewire refused the
+    // expression with "illegal character U+0040".
+    expect($html)->toContain("decide('call_1', true)")
+        ->toContain("decide('call_1', false)")
+        ->not->toContain('@js(');
+});
+
 it('discards a write the user rejects', function (): void {
     scriptChat([
         new ToolCall('call_1', 'test_books_create', ['title' => 'Statuti del comune']),

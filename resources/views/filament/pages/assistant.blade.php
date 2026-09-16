@@ -92,6 +92,17 @@
                             <x-slot name="heading">{{ __('rag::rag.assistant.approval_heading') }}</x-slot>
                             <x-slot name="description">{{ $approval['reason'] ?? $approval['tool'] }}</x-slot>
 
+                            @php
+                                // Blade does not compile directives inside a
+                                // component tag's attributes, so the id is
+                                // interpolated instead of passed through @js.
+                                // Provider call ids are alphanumeric; anything
+                                // else is stripped rather than allowed to close
+                                // the attribute, and `decide()` ignores an id
+                                // that no longer matches a pending call.
+                                $safeCallId = preg_replace('/[^A-Za-z0-9_-]/', '', (string) $callId);
+                            @endphp
+
                             <div class="rag-assistant-actions">
                                 @if (array_key_exists($callId, $decisions))
                                     <x-filament::badge :color="$decisions[$callId] ? 'success' : 'danger'">
@@ -101,7 +112,7 @@
                                     <x-filament::button
                                         color="success"
                                         icon="heroicon-o-check"
-                                        wire:click="decide(@js($callId), true)"
+                                        wire:click="decide('{{ $safeCallId }}', true)"
                                         wire:loading.attr="disabled"
                                     >
                                         {{ __('rag::rag.assistant.approve') }}
@@ -111,7 +122,7 @@
                                         color="danger"
                                         outlined
                                         icon="heroicon-o-x-mark"
-                                        wire:click="decide(@js($callId), false)"
+                                        wire:click="decide('{{ $safeCallId }}', false)"
                                         wire:loading.attr="disabled"
                                     >
                                         {{ __('rag::rag.assistant.reject') }}
