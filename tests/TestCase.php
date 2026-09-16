@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Tests;
+namespace Murkrow\FilamentAi\Tests;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Murkrow\Rag\Contracts\VectorStore;
-use Murkrow\Rag\RagServiceProvider;
-use Murkrow\Rag\Tests\Fixtures\InMemoryVectorStore;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
-use Murkrow\Rag\Tests\Fixtures\TestBookSource;
+use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\FilamentAiServiceProvider;
+use Murkrow\FilamentAi\Tests\Fixtures\InMemoryVectorStore;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBookSource;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 /**
@@ -43,12 +43,13 @@ abstract class TestCase extends Orchestra
     {
         // Deliberately not PgvectorServiceProvider: it ships a
         // CREATE EXTENSION migration that SQLite cannot run, and the Blueprint
-        // macros it registers are registered by RagServiceProvider anyway.
+        // macros it registers are registered by FilamentAiServiceProvider anyway.
         return array_values(array_filter([
             class_exists(\Laravel\Mcp\Server\McpServiceProvider::class)
                 ? \Laravel\Mcp\Server\McpServiceProvider::class
                 : null,
-            RagServiceProvider::class,
+            \Laravel\Ai\AiServiceProvider::class,
+            FilamentAiServiceProvider::class,
         ]));
     }
 

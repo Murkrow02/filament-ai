@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Chunking;
+namespace Murkrow\FilamentAi\Chunking;
 
-use Murkrow\Rag\Contracts\TokenEstimator;
+use Murkrow\FilamentAi\Contracts\TokenEstimator;
 use Yethee\Tiktoken\EncoderProvider;
 
 /**

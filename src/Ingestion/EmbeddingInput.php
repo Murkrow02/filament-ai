@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Ingestion;
+namespace Murkrow\FilamentAi\Ingestion;
 
-use Murkrow\Rag\Models\Chunk;
+use Murkrow\FilamentAi\Models\Chunk;
 
 /**
  * Rebuilds the exact text that was hashed into a chunk's content_hash.

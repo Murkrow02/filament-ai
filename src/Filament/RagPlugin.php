@@ -2,25 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament;
+namespace Murkrow\FilamentAi\Filament;
 
 use Filament\Contracts\Plugin;
 use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
+use Murkrow\FilamentAi\Agent\Chat\AssistantAccess;
+use Murkrow\FilamentAi\Filament\Pages\AgentSettings;
+use Murkrow\FilamentAi\Filament\Pages\AssistantChat;
 use Illuminate\Support\Facades\Route;
-use Murkrow\Rag\Chat\ChatAbilities;
-use Murkrow\Rag\Filament\Pages\IngestKnowledge;
-use Murkrow\Rag\Filament\Pages\RagDashboard;
-use Murkrow\Rag\Filament\Pages\RagPlayground;
-use Murkrow\Rag\Filament\Pages\RagSettings;
-use Murkrow\Rag\Filament\Resources\DocumentResource;
-use Murkrow\Rag\Filament\Resources\IngestionRunResource;
-use Murkrow\Rag\Filament\Resources\QueryResource;
-use Murkrow\Rag\Filament\Widgets\IngestionThroughputChart;
-use Murkrow\Rag\Filament\Widgets\KnowledgeStatsOverview;
-use Murkrow\Rag\Filament\Widgets\LatestRunsTable;
-use Murkrow\Rag\Filament\Widgets\SourceCoverageChart;
+use Murkrow\FilamentAi\Chat\ChatAbilities;
+use Murkrow\FilamentAi\Filament\Pages\IngestKnowledge;
+use Murkrow\FilamentAi\Filament\Pages\RagDashboard;
+use Murkrow\FilamentAi\Filament\Pages\RagPlayground;
+use Murkrow\FilamentAi\Filament\Pages\RagSettings;
+use Murkrow\FilamentAi\Filament\Resources\DocumentResource;
+use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource;
+use Murkrow\FilamentAi\Filament\Resources\QueryResource;
+use Murkrow\FilamentAi\Filament\Widgets\IngestionThroughputChart;
+use Murkrow\FilamentAi\Filament\Widgets\KnowledgeStatsOverview;
+use Murkrow\FilamentAi\Filament\Widgets\LatestRunsTable;
+use Murkrow\FilamentAi\Filament\Widgets\SourceCoverageChart;
 
 /**
  * The control panel.
@@ -29,7 +33,7 @@ use Murkrow\Rag\Filament\Widgets\SourceCoverageChart;
  * `discoverResources()` only scans its own app directories -- a package's
  * classes are invisible to it.
  *
- *     ->plugin(\Murkrow\Rag\Filament\RagPlugin::make())
+ *     ->plugin(\Murkrow\FilamentAi\Filament\RagPlugin::make())
  *
  * Every page and resource is individually switchable in config, so a host can
  * expose the dashboard to operators while keeping ingestion controls to itself.
@@ -56,6 +60,12 @@ class RagPlugin implements Plugin
             ->resources($this->resources())
             ->pages($this->pages())
             ->widgets($this->widgets());
+
+        if (AssistantAccess::enabled() && config('rag.agent.chat.topbar_button', true)) {
+            // Resolved at render time, not here: the button needs the
+            // signed-in user and the page being rendered.
+            $panel->renderHook(PanelsRenderHook::GLOBAL_SEARCH_BEFORE, static fn (): string => AssistantChat::topbarButton());
+        }
     }
 
     /**
@@ -140,6 +150,12 @@ class RagPlugin implements Plugin
             config('rag.filament.pages.ingest', true) ? IngestKnowledge::class : null,
             config('rag.filament.pages.playground', true) ? RagPlayground::class : null,
             config('rag.filament.pages.settings', true) ? RagSettings::class : null,
+            AssistantAccess::enabled() ? AssistantChat::class : null,
+            // Registered even when the chat is off: switching it back on
+            // is one of the things this page is for.
+            config('rag.enabled', true) && config('rag.agent.enabled', true) && config('rag.agent.settings.enabled', true)
+                ? AgentSettings::class
+                : null,
         ]));
     }
 

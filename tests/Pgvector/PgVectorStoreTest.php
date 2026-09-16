@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Contracts\EmbeddingProvider;
-use Murkrow\Rag\Contracts\Retriever;
-use Murkrow\Rag\Contracts\VectorStore;
-use Murkrow\Rag\Data\RetrievalOptions;
-use Murkrow\Rag\Data\VectorQuery;
-use Murkrow\Rag\Embeddings\FakeEmbeddingProvider;
-use Murkrow\Rag\Embeddings\VectorMath;
-use Murkrow\Rag\Ingestion\ChunkEmbedder;
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Support\Tables;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
+use Murkrow\FilamentAi\Contracts\Retriever;
+use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\Data\RetrievalOptions;
+use Murkrow\FilamentAi\Data\VectorQuery;
+use Murkrow\FilamentAi\Embeddings\FakeEmbeddingProvider;
+use Murkrow\FilamentAi\Embeddings\VectorMath;
+use Murkrow\FilamentAi\Ingestion\ChunkEmbedder;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Support\Tables;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 use Illuminate\Support\Facades\DB;
 
 function seedPgLibrary(): TestBook

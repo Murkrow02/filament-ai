@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\VectorStores;
+namespace Murkrow\FilamentAi\VectorStores;
 
 use Closure;
 use Illuminate\Support\Manager;
-use Murkrow\Rag\Contracts\VectorStore;
+use Murkrow\FilamentAi\Contracts\VectorStore;
 
 /**
  * @method VectorStore driver(string|null $driver = null)

@@ -20,7 +20,7 @@ declare(strict_types=1);
 */
 
 use Laravel\Mcp\Facades\Mcp;
-use Murkrow\Rag\Mcp\KnowledgeServer;
+use Murkrow\FilamentAi\Mcp\KnowledgeServer;
 
 Mcp::web('mcp/knowledge', KnowledgeServer::class)
     ->middleware(['auth:sanctum']);

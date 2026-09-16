@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Database\Factories;
+namespace Murkrow\FilamentAi\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
 
 /**
  * @extends Factory<Chunk>

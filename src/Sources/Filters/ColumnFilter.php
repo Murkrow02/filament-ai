@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Sources\Filters;
+namespace Murkrow\FilamentAi\Sources\Filters;
 
 use Illuminate\Support\Str;
-use Murkrow\Rag\Contracts\SourceFilter;
+use Murkrow\FilamentAi\Contracts\SourceFilter;
 
 /**
  * Base for every filter that narrows on a single column.

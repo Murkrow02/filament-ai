@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Contracts;
+namespace Murkrow\FilamentAi\Contracts;
 
 interface TokenEstimator
 {

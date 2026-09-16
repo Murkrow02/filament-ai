@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Settings;
+namespace Murkrow\FilamentAi\Settings;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
-use Murkrow\Rag\Models\Setting;
-use Murkrow\Rag\Support\Tables;
+use Murkrow\FilamentAi\Models\Setting;
+use Murkrow\FilamentAi\Support\Tables;
 use Throwable;
 
 /**

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Resources;
+namespace Murkrow\FilamentAi\Filament\Resources;
 
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -11,14 +11,14 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Murkrow\Rag\Enums\DocumentStatus;
-use Murkrow\Rag\Enums\IngestionMode;
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Filament\Concerns\HasRagNavigation;
-use Murkrow\Rag\Filament\Resources\DocumentResource\Pages\ListDocuments;
-use Murkrow\Rag\Filament\Resources\DocumentResource\Pages\ViewDocument;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Enums\DocumentStatus;
+use Murkrow\FilamentAi\Enums\IngestionMode;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Resources\DocumentResource\Pages\ListDocuments;
+use Murkrow\FilamentAi\Filament\Resources\DocumentResource\Pages\ViewDocument;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 use Throwable;
 
 /**

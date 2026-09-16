@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Console;
+namespace Murkrow\FilamentAi\Console;
 
 use Illuminate\Console\Command;
-use Murkrow\Rag\Contracts\Retriever;
-use Murkrow\Rag\Data\RetrievalOptions;
-use Murkrow\Rag\Data\ScoredChunk;
-use Murkrow\Rag\Sources\SourceRegistry;
-use Murkrow\Rag\Support\Text;
+use Murkrow\FilamentAi\Contracts\Retriever;
+use Murkrow\FilamentAi\Data\RetrievalOptions;
+use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Support\Text;
 
 class SearchCommand extends Command
 {

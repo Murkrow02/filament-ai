@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Console;
+namespace Murkrow\FilamentAi\Console;
 
 use Illuminate\Console\Command;
-use Murkrow\Rag\Contracts\Answerer;
-use Murkrow\Rag\Data\AnswerOptions;
-use Murkrow\Rag\Data\Citation;
-use Murkrow\Rag\Data\RetrievalOptions;
-use Murkrow\Rag\Enums\QueryChannel;
-use Murkrow\Rag\Ingestion\CostCalculator;
+use Murkrow\FilamentAi\Contracts\Answerer;
+use Murkrow\FilamentAi\Data\AnswerOptions;
+use Murkrow\FilamentAi\Data\Citation;
+use Murkrow\FilamentAi\Data\RetrievalOptions;
+use Murkrow\FilamentAi\Enums\QueryChannel;
+use Murkrow\FilamentAi\Ingestion\CostCalculator;
 
 class AskCommand extends Command
 {

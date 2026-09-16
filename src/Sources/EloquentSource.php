@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Sources;
+namespace Murkrow\FilamentAi\Sources;
 
 use Generator;
 use Illuminate\Database\Eloquent\Builder;
@@ -10,14 +10,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
-use Murkrow\Rag\Contracts\KnowledgeSource;
-use Murkrow\Rag\Contracts\SourceFilter;
-use Murkrow\Rag\Data\DocumentDraft;
-use Murkrow\Rag\Data\Segment;
-use Murkrow\Rag\Exceptions\InvalidSourceConfigurationException;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Support\Text;
+use Murkrow\FilamentAi\Contracts\KnowledgeSource;
+use Murkrow\FilamentAi\Contracts\SourceFilter;
+use Murkrow\FilamentAi\Data\DocumentDraft;
+use Murkrow\FilamentAi\Data\Segment;
+use Murkrow\FilamentAi\Exceptions\InvalidSourceConfigurationException;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Support\Text;
 
 /**
  * Base class for a knowledge source backed by an Eloquent model.

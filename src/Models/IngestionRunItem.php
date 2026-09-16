@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Models;
+namespace Murkrow\FilamentAi\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Murkrow\Rag\Enums\RunItemStatus;
-use Murkrow\Rag\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Enums\RunItemStatus;
+use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
 
 /**
  * Per-document outcome inside an ingestion run. Kept as its own table so a

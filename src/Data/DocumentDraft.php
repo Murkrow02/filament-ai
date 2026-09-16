@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Data;
+namespace Murkrow\FilamentAi\Data;
 
 /**
  * A document as the source sees it, before it exists in the package's tables.

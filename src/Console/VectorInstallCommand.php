@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Console;
+namespace Murkrow\FilamentAi\Console;
 
 use Illuminate\Console\Command;
-use Murkrow\Rag\Contracts\VectorStore;
-use Murkrow\Rag\VectorStores\PgVectorStore;
+use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\VectorStores\PgVectorStore;
 use Throwable;
 
 class VectorInstallCommand extends Command

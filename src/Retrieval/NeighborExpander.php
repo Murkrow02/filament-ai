@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Retrieval;
+namespace Murkrow\FilamentAi\Retrieval;
 
 use Illuminate\Support\Collection;
-use Murkrow\Rag\Data\ScoredChunk;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
+use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
 
 /**
  * Pulls the chunks immediately before and after each hit.

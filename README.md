@@ -1,8 +1,8 @@
 # Laravel RAG
 
-[![Tests](https://github.com/Murkrow02/laravel-rag/actions/workflows/tests.yml/badge.svg)](https://github.com/Murkrow02/laravel-rag/actions/workflows/tests.yml)
-[![Latest Version](https://img.shields.io/packagist/v/murkrow/laravel-rag.svg)](https://packagist.org/packages/murkrow/laravel-rag)
-[![License](https://img.shields.io/packagist/l/murkrow/laravel-rag.svg)](LICENSE.md)
+[![Tests](https://github.com/Murkrow02/filament-ai/actions/workflows/tests.yml/badge.svg)](https://github.com/Murkrow02/filament-ai/actions/workflows/tests.yml)
+[![Latest Version](https://img.shields.io/packagist/v/murkrow/filament-ai.svg)](https://packagist.org/packages/murkrow/filament-ai)
+[![License](https://img.shields.io/packagist/l/murkrow/filament-ai.svg)](LICENSE.md)
 
 A configuration-driven RAG toolkit for Laravel: chunking, embeddings, pgvector retrieval, grounded answering, an MCP server and a Filament control panel.
 
@@ -17,11 +17,12 @@ Rag::ask('Who convened the council, and when?')->answer;
 
 | | |
 |---|---|
-| PHP | 8.2+ |
+| PHP | 8.3+ |
 | Laravel | 12 or 13 |
 | Database | **PostgreSQL with the `vector` extension** (pgvector 0.5+) |
-| Embeddings & generation | any provider [Prism](https://prismphp.com) supports — OpenAI, Ollama, VoyageAI, Bedrock, Mistral… |
-| Optional | `filament/filament` ^4 for the panel, `laravel/mcp` ^1 for the MCP server, `laravel/scout` for hybrid retrieval |
+| Embeddings & generation | any provider [laravel/ai](https://laravel.com/docs/ai-sdk) supports — OpenAI, Anthropic, Gemini, Ollama, VoyageAI, Bedrock, Mistral… |
+| Panel | `filament/filament` ^5 |
+| Optional | `laravel/mcp` ^1 for the MCP server, `laravel/scout` for hybrid retrieval |
 
 The easiest way to get pgvector is the official image: `pgvector/pgvector:pg17`. A stock `postgres:17` does **not** ship the extension.
 
@@ -41,14 +42,14 @@ RUN apk add --no-cache --virtual .build build-base git postgresql17-dev \
 ## Installation
 
 ```bash
-composer require murkrow/laravel-rag
+composer require murkrow/filament-ai
 php artisan rag:install     # verifies the extension, publishes the config
 php artisan migrate
 ```
 
 `rag:install` tells you, in plain language, what is missing before anything else can go wrong — a database that cannot host vectors, a missing `job_batches` table, a corpus with no source configured.
 
-Add your provider key and pick your models:
+Add your provider key and pick your models. Credentials and base URLs live in laravel/ai's `config/ai.php` (`php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"`); `RAG_EMBEDDING_PROVIDER` and `RAG_LLM_PROVIDER` name one of its `providers` and fall back to its defaults when unset:
 
 ```dotenv
 OPENAI_API_KEY=sk-...
@@ -92,7 +93,7 @@ namespace App\Knowledge;
 
 use App\Models\Book;
 use Illuminate\Database\Eloquent\Builder;
-use Murkrow\Rag\Sources\{EloquentSource, Filter, PositionLabels, SegmentMap};
+use Murkrow\FilamentAi\Sources\{EloquentSource, Filter, PositionLabels, SegmentMap};
 
 final class BookSource extends EloquentSource
 {
@@ -256,7 +257,7 @@ Ingestion only ever walks what a source still returns, so it cannot notice that 
 Immediately, from wherever the host deletes the record — a model observer is the place that cannot be bypassed:
 
 ```php
-use Murkrow\Rag\Facades\Rag;
+use Murkrow\FilamentAi\Facades\Rag;
 
 public function deleted(Book $book): void
 {
@@ -300,8 +301,8 @@ Every parameter is configurable per source, and the chunker is deterministic: th
 ## Searching and answering
 
 ```php
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Data\{AnswerOptions, RetrievalOptions};
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Data\{AnswerOptions, RetrievalOptions};
 
 // Retrieval only — no model call, no cost.
 $chunks = Rag::search('who convened the council?');
@@ -361,6 +362,132 @@ Embeddings are weakest at exactly what lexical search is best at: names, dates, 
 
 ---
 
+## Panel agent
+
+An assistant the panel user can ask instead of navigating. It reads the knowledge base and every Filament resource that opts in, always as the signed-in user.
+
+Opt a resource in with one interface and one trait. Nothing else is written for the agent: its tools are derived from what the resource already declares.
+
+```php
+use Murkrow\FilamentAi\Agent\Resources\AgentResource;
+use Murkrow\FilamentAi\Agent\Resources\InteractsWithAgent;
+
+class OrderResource extends Resource implements AgentResource
+{
+    use InteractsWithAgent;
+}
+```
+
+That resource now gives the agent `orders_list` (free-text search over the table's searchable columns, paginated, newest first) and `orders_view` (one record, with the table's columns and the form's fields). The table's own filters become arguments too -- `status`, `customer`, a ternary toggle -- and are applied by Filament itself, so they narrow exactly as they do in the panel. Narrow or describe it when the defaults are not right:
+
+```php
+public static function agentTools(AgentTools $tools): AgentTools
+{
+    return $tools
+        ->only(AgentTools::LIST)
+        ->searchUsing(['number', 'customer_name'])
+        ->limit(10)
+        ->describe('Customer orders. "Open" means placed but not shipped.');
+}
+```
+
+What the agent can and cannot reach:
+
+- Records come from `Resource::getEloquentQuery()`, so tenant scoping and anything you narrowed for the table apply unchanged.
+- The resource's policies (`viewAny`, `view`, `create`, `update`, `delete`) are checked on every call. A resource the user may not view is not even offered to the model.
+- Attributes the model hides (`$hidden`) are never returned.
+- Resources without `AgentResource` are invisible to it.
+
+### Changing data
+
+An opted-in resource also gets `orders_create` and `orders_edit`, built from its form: the arguments are the form's fields, validated with the form's own rules, and saved the way the panel's create and edit pages save them. `orders_delete` exists only when the resource asks for it with `->with(AgentTools::DELETE)`. Fields that are not one attribute value -- uploads, repeaters, many-to-many selects -- are not offered to the agent.
+
+No write runs on the model's word alone. The turn pauses with a pending approval that names the change (`Create order -- Customer: Acme; Total: 120`), and the tool runs only once the user decides:
+
+```php
+use Laravel\Ai\Approvals\Decision;
+use Laravel\Ai\Approvals\Decisions;
+
+$response = (new PanelAssistant)->forUser(auth()->user())->prompt('Mark order 1042 as shipped');
+
+foreach ($response->pendingApprovals as $approval) {
+    // show $approval->reason to the user, then resume with their decision:
+    (new PanelAssistant)
+        ->continue($response->conversationId, as: auth()->user())
+        ->prompt(Decisions::from([$approval->id => Decision::approve()]));
+}
+```
+
+Resuming reads the paused call back from laravel/ai's conversation tables, so publish and run its migrations, and prompt with `forUser()`. Creation and edits can skip the confirmation per resource with `->withoutApproval(AgentTools::CREATE, AgentTools::EDIT)`; a deletion is always confirmed.
+
+### Deciding what it may do, from the panel
+
+`Assistant settings` (next to the chat, gated by `rag.filament.authorize`) turns the configuration above into a form: provider and model, whether it may search documents and which sources, how many records an answer may carry, and then one section per opted-in resource -- which abilities it keeps, which writes may run without asking, how many records that resource returns.
+
+It can only narrow. A resource that never implemented `AgentResource` is not listed, an ability its class does not offer cannot be ticked, and a deletion is always confirmed by the user. Anything left exactly as the code declared it is not stored at all, so a later change to `agentTools()` is picked up instead of being shadowed by a saved row. Settings live in the same table as the knowledge settings and are layered over `config/rag.php` on boot.
+
+### Running code
+
+Some questions are not lookups: anagrams, permutations, ciphers, parsing, arithmetic over many rows. Writing a tool for each is a losing battle, so the agent can be given a sandbox and write the program itself.
+
+It is off by default. Switch it on with a sandbox to point at -- the shipped driver talks to a self-hosted [Piston](https://github.com/engineer-man/piston):
+
+```yaml
+# docker-compose.yml -- a container of its own, port not published
+piston:
+    image: ghcr.io/engineer-man/piston:latest
+    privileged: true          # isolate(1) needs cgroup and mount privileges
+    environment:
+        - PISTON_RUN_TIMEOUT=10000
+    tmpfs:
+        - /piston/jobs:exec,uid=1000,gid=1000,mode=711
+        - /tmp:exec
+```
+
+```dotenv
+RAG_AGENT_SANDBOX=true
+RAG_AGENT_SANDBOX_URL=http://piston:2000
+RAG_AGENT_SANDBOX_PYTHON=3.12.0   # pin it, or answers change when the sandbox does
+RAG_AGENT_MAX_STEPS=10            # write, run, read the error, fix
+```
+
+Install the language once: `POST /api/v2/packages {"language":"python","version":"3.12.0"}`.
+
+What the agent gets is `run_code`: a language, a program, optional stdin, and back come stdout and stderr, truncated from the end -- the last lines of a traceback are the ones worth keeping. The sandbox reaches nothing: not this application, not the database, not the internet. Data a program needs is data the agent read with another tool and passed in. Every run is logged with its snippet.
+
+The privilege is real and belongs to the sandbox container, not the app: never point the driver at something that shares this application's filesystem, database or network.
+
+Once a sandbox is configured, the rest is on the `Assistant settings` page: whether the agent may run code at all, which of the installed languages it may use (the page asks the sandbox), the time limit, and how much of a program and of its output to keep. The url and the driver stay in `config/rag.php` -- a form that decides where the application posts code is a way in, not a setting.
+
+### In the panel
+
+The plugin adds an **Assistant** page to the panel: the user's conversations in a sidebar, answers rendered as Markdown, and every pending change shown as a card with Approve and Reject. A button next to global search opens it about the page on screen, so "this order" means the order being viewed. History lives in laravel/ai's conversation tables -- run its migrations -- and is only ever visible to the user who wrote it.
+
+```php
+// config/rag.php
+'agent' => [
+    'assistant' => \App\Ai\Assistant::class,      // your PanelAssistant subclass
+    'authorize' => fn ($user) => $user->can('useAssistant'),
+    'chat' => ['slug' => 'assistant', 'topbar_button' => true],
+],
+```
+
+Answers arrive whole, not streamed, for now.
+
+The agent itself works with no class of your own:
+
+```php
+use Murkrow\FilamentAi\Agent\PanelAssistant;
+
+(new PanelAssistant)
+    ->onPage(OrderResource::class, $order)   // so "this order" means something
+    ->prompt('Has this customer ordered before?');
+```
+
+Extend it to give it a voice and a domain (`persona()`, `domain()`, `additionalTools()`). Knowledge sources it may read and the default record cap live under `rag.agent`.
+
+---
+
 ## MCP server
 
 With `laravel/mcp` installed, the package registers a server automatically — no route file to publish.
@@ -393,7 +520,7 @@ Restrict what MCP can reach with `rag.mcp.sources`. An empty allow-list exposes 
 
 ```php
 // app/Providers/Filament/AdminPanelProvider.php
-->plugin(\Murkrow\Rag\Filament\RagPlugin::make())
+->plugin(\Murkrow\FilamentAi\Filament\RagPlugin::make())
 ```
 
 That is the whole installation. Add `'Knowledge'` to your panel's `navigationGroups()`, or point `rag.filament.navigation_group` at a group you already have.
@@ -537,8 +664,8 @@ Everything behind a contract can be replaced by binding your own implementation:
 | Contract | Default | Why you might swap it |
 |---|---|---|
 | `VectorStore` | `PgVectorStore` | another vector database |
-| `EmbeddingProvider` | Prism | an in-house inference service |
-| `LanguageModel` | Prism | a bespoke client |
+| `EmbeddingProvider` | laravel/ai | an in-house inference service |
+| `LanguageModel` | laravel/ai | a bespoke client |
 | `Chunker` | `SlidingWindowChunker` | structure-aware splitting |
 | `Retriever` / `Answerer` | defaults | a different pipeline |
 | `LexicalSearch` | none | your own keyword engine |
@@ -568,7 +695,7 @@ docker run -d --name rag-test-pg -e POSTGRES_USER=rag -e POSTGRES_PASSWORD=rag \
   -e POSTGRES_DB=rag_test -p 55432:5432 pgvector/pgvector:pg17
 ```
 
-CI runs the whole suite, pgvector included, on PHP 8.2–8.4 for every push and pull request.
+CI runs the whole suite, pgvector included, on PHP 8.3–8.4 for every push and pull request.
 
 ---
 

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Retrieval\Lexical;
+namespace Murkrow\FilamentAi\Retrieval\Lexical;
 
 use Closure;
 use Illuminate\Support\Manager;
-use Murkrow\Rag\Contracts\LexicalSearch;
+use Murkrow\FilamentAi\Contracts\LexicalSearch;
 
 /**
  * @method LexicalSearch driver(string|null $driver = null)

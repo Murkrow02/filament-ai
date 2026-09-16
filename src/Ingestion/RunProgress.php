@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Ingestion;
+namespace Murkrow\FilamentAi\Ingestion;
 
-use Murkrow\Rag\Enums\RunStatus;
-use Murkrow\Rag\Models\IngestionRun;
+use Murkrow\FilamentAi\Enums\RunStatus;
+use Murkrow\FilamentAi\Models\IngestionRun;
 
 /**
  * Progress accounting for an ingestion run.

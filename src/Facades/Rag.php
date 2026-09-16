@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Facades;
+namespace Murkrow\FilamentAi\Facades;
 
 use Illuminate\Support\Facades\Facade;
-use Murkrow\Rag\RagManager;
+use Murkrow\FilamentAi\RagManager;
 
 /**
- * @method static \Illuminate\Support\Collection<int, \Murkrow\Rag\Data\ScoredChunk> search(string $question, \Murkrow\Rag\Data\RetrievalOptions $options = new \Murkrow\Rag\Data\RetrievalOptions)
- * @method static \Murkrow\Rag\Data\RetrievalResult retrieve(string $question, \Murkrow\Rag\Data\RetrievalOptions $options = new \Murkrow\Rag\Data\RetrievalOptions)
- * @method static \Murkrow\Rag\Data\AnswerResult ask(string $question, \Murkrow\Rag\Data\AnswerOptions $options = new \Murkrow\Rag\Data\AnswerOptions)
- * @method static \Generator stream(string $question, \Murkrow\Rag\Data\AnswerOptions $options = new \Murkrow\Rag\Data\AnswerOptions)
- * @method static \Murkrow\Rag\Models\IngestionRun ingest(string $sourceKey, array $filters = [], \Murkrow\Rag\Enums\IngestionMode $mode = \Murkrow\Rag\Enums\IngestionMode::Incremental, array $chunkingOverrides = [], int|string|null $createdBy = null)
- * @method static \Murkrow\Rag\Models\IngestionRun ingestSync(string $sourceKey, array $filters = [], \Murkrow\Rag\Enums\IngestionMode $mode = \Murkrow\Rag\Enums\IngestionMode::Incremental, array $chunkingOverrides = [], ?\Closure $onProgress = null)
- * @method static \Murkrow\Rag\Data\IngestionEstimate estimate(string $sourceKey, array $filters = [])
+ * @method static \Illuminate\Support\Collection<int, \Murkrow\FilamentAi\Data\ScoredChunk> search(string $question, \Murkrow\FilamentAi\Data\RetrievalOptions $options = new \Murkrow\FilamentAi\Data\RetrievalOptions)
+ * @method static \Murkrow\FilamentAi\Data\RetrievalResult retrieve(string $question, \Murkrow\FilamentAi\Data\RetrievalOptions $options = new \Murkrow\FilamentAi\Data\RetrievalOptions)
+ * @method static \Murkrow\FilamentAi\Data\AnswerResult ask(string $question, \Murkrow\FilamentAi\Data\AnswerOptions $options = new \Murkrow\FilamentAi\Data\AnswerOptions)
+ * @method static \Generator stream(string $question, \Murkrow\FilamentAi\Data\AnswerOptions $options = new \Murkrow\FilamentAi\Data\AnswerOptions)
+ * @method static \Murkrow\FilamentAi\Models\IngestionRun ingest(string $sourceKey, array $filters = [], \Murkrow\FilamentAi\Enums\IngestionMode $mode = \Murkrow\FilamentAi\Enums\IngestionMode::Incremental, array $chunkingOverrides = [], int|string|null $createdBy = null)
+ * @method static \Murkrow\FilamentAi\Models\IngestionRun ingestSync(string $sourceKey, array $filters = [], \Murkrow\FilamentAi\Enums\IngestionMode $mode = \Murkrow\FilamentAi\Enums\IngestionMode::Incremental, array $chunkingOverrides = [], ?\Closure $onProgress = null)
+ * @method static \Murkrow\FilamentAi\Data\IngestionEstimate estimate(string $sourceKey, array $filters = [])
  * @method static bool forget(string $sourceKey, string|int $externalId)
- * @method static \Murkrow\Rag\Sources\ClosureKnowledgeSource source(string $key)
- * @method static void register(\Murkrow\Rag\Contracts\KnowledgeSource $source)
- * @method static \Murkrow\Rag\Sources\SourceRegistry sources()
+ * @method static \Murkrow\FilamentAi\Sources\ClosureKnowledgeSource source(string $key)
+ * @method static void register(\Murkrow\FilamentAi\Contracts\KnowledgeSource $source)
+ * @method static \Murkrow\FilamentAi\Sources\SourceRegistry sources()
  *
  * @see RagManager
  */

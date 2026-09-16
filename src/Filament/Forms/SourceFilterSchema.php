@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Forms;
+namespace Murkrow\FilamentAi\Filament\Forms;
 
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
-use Murkrow\Rag\Contracts\KnowledgeSource;
-use Murkrow\Rag\Contracts\SourceFilter;
-use Murkrow\Rag\Sources\Filters\BooleanFilter;
-use Murkrow\Rag\Sources\Filters\DateRangeFilter;
-use Murkrow\Rag\Sources\Filters\IdsFilter;
-use Murkrow\Rag\Sources\Filters\InFilter;
-use Murkrow\Rag\Sources\Filters\NullFilter;
-use Murkrow\Rag\Sources\Filters\RangeFilter;
+use Murkrow\FilamentAi\Contracts\KnowledgeSource;
+use Murkrow\FilamentAi\Contracts\SourceFilter;
+use Murkrow\FilamentAi\Sources\Filters\BooleanFilter;
+use Murkrow\FilamentAi\Sources\Filters\DateRangeFilter;
+use Murkrow\FilamentAi\Sources\Filters\IdsFilter;
+use Murkrow\FilamentAi\Sources\Filters\InFilter;
+use Murkrow\FilamentAi\Sources\Filters\NullFilter;
+use Murkrow\FilamentAi\Sources\Filters\RangeFilter;
 
 /**
  * Turns a source's filters into form fields.

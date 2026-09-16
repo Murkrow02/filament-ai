@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Console;
+namespace Murkrow\FilamentAi\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Murkrow\Rag\Ingestion\CostCalculator;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Models\IngestionRun;
-use Murkrow\Rag\Models\QueryLog;
-use Murkrow\Rag\Sources\SourceRegistry;
-use Murkrow\Rag\Support\Tables;
+use Murkrow\FilamentAi\Ingestion\CostCalculator;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Models\IngestionRun;
+use Murkrow\FilamentAi\Models\QueryLog;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Support\Tables;
 
 class StatusCommand extends Command
 {

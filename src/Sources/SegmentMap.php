@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Sources;
+namespace Murkrow\FilamentAi\Sources;
 
 /**
  * Where a document's ordered text lives.

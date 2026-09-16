@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Exceptions;
+namespace Murkrow\FilamentAi\Exceptions;
 
-use Murkrow\Rag\Contracts\KnowledgeSource;
+use Murkrow\FilamentAi\Contracts\KnowledgeSource;
 
 class InvalidSourceConfigurationException extends RagException
 {

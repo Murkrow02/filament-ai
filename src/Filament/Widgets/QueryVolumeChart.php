@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Widgets;
+namespace Murkrow\FilamentAi\Filament\Widgets;
 
 use Filament\Widgets\ChartWidget;
-use Murkrow\Rag\Filament\Concerns\HasRagNavigation;
-use Murkrow\Rag\Models\QueryLog;
+use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Models\QueryLog;
 
 /**
  * Answered versus refused questions per day.

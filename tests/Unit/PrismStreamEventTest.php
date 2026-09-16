@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Llm\PrismLanguageModel;
+use Murkrow\FilamentAi\Llm\PrismLanguageModel;
 
 /**
  * Prism's streamed events carry their text on `delta`; older releases used

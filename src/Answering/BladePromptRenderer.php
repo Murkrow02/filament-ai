@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Answering;
+namespace Murkrow\FilamentAi\Answering;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\View;
-use Murkrow\Rag\Contracts\PromptRenderer;
-use Murkrow\Rag\Data\Citation;
+use Murkrow\FilamentAi\Contracts\PromptRenderer;
+use Murkrow\FilamentAi\Data\Citation;
 
 /**
  * Prompts as publishable Blade views.

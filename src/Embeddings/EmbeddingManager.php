@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Embeddings;
+namespace Murkrow\FilamentAi\Embeddings;
 
 use Closure;
 use Illuminate\Support\Manager;
-use Murkrow\Rag\Contracts\EmbeddingProvider;
+use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
 
 /**
  * @method EmbeddingProvider driver(string|null $driver = null)
@@ -15,9 +15,17 @@ final class EmbeddingManager extends Manager
 {
     public function getDefaultDriver(): string
     {
-        return (string) $this->config->get('rag.embeddings.driver', 'prism');
+        return (string) $this->config->get('rag.embeddings.driver', 'laravel-ai');
     }
 
+    public function createLaravelAiDriver(): EmbeddingProvider
+    {
+        return LaravelAiEmbeddingProvider::fromConfig();
+    }
+
+    /**
+     * @deprecated Use the laravel-ai driver. Removed in the next minor release.
+     */
     public function createPrismDriver(): EmbeddingProvider
     {
         return PrismEmbeddingProvider::fromConfig();

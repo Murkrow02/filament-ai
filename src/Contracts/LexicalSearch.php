@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Contracts;
+namespace Murkrow\FilamentAi\Contracts;
 
-use Murkrow\Rag\Data\VectorQuery;
+use Murkrow\FilamentAi\Data\VectorQuery;
 
 /**
  * Optional keyword leg of hybrid retrieval, fused with the vector leg via RRF.

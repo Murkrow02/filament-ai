@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Data;
+namespace Murkrow\FilamentAi\Data;
 
 /**
  * One ordered unit of source text, as produced by a KnowledgeSource.

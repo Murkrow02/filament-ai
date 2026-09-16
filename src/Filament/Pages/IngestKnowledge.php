@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Pages;
+namespace Murkrow\FilamentAi\Filament\Pages;
 
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -14,14 +14,14 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Schema;
 use Livewire\Attributes\Url;
-use Murkrow\Rag\Enums\IngestionMode;
-use Murkrow\Rag\Filament\Concerns\HasRagNavigation;
-use Murkrow\Rag\Filament\Forms\SourceFilterSchema;
-use Murkrow\Rag\Filament\Resources\IngestionRunResource;
-use Murkrow\Rag\Ingestion\CostCalculator;
-use Murkrow\Rag\Ingestion\IngestionPlanner;
-use Murkrow\Rag\Ingestion\StartIngestionRun;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Enums\IngestionMode;
+use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Forms\SourceFilterSchema;
+use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource;
+use Murkrow\FilamentAi\Ingestion\CostCalculator;
+use Murkrow\FilamentAi\Ingestion\IngestionPlanner;
+use Murkrow\FilamentAi\Ingestion\StartIngestionRun;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 use Throwable;
 
 /**

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Chunking\HeuristicTokenEstimator;
-use Murkrow\Rag\Chunking\Normalizers\CollapseWhitespace;
-use Murkrow\Rag\Chunking\Normalizers\DehyphenateLineBreaks;
-use Murkrow\Rag\Chunking\Normalizers\FixOcrLigatures;
-use Murkrow\Rag\Chunking\Normalizers\StripControlChars;
+use Murkrow\FilamentAi\Chunking\HeuristicTokenEstimator;
+use Murkrow\FilamentAi\Chunking\Normalizers\CollapseWhitespace;
+use Murkrow\FilamentAi\Chunking\Normalizers\DehyphenateLineBreaks;
+use Murkrow\FilamentAi\Chunking\Normalizers\FixOcrLigatures;
+use Murkrow\FilamentAi\Chunking\Normalizers\StripControlChars;
 
 return [
 
@@ -43,17 +43,22 @@ return [
     | Embeddings
     |--------------------------------------------------------------------------
     |
-    | Provider agnostic: anything Prism supports (OpenAI, Ollama, VoyageAI,
-    | Bedrock, Mistral, ...) works by changing "prism_provider" and "model".
+    | Provider agnostic through laravel/ai: "provider" names an entry of
+    | config/ai.php's "providers" (null uses ai.default_for_embeddings), so
+    | keys and base URLs are configured once for the whole application.
     | "dimensions" MUST match what the model returns -- it defines the width of
     | the pgvector column, so changing it requires `rag:vector:reindex`.
     |
     */
 
     'embeddings' => [
-        'driver' => env('RAG_EMBEDDING_DRIVER', 'prism'), // prism | fake
+        'driver' => env('RAG_EMBEDDING_DRIVER', 'laravel-ai'), // laravel-ai | prism (deprecated) | fake
+        'provider' => env('RAG_EMBEDDING_PROVIDER'),
+        // Read only by the deprecated prism driver.
         'prism_provider' => env('RAG_EMBEDDING_PROVIDER', 'openai'),
         'model' => env('RAG_EMBEDDING_MODEL', 'text-embedding-3-small'),
+        // Seconds per request; null keeps laravel/ai's default.
+        'timeout' => env('RAG_EMBEDDING_TIMEOUT'),
         'dimensions' => (int) env('RAG_EMBEDDING_DIMENSIONS', 1536),
         // Texts per embedding request. A queued job carries
         // rag.queue.chunks_per_job chunks and sends them in requests of this
@@ -90,12 +95,17 @@ return [
     */
 
     'llm' => [
-        'driver' => env('RAG_LLM_DRIVER', 'prism'), // prism | fake
+        'driver' => env('RAG_LLM_DRIVER', 'laravel-ai'), // laravel-ai | prism (deprecated) | fake
+        // An entry of config/ai.php's "providers"; null uses ai.default.
+        'provider' => env('RAG_LLM_PROVIDER'),
+        // Read only by the deprecated prism driver.
         'prism_provider' => env('RAG_LLM_PROVIDER', 'openai'),
         'model' => env('RAG_LLM_MODEL', 'gpt-4o-mini'),
+        // Seconds per request; null keeps laravel/ai's default.
+        'timeout' => env('RAG_LLM_TIMEOUT'),
 
         // Selectable at query time (e.g. the Filament Playground's model
-        // dropdown). All options share the single provider above -- Prism's
+        // dropdown). All options share the single provider above -- a
         // per-call `model` override, not a provider override. Empty means no
         // picker: callers just get the 'model' key above.
         'available_models' => [],
@@ -324,6 +334,121 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Panel agent
+    |--------------------------------------------------------------------------
+    |
+    | The assistant a panel user talks to. It reads the knowledge base and the
+    | Filament resources that implement AgentResource -- exposure is opt-in per
+    | resource -- always as the signed-in user, through the resource's own
+    | query and policies.
+    |
+    */
+
+    'agent' => [
+        'enabled' => env('RAG_AGENT_ENABLED', true),
+
+        'knowledge' => [
+            'enabled' => true,
+            // null => every registered source; [] => none.
+            'sources' => null,
+        ],
+
+        'resources' => [
+            'enabled' => true,
+            // Default cap on records per list call; AgentTools::limit() overrides it per resource.
+            'max_records' => 25,
+
+            // Per-resource policies, keyed by resource class. What the
+            // panel's assistant settings page writes; a resource absent
+            // here keeps whatever its own agentTools() declared.
+            //
+            //   App\Filament\Resources\Orders\OrderResource::class => [
+            //       'abilities' => ['list', 'view', 'edit'],
+            //       'unapproved' => ['edit'],
+            //       'max_records' => 10,
+            //   ],
+            'overrides' => [],
+        ],
+
+        // The agent class the panel chat talks to. Extend PanelAssistant to
+        // give it a persona, a domain and extra tools.
+        'assistant' => \Murkrow\FilamentAi\Agent\PanelAssistant::class,
+
+        // Which model answers in the panel. Both fall back to the generation
+        // model configured above, so a host that set RAG_LLM_* once does not
+        // have to say it twice; null then leaves laravel/ai's own defaults
+        // (config/ai.php) in charge.
+        'provider' => env('RAG_AGENT_PROVIDER'),
+        'model' => env('RAG_AGENT_MODEL'),
+
+        // fn (?Authenticatable $user): bool -- who may use the assistant.
+        // null lets every user who can reach the panel use it.
+        'authorize' => null,
+
+        // How many tool round trips one answer may take. A sandbox needs
+        // several (write, run, read the error, fix); null keeps
+        // laravel/ai's own default.
+        'max_steps' => env('RAG_AGENT_MAX_STEPS'),
+
+        /*
+        | Code execution.
+        |
+        | Off by default, and deliberately so: this hands a language model
+        | a way to run programs. The driver is the security boundary -- the
+        | shipped one talks to a self-hosted Piston, which runs each
+        | submission under isolate with no outgoing network. Never point it
+        | at something that shares this application's filesystem, database
+        | or network.
+        */
+        'sandbox' => [
+            'enabled' => (bool) env('RAG_AGENT_SANDBOX', false),
+            'driver' => env('RAG_AGENT_SANDBOX_DRIVER', 'piston'), // piston | fake
+            'url' => env('RAG_AGENT_SANDBOX_URL', 'http://piston:2000'),
+
+            // Language => version selector Piston understands; '*' takes
+            // whatever is installed, which is worth pinning in production.
+            'languages' => [
+                'python' => env('RAG_AGENT_SANDBOX_PYTHON', '*'),
+            ],
+
+            'timeout' => (int) env('RAG_AGENT_SANDBOX_TIMEOUT', 5000), // ms of wall clock per run
+            'memory_limit' => 128 * 1024 * 1024,
+            'http_timeout' => 15, // seconds to wait for the sandbox itself
+
+            // Characters of stdout and of stderr handed back to the model.
+            'max_output' => 4000,
+            'max_code_characters' => 20000,
+
+            // Every run is logged. null uses the application's default channel.
+            'log_channel' => env('RAG_AGENT_SANDBOX_LOG'),
+        ],
+
+        // The chat page inside the panel. It keeps its history in laravel/ai's
+        // conversation tables: publish and run laravel/ai's migrations.
+        'chat' => [
+            'enabled' => true,
+            'slug' => 'assistant',
+            'navigation_group' => null,
+            'navigation_sort' => -1,
+            // Conversations listed in the chat's sidebar.
+            'history' => 20,
+            // A button next to global search that opens the chat about the
+            // record on screen.
+            'topbar_button' => true,
+        ],
+
+        // The admin page that edits everything above at runtime. It is
+        // gated by rag.filament.authorize, not by rag.agent.authorize:
+        // using the assistant and deciding what it may do are different
+        // permissions.
+        'settings' => [
+            'enabled' => true,
+            'slug' => 'assistant-settings',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Chat page
     |--------------------------------------------------------------------------
     |
@@ -468,6 +593,30 @@ return [
             'answering.require_citations' => ['type' => 'bool'],
             'answering.max_context_tokens' => ['type' => 'int', 'min' => 500, 'max' => 100000],
             'queue.chunks_per_job' => ['type' => 'int', 'min' => 1, 'max' => 512],
+
+            // The assistant. Edited by its own page, not by the knowledge
+            // settings form, which skips everything under "agent.".
+            'agent.enabled' => ['type' => 'bool'],
+            'agent.provider' => ['type' => 'string'],
+            'agent.model' => ['type' => 'string'],
+            'agent.knowledge.enabled' => ['type' => 'bool'],
+            'agent.knowledge.sources' => ['type' => 'json'],
+            'agent.resources.enabled' => ['type' => 'bool'],
+            'agent.resources.max_records' => ['type' => 'int', 'min' => 1, 'max' => 200],
+            'agent.resources.overrides' => ['type' => 'json'],
+            'agent.chat.enabled' => ['type' => 'bool'],
+            'agent.chat.history' => ['type' => 'int', 'min' => 1, 'max' => 100],
+            'agent.chat.topbar_button' => ['type' => 'bool'],
+            'agent.sandbox.enabled' => ['type' => 'bool'],
+            'agent.sandbox.languages' => ['type' => 'json'],
+            'agent.sandbox.timeout' => ['type' => 'int', 'min' => 500, 'max' => 60000],
+            'agent.sandbox.max_output' => ['type' => 'int', 'min' => 200, 'max' => 50000],
+            'agent.sandbox.max_code_characters' => ['type' => 'int', 'min' => 200, 'max' => 200000],
+            'agent.max_steps' => ['type' => 'int', 'min' => 1, 'max' => 40],
+            // The sandbox URL and driver are deliberately not here: a web form
+            // that decides where the application posts code is an SSRF waiting
+            // to happen, and whoever administers the panel is not necessarily
+            // whoever controls the network.
         ],
     ],
 ];

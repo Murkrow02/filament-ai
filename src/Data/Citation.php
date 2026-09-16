@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Data;
+namespace Murkrow\FilamentAi\Data;
 
 /**
  * A numbered reference handed to the model as "[#n]" and resolved back to the

@@ -2,15 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Mcp\Tools;
+namespace Murkrow\FilamentAi\Mcp\Tools;
 
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Knowledge\KnowledgeSearch;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 
 /**
  * Reads a contiguous span of an indexed document.
@@ -18,11 +17,11 @@ use Murkrow\Rag\Sources\SourceRegistry;
  * Search returns isolated passages, which is the right unit for ranking and
  * the wrong one for reading. This is the follow-up call: having found page 47,
  * a client can pull 45-50 and see the argument in context.
+ *
+ * The read itself lives in `KnowledgeSearch`, shared with the panel agent.
  */
 class FetchDocumentTool extends Tool
 {
-    private const MAX_CHARACTERS = 24000;
-
     public function name(): string
     {
         return (string) config('rag.mcp.tools.fetch.name', 'fetch_document');
@@ -60,75 +59,22 @@ class FetchDocumentTool extends Tool
         ];
     }
 
-    public function handle(Request $request): Response
+    public function handle(Request $request, KnowledgeSearch $search): Response
     {
-        $externalId = (string) $request->get('document_id', '');
-
-        if ($externalId === '') {
-            return Response::error('The "document_id" argument is required.');
-        }
-
-        $query = Document::query()->where('external_id', $externalId);
-
+        $from = $request->get('position_from');
+        $to = $request->get('position_to');
         $source = $request->get('source');
 
         // Scoped to what the host exposed, always: naming a hidden source
         // must not reach it, and an empty allow-list must reach nothing.
-        $exposed = app(SourceRegistry::class)->exposedKeys();
+        $result = $search->fetch(
+            externalId: (string) $request->get('document_id', ''),
+            allowedSources: app(SourceRegistry::class)->exposedKeys(),
+            source: $source === null || $source === '' ? null : (string) $source,
+            positionFrom: $from === null ? null : (int) $from,
+            positionTo: $to === null ? null : (int) $to,
+        );
 
-        $query->whereIn('source_key', $source !== null && $source !== ''
-            ? array_values(array_intersect($exposed, [(string) $source]))
-            : $exposed);
-
-        /** @var Document|null $document */
-        $document = $query->first();
-
-        if ($document === null) {
-            return Response::error("No indexed document with identifier [{$externalId}].");
-        }
-
-        $from = $request->get('position_from');
-        $to = $request->get('position_to');
-
-        $chunks = Chunk::query()
-            ->where('document_id', $document->id)
-            ->overlappingPositions(
-                $from === null ? null : (int) $from,
-                $to === null ? null : (int) $to,
-            )
-            ->orderBy('ordinal')
-            ->get();
-
-        if ($chunks->isEmpty()) {
-            return Response::text('That document has no indexed text in the requested range.');
-        }
-
-        $sources = app(SourceRegistry::class);
-        $body = '';
-        $truncated = false;
-
-        foreach ($chunks as $chunk) {
-            $label = $sources->has($document->source_key)
-                ? $sources->get($document->source_key)->positionLabel($chunk->position_start, $chunk->position_end)
-                : "{$chunk->position_start}-{$chunk->position_end}";
-
-            $block = "--- {$label} ---\n".$chunk->content."\n\n";
-
-            // Adjacent chunks overlap by design, so a long span would otherwise
-            // repeat text; the cap keeps the response inside a usable size.
-            if (mb_strlen($body) + mb_strlen($block) > self::MAX_CHARACTERS) {
-                $truncated = true;
-                break;
-            }
-
-            $body .= $block;
-        }
-
-        $header = ($document->title ?? $document->external_id)." (document_id {$document->external_id})\n\n";
-        $footer = $truncated
-            ? "\n[Truncated. Request a narrower position range to read further.]"
-            : '';
-
-        return Response::text($header.rtrim($body).$footer);
+        return $result->isError ? Response::error($result->text) : Response::text($result->text);
     }
 }

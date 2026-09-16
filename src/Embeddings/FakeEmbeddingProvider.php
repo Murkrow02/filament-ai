@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Embeddings;
+namespace Murkrow\FilamentAi\Embeddings;
 
-use Murkrow\Rag\Contracts\EmbeddingProvider;
-use Murkrow\Rag\Data\EmbeddingBatch;
+use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
+use Murkrow\FilamentAi\Data\EmbeddingBatch;
 
 /**
  * Deterministic, network-free embeddings for tests and offline development.

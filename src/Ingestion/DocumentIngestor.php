@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Ingestion;
+namespace Murkrow\FilamentAi\Ingestion;
 
-use Murkrow\Rag\Chunking\Normalizers\NormalizerPipeline;
-use Murkrow\Rag\Contracts\Chunker;
-use Murkrow\Rag\Contracts\KnowledgeSource;
-use Murkrow\Rag\Data\ChunkingOptions;
-use Murkrow\Rag\Data\DocumentDraft;
-use Murkrow\Rag\Data\DocumentIngestionResult;
-use Murkrow\Rag\Data\Segment;
-use Murkrow\Rag\Enums\DocumentStatus;
-use Murkrow\Rag\Enums\IngestionMode;
-use Murkrow\Rag\Events\DocumentIngested;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
+use Murkrow\FilamentAi\Chunking\Normalizers\NormalizerPipeline;
+use Murkrow\FilamentAi\Contracts\Chunker;
+use Murkrow\FilamentAi\Contracts\KnowledgeSource;
+use Murkrow\FilamentAi\Data\ChunkingOptions;
+use Murkrow\FilamentAi\Data\DocumentDraft;
+use Murkrow\FilamentAi\Data\DocumentIngestionResult;
+use Murkrow\FilamentAi\Data\Segment;
+use Murkrow\FilamentAi\Enums\DocumentStatus;
+use Murkrow\FilamentAi\Enums\IngestionMode;
+use Murkrow\FilamentAi\Events\DocumentIngested;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
 
 /**
  * Chunks and reconciles a single document.

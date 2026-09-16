@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Widgets;
+namespace Murkrow\FilamentAi\Filament\Widgets;
 
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Murkrow\Rag\Filament\Concerns\HasRagNavigation;
-use Murkrow\Rag\Ingestion\CostCalculator;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Models\IngestionRun;
-use Murkrow\Rag\Models\QueryLog;
+use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Ingestion\CostCalculator;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Models\IngestionRun;
+use Murkrow\FilamentAi\Models\QueryLog;
 
 /**
  * The five numbers that answer "is the knowledge base healthy?".

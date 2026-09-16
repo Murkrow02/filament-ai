@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Models;
+namespace Murkrow\FilamentAi\Models;
 
 use Illuminate\Bus\Batch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Bus;
-use Murkrow\Rag\Enums\IngestionMode;
-use Murkrow\Rag\Enums\RunStatus;
-use Murkrow\Rag\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Enums\IngestionMode;
+use Murkrow\FilamentAi\Enums\RunStatus;
+use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
 
 /**
  * One ingestion job, from planning to completion.

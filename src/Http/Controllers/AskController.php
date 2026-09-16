@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Http\Controllers;
+namespace Murkrow\FilamentAi\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
-use Murkrow\Rag\Chat\ChatAbilities;
-use Murkrow\Rag\Chat\ChatPayload;
-use Murkrow\Rag\Contracts\Answerer;
-use Murkrow\Rag\Contracts\Retriever;
-use Murkrow\Rag\Data\AnswerOptions;
-use Murkrow\Rag\Data\AnswerResult;
+use Murkrow\FilamentAi\Chat\ChatAbilities;
+use Murkrow\FilamentAi\Chat\ChatPayload;
+use Murkrow\FilamentAi\Contracts\Answerer;
+use Murkrow\FilamentAi\Contracts\Retriever;
+use Murkrow\FilamentAi\Data\AnswerOptions;
+use Murkrow\FilamentAi\Data\AnswerResult;
 use Illuminate\Support\Str;
-use Murkrow\Rag\Data\ScoredChunk;
-use Murkrow\Rag\Enums\QueryChannel;
-use Murkrow\Rag\Http\Concerns\InteractsWithConversations;
-use Murkrow\Rag\Http\Requests\AskRequest;
-use Murkrow\Rag\Models\Conversation;
+use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Enums\QueryChannel;
+use Murkrow\FilamentAi\Http\Concerns\InteractsWithConversations;
+use Murkrow\FilamentAi\Http\Requests\AskRequest;
+use Murkrow\FilamentAi\Models\Conversation;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 

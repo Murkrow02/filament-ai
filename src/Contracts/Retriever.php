@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Contracts;
+namespace Murkrow\FilamentAi\Contracts;
 
-use Murkrow\Rag\Data\RetrievalOptions;
-use Murkrow\Rag\Data\RetrievalResult;
+use Murkrow\FilamentAi\Data\RetrievalOptions;
+use Murkrow\FilamentAi\Data\RetrievalResult;
 
 interface Retriever
 {

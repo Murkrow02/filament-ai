@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Chunking;
+namespace Murkrow\FilamentAi\Chunking;
 
 use Generator;
-use Murkrow\Rag\Chunking\Normalizers\NormalizerPipeline;
-use Murkrow\Rag\Contracts\TokenEstimator;
-use Murkrow\Rag\Data\ChunkingOptions;
-use Murkrow\Rag\Data\Segment;
+use Murkrow\FilamentAi\Chunking\Normalizers\NormalizerPipeline;
+use Murkrow\FilamentAi\Contracts\TokenEstimator;
+use Murkrow\FilamentAi\Data\ChunkingOptions;
+use Murkrow\FilamentAi\Data\Segment;
 
 /**
  * Turns an ordered stream of segments into an ordered stream of sentences,

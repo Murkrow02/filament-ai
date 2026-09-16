@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag;
+namespace Murkrow\FilamentAi;
 
 use Closure;
 use Generator;
 use Illuminate\Support\Collection;
-use Murkrow\Rag\Contracts\Answerer;
-use Murkrow\Rag\Contracts\KnowledgeSource;
-use Murkrow\Rag\Contracts\Retriever;
-use Murkrow\Rag\Data\AnswerOptions;
-use Murkrow\Rag\Data\AnswerResult;
-use Murkrow\Rag\Data\IngestionEstimate;
-use Murkrow\Rag\Data\RetrievalOptions;
-use Murkrow\Rag\Data\ScoredChunk;
-use Murkrow\Rag\Enums\IngestionMode;
-use Murkrow\Rag\Ingestion\IngestionPlanner;
-use Murkrow\Rag\Ingestion\StartIngestionRun;
-use Murkrow\Rag\Ingestion\SyncIngestionRunner;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Models\IngestionRun;
-use Murkrow\Rag\Sources\ClosureKnowledgeSource;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Contracts\Answerer;
+use Murkrow\FilamentAi\Contracts\KnowledgeSource;
+use Murkrow\FilamentAi\Contracts\Retriever;
+use Murkrow\FilamentAi\Data\AnswerOptions;
+use Murkrow\FilamentAi\Data\AnswerResult;
+use Murkrow\FilamentAi\Data\IngestionEstimate;
+use Murkrow\FilamentAi\Data\RetrievalOptions;
+use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Enums\IngestionMode;
+use Murkrow\FilamentAi\Ingestion\IngestionPlanner;
+use Murkrow\FilamentAi\Ingestion\StartIngestionRun;
+use Murkrow\FilamentAi\Ingestion\SyncIngestionRunner;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Models\IngestionRun;
+use Murkrow\FilamentAi\Sources\ClosureKnowledgeSource;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 
 /**
  * The package's front door, exposed as the `Rag` facade.
@@ -50,7 +50,7 @@ final class RagManager
         return $this->retriever->retrieve($question, $options)->chunks;
     }
 
-    public function retrieve(string $question, RetrievalOptions $options = new RetrievalOptions): \Murkrow\Rag\Data\RetrievalResult
+    public function retrieve(string $question, RetrievalOptions $options = new RetrievalOptions): \Murkrow\FilamentAi\Data\RetrievalResult
     {
         return $this->retriever->retrieve($question, $options);
     }

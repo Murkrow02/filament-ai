@@ -2,29 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Answering;
+namespace Murkrow\FilamentAi\Answering;
 
 use Generator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use Murkrow\Rag\Contracts\Answerer;
-use Murkrow\Rag\Contracts\LanguageModel;
-use Murkrow\Rag\Contracts\PromptRenderer;
-use Murkrow\Rag\Contracts\Retriever;
-use Murkrow\Rag\Contracts\TokenEstimator;
-use Murkrow\Rag\Data\AnswerOptions;
-use Murkrow\Rag\Data\AnswerResult;
-use Murkrow\Rag\Data\Citation;
-use Murkrow\Rag\Data\ChunkingOptions;
-use Murkrow\Rag\Data\RetrievalResult;
-use Murkrow\Rag\Data\ScoredChunk;
-use Murkrow\Rag\Data\Usage;
-use Murkrow\Rag\Chunking\TokenEstimatorFactory;
-use Murkrow\Rag\Events\QueryAnswered;
-use Murkrow\Rag\Models\QueryLog;
-use Murkrow\Rag\Models\QueryCitation;
-use Murkrow\Rag\Sources\SourceRegistry;
-use Murkrow\Rag\Support\Text;
+use Murkrow\FilamentAi\Contracts\Answerer;
+use Murkrow\FilamentAi\Contracts\LanguageModel;
+use Murkrow\FilamentAi\Contracts\PromptRenderer;
+use Murkrow\FilamentAi\Contracts\Retriever;
+use Murkrow\FilamentAi\Contracts\TokenEstimator;
+use Murkrow\FilamentAi\Data\AnswerOptions;
+use Murkrow\FilamentAi\Data\AnswerResult;
+use Murkrow\FilamentAi\Data\Citation;
+use Murkrow\FilamentAi\Data\ChunkingOptions;
+use Murkrow\FilamentAi\Data\RetrievalResult;
+use Murkrow\FilamentAi\Data\ScoredChunk;
+use Murkrow\FilamentAi\Data\Usage;
+use Murkrow\FilamentAi\Chunking\TokenEstimatorFactory;
+use Murkrow\FilamentAi\Events\QueryAnswered;
+use Murkrow\FilamentAi\Models\QueryLog;
+use Murkrow\FilamentAi\Models\QueryCitation;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Support\Text;
 
 /**
  * Retrieval-augmented answering.

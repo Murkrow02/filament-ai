@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Models;
+namespace Murkrow\FilamentAi\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
-use Murkrow\Rag\Data\AnswerResult;
-use Murkrow\Rag\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Data\AnswerResult;
+use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
 
 /**
  * One chat thread on the standalone chat page.

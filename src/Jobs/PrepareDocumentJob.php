@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Jobs;
+namespace Murkrow\FilamentAi\Jobs;
 
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
@@ -10,16 +10,16 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Murkrow\Rag\Data\ChunkingOptions;
-use Murkrow\Rag\Enums\IngestionMode;
-use Murkrow\Rag\Enums\RunItemStatus;
-use Murkrow\Rag\Exceptions\IngestionException;
-use Murkrow\Rag\Ingestion\DocumentIngestor;
-use Murkrow\Rag\Ingestion\RunProgress;
-use Murkrow\Rag\Jobs\Concerns\InteractsWithRagQueue;
-use Murkrow\Rag\Models\IngestionRun;
-use Murkrow\Rag\Models\IngestionRunItem;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Data\ChunkingOptions;
+use Murkrow\FilamentAi\Enums\IngestionMode;
+use Murkrow\FilamentAi\Enums\RunItemStatus;
+use Murkrow\FilamentAi\Exceptions\IngestionException;
+use Murkrow\FilamentAi\Ingestion\DocumentIngestor;
+use Murkrow\FilamentAi\Ingestion\RunProgress;
+use Murkrow\FilamentAi\Jobs\Concerns\InteractsWithRagQueue;
+use Murkrow\FilamentAi\Models\IngestionRun;
+use Murkrow\FilamentAi\Models\IngestionRunItem;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 use Throwable;
 
 /**

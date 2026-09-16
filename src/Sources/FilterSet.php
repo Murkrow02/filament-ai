@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Sources;
+namespace Murkrow\FilamentAi\Sources;
 
 use Countable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Murkrow\Rag\Contracts\SourceFilter;
-use Murkrow\Rag\Sources\Filters\FilterValue;
+use Murkrow\FilamentAi\Contracts\SourceFilter;
+use Murkrow\FilamentAi\Sources\Filters\FilterValue;
 
 /**
  * A source's filters, keyed by name.

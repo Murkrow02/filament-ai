@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Tests\Fixtures;
+namespace Murkrow\FilamentAi\Tests\Fixtures;
 
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -13,7 +13,7 @@ use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Murkrow\Rag\Filament\RagPlugin;
+use Murkrow\FilamentAi\Filament\RagPlugin;
 
 /**
  * A minimal host panel, so the plugin is exercised the way a real application
@@ -35,6 +35,11 @@ class TestPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+            ])
+            // Host resources: one opted in to the agent, one not.
+            ->resources([
+                Filament\TestBookResource::class,
+                Filament\TestBookPageResource::class,
             ])
             ->plugin(RagPlugin::make());
     }

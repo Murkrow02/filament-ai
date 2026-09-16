@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Widgets;
+namespace Murkrow\FilamentAi\Filament\Widgets;
 
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
-use Murkrow\Rag\Enums\RunStatus;
-use Murkrow\Rag\Ingestion\CostCalculator;
-use Murkrow\Rag\Models\IngestionRun;
+use Murkrow\FilamentAi\Enums\RunStatus;
+use Murkrow\FilamentAi\Ingestion\CostCalculator;
+use Murkrow\FilamentAi\Models\IngestionRun;
 
 /**
  * Live view of the most recent runs.

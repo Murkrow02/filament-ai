@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Data\DocumentDraft;
-use Murkrow\Rag\Enums\IngestionMode;
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Sources\SourceRegistry;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
-use Murkrow\Rag\Tests\Fixtures\TestTitleIndexSource;
+use Murkrow\FilamentAi\Data\DocumentDraft;
+use Murkrow\FilamentAi\Enums\IngestionMode;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Tests\Fixtures\TestTitleIndexSource;
 
 beforeEach(function (): void {
     config()->set('rag.sources', [TestTitleIndexSource::class]);

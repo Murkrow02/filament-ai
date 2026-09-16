@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Contracts;
+namespace Murkrow\FilamentAi\Contracts;
 
-use Murkrow\Rag\Data\EmbeddingBatch;
+use Murkrow\FilamentAi\Data\EmbeddingBatch;
 
 interface EmbeddingProvider
 {

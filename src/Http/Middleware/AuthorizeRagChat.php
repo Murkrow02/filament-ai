@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Http\Middleware;
+namespace Murkrow\FilamentAi\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Murkrow\Rag\Chat\ChatAbilities;
+use Murkrow\FilamentAi\Chat\ChatAbilities;
 use Symfony\Component\HttpFoundation\Response;
 
 /**

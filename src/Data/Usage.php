@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Data;
+namespace Murkrow\FilamentAi\Data;
 
 /**
  * Token and cost accounting. Cost is kept in micro-USD integers so it can be

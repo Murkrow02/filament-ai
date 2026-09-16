@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Contracts;
+namespace Murkrow\FilamentAi\Contracts;
 
 /**
  * A vector store whose column has a fixed width that can be changed in place.

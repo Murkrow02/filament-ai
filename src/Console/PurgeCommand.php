@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Console;
+namespace Murkrow\FilamentAi\Console;
 
 use Illuminate\Console\Command;
-use Murkrow\Rag\Contracts\VectorStore;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
+use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
 
 class PurgeCommand extends Command
 {

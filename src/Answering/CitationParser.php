@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Answering;
+namespace Murkrow\FilamentAi\Answering;
 
 use Illuminate\Support\Collection;
-use Murkrow\Rag\Data\Citation;
+use Murkrow\FilamentAi\Data\Citation;
 
 /**
  * Resolves the "[#n]" markers a grounded answer contains back to the chunks

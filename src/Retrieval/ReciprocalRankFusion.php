@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Retrieval;
+namespace Murkrow\FilamentAi\Retrieval;
 
 use Illuminate\Support\Collection;
-use Murkrow\Rag\Data\ScoredChunk;
+use Murkrow\FilamentAi\Data\ScoredChunk;
 
 /**
  * Fuses the vector and lexical result lists by rank rather than by score.

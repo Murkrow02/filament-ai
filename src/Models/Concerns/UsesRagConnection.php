@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Models\Concerns;
+namespace Murkrow\FilamentAi\Models\Concerns;
 
-use Murkrow\Rag\Support\Tables;
+use Murkrow\FilamentAi\Support\Tables;
 
 /**
  * Binds a model to the package's configured connection and prefixed table.

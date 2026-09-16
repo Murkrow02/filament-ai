@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Database\Factories;
+namespace Murkrow\FilamentAi\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Murkrow\Rag\Enums\DocumentStatus;
-use Murkrow\Rag\Models\Document;
+use Murkrow\FilamentAi\Enums\DocumentStatus;
+use Murkrow\FilamentAi\Models\Document;
 
 /**
  * @extends Factory<Document>

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Contracts;
+namespace Murkrow\FilamentAi\Contracts;
 
 use Generator;
-use Murkrow\Rag\Data\ChunkDraft;
-use Murkrow\Rag\Data\ChunkingOptions;
-use Murkrow\Rag\Data\Segment;
+use Murkrow\FilamentAi\Data\ChunkDraft;
+use Murkrow\FilamentAi\Data\ChunkingOptions;
+use Murkrow\FilamentAi\Data\Segment;
 
 interface Chunker
 {

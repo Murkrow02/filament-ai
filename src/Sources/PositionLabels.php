@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Sources;
+namespace Murkrow\FilamentAi\Sources;
 
-use Murkrow\Rag\Support\Text;
+use Murkrow\FilamentAi\Support\Text;
 
 /**
  * How a chunk's position range is written in a citation: "Pages 12-13" for a

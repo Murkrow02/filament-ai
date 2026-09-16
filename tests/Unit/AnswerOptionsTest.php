@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Data\AnswerOptions;
-use Murkrow\Rag\Data\RetrievalOptions;
-use Murkrow\Rag\Enums\QueryChannel;
+use Murkrow\FilamentAi\Data\AnswerOptions;
+use Murkrow\FilamentAi\Data\RetrievalOptions;
+use Murkrow\FilamentAi\Enums\QueryChannel;
 
 it('carries the conversation through its with* helpers', function (): void {
     // Both helpers rebuild the object positionally, so a new constructor

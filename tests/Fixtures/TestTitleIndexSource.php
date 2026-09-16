@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Tests\Fixtures;
+namespace Murkrow\FilamentAi\Tests\Fixtures;
 
-use Murkrow\Rag\Sources\Filter;
-use Murkrow\Rag\Sources\GroupedEloquentSource;
-use Murkrow\Rag\Sources\PositionLabels;
+use Murkrow\FilamentAi\Sources\Filter;
+use Murkrow\FilamentAi\Sources\GroupedEloquentSource;
+use Murkrow\FilamentAi\Sources\PositionLabels;
 
 /**
  * Stands in for a host's list-shaped data: one document per initial letter,

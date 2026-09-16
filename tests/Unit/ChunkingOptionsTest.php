@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Data\ChunkingOptions;
+use Murkrow\FilamentAi\Data\ChunkingOptions;
 
 it('produces the same checksum for the same parameters', function (): void {
     $a = ChunkingOptions::fromArray(['target_tokens' => 512, 'overlap_tokens' => 80]);

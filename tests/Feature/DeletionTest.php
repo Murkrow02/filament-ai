@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Jobs\PruneOrphanChunksJob;
-use Murkrow\Rag\Models\Chunk;
-use Murkrow\Rag\Models\Document;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Jobs\PruneOrphanChunksJob;
+use Murkrow\FilamentAi\Models\Chunk;
+use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 function seedIndexedBook(string $title = 'Cronaca'): TestBook
 {

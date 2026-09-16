@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Ingestion;
+namespace Murkrow\FilamentAi\Ingestion;
 
-use Murkrow\Rag\Contracts\EmbeddingProvider;
-use Murkrow\Rag\Contracts\KnowledgeSource;
-use Murkrow\Rag\Contracts\VectorStore;
-use Murkrow\Rag\Data\ChunkingOptions;
-use Murkrow\Rag\Data\DocumentDraft;
-use Murkrow\Rag\Data\IngestionEstimate;
-use Murkrow\Rag\Enums\IngestionMode;
-use Murkrow\Rag\Enums\RunItemStatus;
-use Murkrow\Rag\Enums\RunStatus;
-use Murkrow\Rag\Models\IngestionRun;
-use Murkrow\Rag\Models\IngestionRunItem;
+use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
+use Murkrow\FilamentAi\Contracts\KnowledgeSource;
+use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\Data\ChunkingOptions;
+use Murkrow\FilamentAi\Data\DocumentDraft;
+use Murkrow\FilamentAi\Data\IngestionEstimate;
+use Murkrow\FilamentAi\Enums\IngestionMode;
+use Murkrow\FilamentAi\Enums\RunItemStatus;
+use Murkrow\FilamentAi\Enums\RunStatus;
+use Murkrow\FilamentAi\Models\IngestionRun;
+use Murkrow\FilamentAi\Models\IngestionRunItem;
 use Illuminate\Support\Str;
 
 /**

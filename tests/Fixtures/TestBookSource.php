@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Tests\Fixtures;
+namespace Murkrow\FilamentAi\Tests\Fixtures;
 
-use Murkrow\Rag\Sources\EloquentSource;
-use Murkrow\Rag\Sources\Filter;
-use Murkrow\Rag\Sources\PositionLabels;
-use Murkrow\Rag\Sources\SegmentMap;
+use Murkrow\FilamentAi\Sources\EloquentSource;
+use Murkrow\FilamentAi\Sources\Filter;
+use Murkrow\FilamentAi\Sources\PositionLabels;
+use Murkrow\FilamentAi\Sources\SegmentMap;
 
 /**
  * The source every feature test ingests from.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Exceptions;
+namespace Murkrow\FilamentAi\Exceptions;
 
 class VectorDriverUnsupportedException extends RagException
 {

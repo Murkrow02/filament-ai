@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Sources;
+namespace Murkrow\FilamentAi\Sources;
 
 /**
  * Parses the CLI's repeatable `--filter=name:value` option.

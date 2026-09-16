@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Chunking\Normalizers;
+namespace Murkrow\FilamentAi\Chunking\Normalizers;
 
-use Murkrow\Rag\Contracts\TextNormalizer;
+use Murkrow\FilamentAi\Contracts\TextNormalizer;
 
 /**
  * Expands typographic ligatures and normalises exotic whitespace and quotes.

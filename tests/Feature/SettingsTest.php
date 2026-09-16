@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Settings\SettingsRepository;
+use Murkrow\FilamentAi\Settings\SettingsRepository;
 
 beforeEach(function (): void {
     config()->set('rag.settings.enabled', true);

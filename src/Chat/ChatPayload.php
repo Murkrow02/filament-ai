@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Chat;
+namespace Murkrow\FilamentAi\Chat;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
-use Murkrow\Rag\Models\Conversation;
-use Murkrow\Rag\Models\QueryCitation;
-use Murkrow\Rag\Models\QueryLog;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Models\Conversation;
+use Murkrow\FilamentAi\Models\QueryCitation;
+use Murkrow\FilamentAi\Models\QueryLog;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 
 /**
  * Everything the chat page hands to the browser, in one object.

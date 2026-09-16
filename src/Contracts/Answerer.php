@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Contracts;
+namespace Murkrow\FilamentAi\Contracts;
 
 use Generator;
-use Murkrow\Rag\Data\AnswerOptions;
-use Murkrow\Rag\Data\AnswerResult;
+use Murkrow\FilamentAi\Data\AnswerOptions;
+use Murkrow\FilamentAi\Data\AnswerResult;
 
 interface Answerer
 {

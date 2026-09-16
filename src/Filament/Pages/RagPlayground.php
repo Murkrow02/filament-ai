@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Pages;
+namespace Murkrow\FilamentAi\Filament\Pages;
 
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -14,13 +14,13 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Murkrow\Rag\Contracts\Answerer;
-use Murkrow\Rag\Contracts\Retriever;
-use Murkrow\Rag\Data\AnswerOptions;
-use Murkrow\Rag\Data\RetrievalOptions;
-use Murkrow\Rag\Enums\QueryChannel;
-use Murkrow\Rag\Filament\Concerns\HasRagNavigation;
-use Murkrow\Rag\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Contracts\Answerer;
+use Murkrow\FilamentAi\Contracts\Retriever;
+use Murkrow\FilamentAi\Data\AnswerOptions;
+use Murkrow\FilamentAi\Data\RetrievalOptions;
+use Murkrow\FilamentAi\Enums\QueryChannel;
+use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
 use Throwable;
 
 /**

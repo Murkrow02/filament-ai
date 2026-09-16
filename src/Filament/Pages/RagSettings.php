@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Filament\Pages;
+namespace Murkrow\FilamentAi\Filament\Pages;
 
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -13,8 +13,8 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Murkrow\Rag\Filament\Concerns\HasRagNavigation;
-use Murkrow\Rag\Settings\SettingsRepository;
+use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Settings\SettingsRepository;
 
 /**
  * Runtime tuning for the whitelisted config keys.
@@ -57,6 +57,13 @@ class RagSettings extends Page
         $values = [];
 
         foreach ($settings->effectiveAll() as $key => $value) {
+            // Agent keys belong to AgentSettings. Filling them here would put
+            // them in this component's state, and save() would write them
+            // straight back -- including the per-resource policies.
+            if (! $this->owns($key)) {
+                continue;
+            }
+
             $values[$this->flatten($key)] = $value;
         }
 
@@ -70,7 +77,15 @@ class RagSettings extends Page
         $groups = [];
 
         foreach ($settings->schema() as $key => $descriptor) {
-            $groups[explode('.', $key)[0]][$key] = $descriptor;
+            $group = explode('.', $key)[0];
+
+            // The assistant has its own page: its policies are per resource
+            // and do not fit a flat form of scalars.
+            if ($group === 'agent') {
+                continue;
+            }
+
+            $groups[$group][$key] = $descriptor;
         }
 
         $sections = [];
@@ -97,7 +112,7 @@ class RagSettings extends Page
         foreach (array_keys($settings->schema()) as $key) {
             $flat = $this->flatten($key);
 
-            if (array_key_exists($flat, $state)) {
+            if ($this->owns($key) && array_key_exists($flat, $state)) {
                 $values[$key] = $state[$flat];
             }
         }
@@ -116,7 +131,9 @@ class RagSettings extends Page
         abort_unless(static::canAccessRag(), 403);
 
         foreach (array_keys($settings->schema()) as $key) {
-            $settings->forget($key);
+            if ($this->owns($key)) {
+                $settings->forget($key);
+            }
         }
 
         $this->mount($settings);
@@ -197,6 +214,14 @@ class RagSettings extends Page
         }
 
         return $result;
+    }
+
+    /**
+     * Whether this page, rather than AgentSettings, owns a settings key.
+     */
+    private function owns(string $key): bool
+    {
+        return ! str_starts_with($key, 'agent.');
     }
 
     private function flatten(string $key): string

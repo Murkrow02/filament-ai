@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Jobs;
+namespace Murkrow\FilamentAi\Jobs;
 
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
@@ -11,10 +11,10 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Queue\SerializesModels;
-use Murkrow\Rag\Embeddings\EmbeddingRateLimiter;
-use Murkrow\Rag\Ingestion\ChunkEmbedder;
-use Murkrow\Rag\Ingestion\RunProgress;
-use Murkrow\Rag\Jobs\Concerns\InteractsWithRagQueue;
+use Murkrow\FilamentAi\Embeddings\EmbeddingRateLimiter;
+use Murkrow\FilamentAi\Ingestion\ChunkEmbedder;
+use Murkrow\FilamentAi\Ingestion\RunProgress;
+use Murkrow\FilamentAi\Jobs\Concerns\InteractsWithRagQueue;
 use Throwable;
 
 /**

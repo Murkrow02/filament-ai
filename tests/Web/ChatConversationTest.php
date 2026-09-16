@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Models\Conversation;
-use Murkrow\Rag\Models\QueryLog;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Models\Conversation;
+use Murkrow\FilamentAi\Models\QueryLog;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 function seedConversationCorpus(): void
 {
@@ -145,5 +145,5 @@ it('starts a new thread instead of failing when the conversation id is unusable'
         ])->assertOk()->assertJsonPath('refused', false);
     }
 
-    expect(Murkrow\Rag\Models\Conversation::query()->count())->toBe(4);
+    expect(Murkrow\FilamentAi\Models\Conversation::query()->count())->toBe(4);
 });

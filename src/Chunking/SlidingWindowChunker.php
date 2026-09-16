@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Murkrow\Rag\Chunking;
+namespace Murkrow\FilamentAi\Chunking;
 
 use Generator;
-use Murkrow\Rag\Chunking\Normalizers\NormalizerPipeline;
-use Murkrow\Rag\Contracts\Chunker;
-use Murkrow\Rag\Data\ChunkDraft;
-use Murkrow\Rag\Data\ChunkingOptions;
+use Murkrow\FilamentAi\Chunking\Normalizers\NormalizerPipeline;
+use Murkrow\FilamentAi\Contracts\Chunker;
+use Murkrow\FilamentAi\Data\ChunkDraft;
+use Murkrow\FilamentAi\Data\ChunkingOptions;
 
 /**
  * Sentence-aligned sliding window with overlap.
@@ -31,7 +31,7 @@ final class SlidingWindowChunker implements Chunker
     ) {}
 
     /**
-     * @param  iterable<int, \Murkrow\Rag\Data\Segment>  $segments
+     * @param  iterable<int, \Murkrow\FilamentAi\Data\Segment>  $segments
      * @return Generator<int, ChunkDraft>
      */
     public function chunk(
@@ -230,7 +230,7 @@ final class SlidingWindowChunker implements Chunker
         ChunkingOptions $options,
         ?string $documentTitle,
         ?callable $positionLabel,
-        \Murkrow\Rag\Contracts\TokenEstimator $estimator,
+        \Murkrow\FilamentAi\Contracts\TokenEstimator $estimator,
     ): ChunkDraft {
         $first = $window[0];
         $last = $window[count($window) - 1];

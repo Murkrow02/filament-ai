@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Data\DocumentDraft;
-use Murkrow\Rag\Sources\SourceRegistry;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Data\DocumentDraft;
+use Murkrow\FilamentAi\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 function makeBook(string $title, array $pages, ?string $author = null): TestBook
 {
@@ -88,17 +88,17 @@ it('rejects a configured entry that is not a knowledge source', function (): voi
     app(SourceRegistry::class)->flush();
 
     expect(fn () => app(SourceRegistry::class)->keys())
-        ->toThrow(\Murkrow\Rag\Exceptions\InvalidSourceConfigurationException::class);
+        ->toThrow(\Murkrow\FilamentAi\Exceptions\InvalidSourceConfigurationException::class);
 });
 
 it('registers a closure-built source at runtime', function (): void {
-    \Murkrow\Rag\Facades\Rag::source('handbook')
+    \Murkrow\FilamentAi\Facades\Rag::source('handbook')
         ->setLabel('Handbook')
         ->loadDocumentsUsing(fn (): \Illuminate\Support\LazyCollection => \Illuminate\Support\LazyCollection::make([
             new DocumentDraft(sourceKey: 'handbook', externalId: '1', title: 'Chapter one'),
         ]))
         ->loadSegmentsUsing(function (string $id): \Generator {
-            yield new \Murkrow\Rag\Data\Segment(1, 'Testo.');
+            yield new \Murkrow\FilamentAi\Data\Segment(1, 'Testo.');
         })
         ->register();
 
@@ -110,5 +110,5 @@ it('registers a closure-built source at runtime', function (): void {
 
 it('reports an unknown source rather than failing silently', function (): void {
     expect(fn () => app(SourceRegistry::class)->get('nope'))
-        ->toThrow(\Murkrow\Rag\Exceptions\UnknownSourceException::class);
+        ->toThrow(\Murkrow\FilamentAi\Exceptions\UnknownSourceException::class);
 });

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use Murkrow\Rag\Facades\Rag;
-use Murkrow\Rag\Mcp\KnowledgeServer;
-use Murkrow\Rag\Mcp\Prompts\GroundedAnswerPrompt;
-use Murkrow\Rag\Mcp\Resources\DocumentsResource;
-use Murkrow\Rag\Mcp\Tools\AnswerQuestionTool;
-use Murkrow\Rag\Mcp\Tools\FetchDocumentTool;
-use Murkrow\Rag\Mcp\Tools\SearchKnowledgeTool;
-use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Mcp\KnowledgeServer;
+use Murkrow\FilamentAi\Mcp\Prompts\GroundedAnswerPrompt;
+use Murkrow\FilamentAi\Mcp\Resources\DocumentsResource;
+use Murkrow\FilamentAi\Mcp\Tools\AnswerQuestionTool;
+use Murkrow\FilamentAi\Mcp\Tools\FetchDocumentTool;
+use Murkrow\FilamentAi\Mcp\Tools\SearchKnowledgeTool;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 function seedForMcp(): TestBook
 {
