@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Murkrow\FilamentAi\Agent\Sandbox;
 
 use Murkrow\FilamentAi\Contracts\CodeSandbox;
+use Murkrow\FilamentAi\Contracts\ListsRuntimes;
 
 /**
  * Offline stand-in. Queue results with `respondWith()`; anything not queued
  * echoes the snippet back, which is enough for the tool's own assertions.
  */
-final class FakeSandbox implements CodeSandbox
+final class FakeSandbox implements CodeSandbox, ListsRuntimes
 {
     /** @var list<SandboxResult> */
     private array $queue = [];
@@ -46,6 +47,14 @@ final class FakeSandbox implements CodeSandbox
     public function languages(): array
     {
         return $this->languages;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function runtimes(): array
+    {
+        return array_fill_keys($this->languages, '1.0.0');
     }
 
     public function run(string $language, string $code, string $stdin = ''): SandboxResult

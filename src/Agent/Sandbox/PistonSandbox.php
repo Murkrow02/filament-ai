@@ -6,6 +6,7 @@ namespace Murkrow\FilamentAi\Agent\Sandbox;
 
 use Illuminate\Support\Facades\Http;
 use Murkrow\FilamentAi\Contracts\CodeSandbox;
+use Murkrow\FilamentAi\Contracts\ListsRuntimes;
 use Throwable;
 
 /**
@@ -20,7 +21,7 @@ use Throwable;
  * selector, and `*` means "whatever is installed" -- convenient in
  * development, worth pinning anywhere the answers should stay reproducible.
  */
-final class PistonSandbox implements CodeSandbox
+final class PistonSandbox implements CodeSandbox, ListsRuntimes
 {
     /**
      * @param  array<string, string>  $languages  language name => version selector
@@ -50,6 +51,47 @@ final class PistonSandbox implements CodeSandbox
     public function languages(): array
     {
         return array_values(array_keys($this->languages));
+    }
+
+    /**
+     * What Piston has installed right now, newest version per language.
+     *
+     * Answers an empty array when the sandbox cannot be reached: the settings
+     * page treats that as "nothing to choose from" and says so, rather than
+     * letting an administrator pick a language that is not there.
+     *
+     * @return array<string, string>
+     */
+    public function runtimes(): array
+    {
+        try {
+            $response = Http::timeout($this->httpTimeoutSeconds)->acceptJson()->get($this->url.'/api/v2/runtimes');
+        } catch (Throwable) {
+            return [];
+        }
+
+        if ($response->failed()) {
+            return [];
+        }
+
+        $runtimes = [];
+
+        foreach ((array) $response->json() as $runtime) {
+            if (! is_array($runtime) || ! isset($runtime['language'], $runtime['version'])) {
+                continue;
+            }
+
+            $language = (string) $runtime['language'];
+            $version = (string) $runtime['version'];
+
+            if (! isset($runtimes[$language]) || version_compare($version, $runtimes[$language], '>')) {
+                $runtimes[$language] = $version;
+            }
+        }
+
+        ksort($runtimes);
+
+        return $runtimes;
     }
 
     public function run(string $language, string $code, string $stdin = ''): SandboxResult

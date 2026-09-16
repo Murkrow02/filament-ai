@@ -457,6 +457,8 @@ What the agent gets is `run_code`: a language, a program, optional stdin, and ba
 
 The privilege is real and belongs to the sandbox container, not the app: never point the driver at something that shares this application's filesystem, database or network.
 
+Once a sandbox is configured, the rest is on the `Assistant settings` page: whether the agent may run code at all, which of the installed languages it may use (the page asks the sandbox), the time limit, and how much of a program and of its output to keep. The url and the driver stay in `config/rag.php` -- a form that decides where the application posts code is a way in, not a setting.
+
 ### In the panel
 
 The plugin adds an **Assistant** page to the panel: the user's conversations in a sidebar, answers rendered as Markdown, and every pending change shown as a card with Approve and Reject. A button next to global search opens it about the page on screen, so "this order" means the order being viewed. History lives in laravel/ai's conversation tables -- run its migrations -- and is only ever visible to the user who wrote it.

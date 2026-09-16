@@ -110,6 +110,42 @@ it('reverts to what the code says', function (): void {
         ->and(toolNamesAfterSaving($settings))->toContain('test_books_create');
 });
 
+it('offers the languages the sandbox actually has, and pins their versions', function (): void {
+    config()->set('rag.agent.sandbox.driver', 'fake');
+    config()->set('rag.agent.sandbox.languages', ['python' => '*', 'javascript' => '*']);
+    $settings = app(SettingsRepository::class);
+
+    Livewire::test(AgentSettings::class)
+        ->assertOk()
+        ->assertSee('python 1.0.0')
+        ->set('data.agent__sandbox__enabled', true)
+        ->set('data.agent__sandbox__languages', ['python'])
+        ->set('data.agent__sandbox__timeout', 8000)
+        ->call('save');
+
+    $settings->apply();
+
+    expect($settings->get('agent.sandbox.languages'))->toBe(['python' => '1.0.0'])
+        ->and(config('rag.agent.sandbox.timeout'))->toBe(8000)
+        ->and(Murkrow\FilamentAi\Agent\Tools\RunCode::enabled())->toBeTrue();
+});
+
+it('says so when the sandbox is not answering, instead of offering nothing in silence', function (): void {
+    app()->instance(Murkrow\FilamentAi\Contracts\CodeSandbox::class, new Murkrow\FilamentAi\Agent\Sandbox\FakeSandbox([]));
+
+    Livewire::test(AgentSettings::class)
+        ->assertOk()
+        ->assertSee('not answering');
+});
+
+it('keeps the sandbox url out of the form', function (): void {
+    // Where the application posts code is not a setting a web form decides.
+    $html = Livewire::test(AgentSettings::class)->html();
+
+    expect($html)->not->toContain('agent__sandbox__url')
+        ->and(app(SettingsRepository::class)->schema())->not->toHaveKey('agent.sandbox.url');
+});
+
 it('is closed to whoever may not administer the knowledge panel', function (): void {
     config()->set('rag.filament.authorize', fn (): bool => false);
 

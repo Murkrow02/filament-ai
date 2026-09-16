@@ -608,7 +608,15 @@ return [
             'agent.chat.history' => ['type' => 'int', 'min' => 1, 'max' => 100],
             'agent.chat.topbar_button' => ['type' => 'bool'],
             'agent.sandbox.enabled' => ['type' => 'bool'],
+            'agent.sandbox.languages' => ['type' => 'json'],
+            'agent.sandbox.timeout' => ['type' => 'int', 'min' => 500, 'max' => 60000],
+            'agent.sandbox.max_output' => ['type' => 'int', 'min' => 200, 'max' => 50000],
+            'agent.sandbox.max_code_characters' => ['type' => 'int', 'min' => 200, 'max' => 200000],
             'agent.max_steps' => ['type' => 'int', 'min' => 1, 'max' => 40],
+            // The sandbox URL and driver are deliberately not here: a web form
+            // that decides where the application posts code is an SSRF waiting
+            // to happen, and whoever administers the panel is not necessarily
+            // whoever controls the network.
         ],
     ],
 ];
