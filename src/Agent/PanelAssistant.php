@@ -16,6 +16,7 @@ use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Promptable;
 use Murkrow\FilamentAi\Agent\Resources\ResourceToolRegistry;
 use Murkrow\FilamentAi\Agent\Tools\FetchDocument;
+use Murkrow\FilamentAi\Agent\Tools\RunCode;
 use Murkrow\FilamentAi\Agent\Tools\SearchKnowledge;
 use Murkrow\FilamentAi\Sources\SourceRegistry;
 use Throwable;
@@ -95,6 +96,7 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
         return [
             ...($sources === [] ? [] : [new SearchKnowledge($sources), new FetchDocument($sources)]),
             ...app(ResourceToolRegistry::class)->tools($this->panel()),
+            ...(RunCode::enabled() ? [new RunCode] : []),
             ...$this->additionalTools(),
         ];
     }
@@ -116,6 +118,17 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
         $provider = config('rag.agent.provider') ?? config('rag.llm.provider');
 
         return blank($provider) ? null : (string) $provider;
+    }
+
+    /**
+     * How many tool round trips one answer may take. Writing a program,
+     * running it, reading the error and fixing it is four on its own.
+     */
+    public function maxSteps(): ?int
+    {
+        $steps = config('rag.agent.max_steps');
+
+        return blank($steps) ? null : (int) $steps;
     }
 
     public function model(): ?string
@@ -209,6 +222,10 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
             $lines[] = '- search_knowledge / fetch_document: the indexed documents (manuals, archives, reference texts).';
         }
 
+        if (RunCode::enabled()) {
+            $lines[] = '- run_code: a sandbox to write and run a small program in, for anything mechanical -- anagrams, permutations, ciphers, parsing, arithmetic over many values. It reaches nothing of this application.';
+        }
+
         $registry = app(ResourceToolRegistry::class);
 
         foreach ($registry->blueprints($this->panel()) as $blueprint) {
@@ -229,6 +246,7 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
         return implode("\n", [
             'Rules:',
             '- Use the tools to look things up. Never invent records, figures or document content; if the tools return nothing, say so.',
+            '- Work out anything mechanical with run_code rather than in your head: a program that prints the answer is checkable, a mental calculation is not. Read its output before answering, and fix the program if it errored.',
             '- You change data only through the _create, _edit and _delete tools, and only when the user asked for the change. The user confirms each change in the interface before it runs: call the tool directly with complete arguments instead of asking for confirmation in text. If a change is rejected, do not try it again.',
             '- When no tool can make the change the user wants, tell them where in the panel to make it, linking the record when you have its url.',
             '- When you mention a record that has a url, link it in Markdown.',

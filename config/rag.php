@@ -385,6 +385,44 @@ return [
         // null lets every user who can reach the panel use it.
         'authorize' => null,
 
+        // How many tool round trips one answer may take. A sandbox needs
+        // several (write, run, read the error, fix); null keeps
+        // laravel/ai's own default.
+        'max_steps' => env('RAG_AGENT_MAX_STEPS'),
+
+        /*
+        | Code execution.
+        |
+        | Off by default, and deliberately so: this hands a language model
+        | a way to run programs. The driver is the security boundary -- the
+        | shipped one talks to a self-hosted Piston, which runs each
+        | submission under isolate with no outgoing network. Never point it
+        | at something that shares this application's filesystem, database
+        | or network.
+        */
+        'sandbox' => [
+            'enabled' => (bool) env('RAG_AGENT_SANDBOX', false),
+            'driver' => env('RAG_AGENT_SANDBOX_DRIVER', 'piston'), // piston | fake
+            'url' => env('RAG_AGENT_SANDBOX_URL', 'http://piston:2000'),
+
+            // Language => version selector Piston understands; '*' takes
+            // whatever is installed, which is worth pinning in production.
+            'languages' => [
+                'python' => env('RAG_AGENT_SANDBOX_PYTHON', '*'),
+            ],
+
+            'timeout' => (int) env('RAG_AGENT_SANDBOX_TIMEOUT', 5000), // ms of wall clock per run
+            'memory_limit' => 128 * 1024 * 1024,
+            'http_timeout' => 15, // seconds to wait for the sandbox itself
+
+            // Characters of stdout and of stderr handed back to the model.
+            'max_output' => 4000,
+            'max_code_characters' => 20000,
+
+            // Every run is logged. null uses the application's default channel.
+            'log_channel' => env('RAG_AGENT_SANDBOX_LOG'),
+        ],
+
         // The chat page inside the panel. It keeps its history in laravel/ai's
         // conversation tables: publish and run laravel/ai's migrations.
         'chat' => [
@@ -569,6 +607,8 @@ return [
             'agent.chat.enabled' => ['type' => 'bool'],
             'agent.chat.history' => ['type' => 'int', 'min' => 1, 'max' => 100],
             'agent.chat.topbar_button' => ['type' => 'bool'],
+            'agent.sandbox.enabled' => ['type' => 'bool'],
+            'agent.max_steps' => ['type' => 'int', 'min' => 1, 'max' => 40],
         ],
     ],
 ];

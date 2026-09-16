@@ -100,6 +100,15 @@ class AgentSettings extends Page
                         ->minValue(1)
                         ->maxValue(100),
                     Toggle::make('agent__chat__topbar_button')->label(__('rag::rag.assistant_settings.topbar_button')),
+                    Toggle::make('agent__sandbox__enabled')
+                        ->label(__('rag::rag.assistant_settings.sandbox'))
+                        ->helperText(__('rag::rag.assistant_settings.sandbox_help')),
+                    TextInput::make('agent__max_steps')
+                        ->label(__('rag::rag.assistant_settings.max_steps'))
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(40)
+                        ->helperText(__('rag::rag.assistant_settings.max_steps_help')),
                 ]),
 
             Section::make(__('rag::rag.assistant_settings.knowledge'))
@@ -151,6 +160,8 @@ class AgentSettings extends Page
             'agent.resources.enabled' => (bool) ($state['agent__resources__enabled'] ?? true),
             'agent.resources.max_records' => (int) ($state['agent__resources__max_records'] ?? 25),
             'agent.resources.overrides' => $this->overridesFrom($state),
+            'agent.sandbox.enabled' => (bool) ($state['agent__sandbox__enabled'] ?? false),
+            'agent.max_steps' => blank($state['agent__max_steps'] ?? null) ? null : (int) $state['agent__max_steps'],
         ], auth()->id());
 
         Notification::make()
@@ -279,6 +290,8 @@ class AgentSettings extends Page
             'agent__knowledge__sources' => (array) ($settings->effective('agent.knowledge.sources') ?? []),
             'agent__resources__enabled' => (bool) $settings->effective('agent.resources.enabled'),
             'agent__resources__max_records' => (int) $settings->effective('agent.resources.max_records'),
+            'agent__sandbox__enabled' => (bool) $settings->effective('agent.sandbox.enabled'),
+            'agent__max_steps' => $settings->effective('agent.max_steps'),
             'resources' => $resources,
         ];
     }

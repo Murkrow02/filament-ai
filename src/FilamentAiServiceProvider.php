@@ -16,6 +16,8 @@ use Murkrow\FilamentAi\Chunking\TokenEstimatorFactory;
 use Murkrow\FilamentAi\Console;
 use Murkrow\FilamentAi\Contracts\Answerer;
 use Murkrow\FilamentAi\Contracts\Chunker;
+use Murkrow\FilamentAi\Agent\Sandbox\SandboxManager;
+use Murkrow\FilamentAi\Contracts\CodeSandbox;
 use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
 use Murkrow\FilamentAi\Contracts\LanguageModel;
 use Murkrow\FilamentAi\Contracts\PromptRenderer;
@@ -184,6 +186,13 @@ class FilamentAiServiceProvider extends ServiceProvider
         $this->app->singleton(
             LanguageModel::class,
             static fn ($app): LanguageModel => $app->make(LanguageModelManager::class)->driver(),
+        );
+
+        $this->app->singleton(SandboxManager::class);
+
+        $this->app->singleton(
+            CodeSandbox::class,
+            static fn ($app): CodeSandbox => $app->make(SandboxManager::class)->driver(),
         );
 
         $this->app->singleton(

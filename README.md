@@ -426,6 +426,37 @@ Resuming reads the paused call back from laravel/ai's conversation tables, so pu
 
 It can only narrow. A resource that never implemented `AgentResource` is not listed, an ability its class does not offer cannot be ticked, and a deletion is always confirmed by the user. Anything left exactly as the code declared it is not stored at all, so a later change to `agentTools()` is picked up instead of being shadowed by a saved row. Settings live in the same table as the knowledge settings and are layered over `config/rag.php` on boot.
 
+### Running code
+
+Some questions are not lookups: anagrams, permutations, ciphers, parsing, arithmetic over many rows. Writing a tool for each is a losing battle, so the agent can be given a sandbox and write the program itself.
+
+It is off by default. Switch it on with a sandbox to point at -- the shipped driver talks to a self-hosted [Piston](https://github.com/engineer-man/piston):
+
+```yaml
+# docker-compose.yml -- a container of its own, port not published
+piston:
+    image: ghcr.io/engineer-man/piston:latest
+    privileged: true          # isolate(1) needs cgroup and mount privileges
+    environment:
+        - PISTON_RUN_TIMEOUT=10000
+    tmpfs:
+        - /piston/jobs:exec,uid=1000,gid=1000,mode=711
+        - /tmp:exec
+```
+
+```dotenv
+RAG_AGENT_SANDBOX=true
+RAG_AGENT_SANDBOX_URL=http://piston:2000
+RAG_AGENT_SANDBOX_PYTHON=3.12.0   # pin it, or answers change when the sandbox does
+RAG_AGENT_MAX_STEPS=10            # write, run, read the error, fix
+```
+
+Install the language once: `POST /api/v2/packages {"language":"python","version":"3.12.0"}`.
+
+What the agent gets is `run_code`: a language, a program, optional stdin, and back come stdout and stderr, truncated from the end -- the last lines of a traceback are the ones worth keeping. The sandbox reaches nothing: not this application, not the database, not the internet. Data a program needs is data the agent read with another tool and passed in. Every run is logged with its snippet.
+
+The privilege is real and belongs to the sandbox container, not the app: never point the driver at something that shares this application's filesystem, database or network.
+
 ### In the panel
 
 The plugin adds an **Assistant** page to the panel: the user's conversations in a sidebar, answers rendered as Markdown, and every pending change shown as a card with Approve and Reject. A button next to global search opens it about the page on screen, so "this order" means the order being viewed. History lives in laravel/ai's conversation tables -- run its migrations -- and is only ever visible to the user who wrote it.
