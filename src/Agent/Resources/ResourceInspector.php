@@ -9,6 +9,7 @@ use Filament\Resources\Pages\PageRegistration;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\Column;
+use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -32,7 +33,10 @@ final class ResourceInspector
     /** @var array<string, list<string>> */
     private array $columnListings = [];
 
-    public function __construct(private readonly FormFieldMapper $fields) {}
+    public function __construct(
+        private readonly FormFieldMapper $fields,
+        private readonly TableFilterMapper $tableFilters,
+    ) {}
 
     /**
      * @param  class-string<\Filament\Resources\Resource>  $resource
@@ -41,7 +45,8 @@ final class ResourceInspector
     {
         /** @var Model $model */
         $model = app($resource::getModel());
-        $columns = $this->tableColumns($resource);
+        $table = $this->table($resource);
+        $columns = $table === null ? [] : $this->tableColumns($table);
         $tableNames = array_values(array_map(static fn (Column $column): string => $column->getName(), $columns));
         $formFields = $this->formFields($resource);
         $formNames = array_values(array_unique(array_map(static fn (Field $field): string => $field->getName(), $formFields)));
@@ -68,31 +73,65 @@ final class ResourceInspector
             description: $tools->description(),
             fields: array_values(array_filter(array_map($this->fields->map(...), $formFields))),
             unapprovedAbilities: $tools->unapprovedAbilities(),
+            filters: $table === null ? [] : $this->tableFilters($table),
         );
     }
 
     /**
      * @param  class-string<\Filament\Resources\Resource>  $resource
-     * @return list<Column>
      */
-    private function tableColumns(string $resource): array
+    private function table(string $resource): ?Table
     {
         $livewire = $this->tablePage($resource);
 
         if ($livewire === null) {
-            return [];
+            return null;
         }
 
         try {
-            $table = $resource::table(Table::make($livewire));
+            return $resource::table(Table::make($livewire));
         } catch (Throwable) {
-            return [];
+            return null;
         }
+    }
 
+    /**
+     * @return list<Column>
+     */
+    private function tableColumns(Table $table): array
+    {
         return array_values(array_filter(
             $table->getColumns(),
             static fn (mixed $column): bool => $column instanceof Column,
         ));
+    }
+
+    /**
+     * @return list<FilterBlueprint>
+     */
+    private function tableFilters(Table $table): array
+    {
+        try {
+            $filters = $table->getFilters();
+        } catch (Throwable) {
+            return [];
+        }
+
+        $blueprints = [];
+
+        foreach ($filters as $filter) {
+            if (! $filter instanceof BaseFilter) {
+                continue;
+            }
+
+            $blueprint = $this->tableFilters->map($filter);
+
+            if ($blueprint !== null) {
+                $blueprints[] = $blueprint;
+            }
+        }
+
+        return $blueprints;
     }
 
     /**

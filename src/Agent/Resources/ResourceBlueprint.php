@@ -19,6 +19,7 @@ final readonly class ResourceBlueprint
      * @param  list<string>  $listAttributes  returned by the list tool
      * @param  list<string>  $viewAttributes  returned by the view tool
      * @param  list<FieldBlueprint>  $fields  writable form fields
+     * @param  list<FilterBlueprint>  $filters  the table's filters, as list arguments
      * @param  list<string>  $unapprovedAbilities  writes that run without asking
      */
     public function __construct(
@@ -34,6 +35,7 @@ final readonly class ResourceBlueprint
         public ?string $description = null,
         public array $fields = [],
         public array $unapprovedAbilities = [],
+        public array $filters = [],
     ) {}
 
     public function allows(string $ability): bool

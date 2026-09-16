@@ -378,7 +378,7 @@ class OrderResource extends Resource implements AgentResource
 }
 ```
 
-That resource now gives the agent `orders_list` (free-text search over the table's searchable columns, paginated, newest first) and `orders_view` (one record, with the table's columns and the form's fields). Narrow or describe it when the defaults are not right:
+That resource now gives the agent `orders_list` (free-text search over the table's searchable columns, paginated, newest first) and `orders_view` (one record, with the table's columns and the form's fields). The table's own filters become arguments too -- `status`, `customer`, a ternary toggle -- and are applied by Filament itself, so they narrow exactly as they do in the panel. Narrow or describe it when the defaults are not right:
 
 ```php
 public static function agentTools(AgentTools $tools): AgentTools

@@ -8,6 +8,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Murkrow\FilamentAi\Agent\Resources\AgentResource;
 use Murkrow\FilamentAi\Agent\Resources\InteractsWithAgent;
@@ -38,11 +40,19 @@ class TestBookResource extends Resource implements AgentResource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([
-            TextColumn::make('title')->searchable()->sortable(),
-            TextColumn::make('author')->searchable(),
-            TextColumn::make('created_at')->dateTime(),
-        ]);
+        return $table
+            ->columns([
+                TextColumn::make('title')->searchable()->sortable(),
+                TextColumn::make('author')->searchable(),
+                TextColumn::make('created_at')->dateTime(),
+            ])
+            ->filters([
+                SelectFilter::make('author')->options([
+                    'Anonimo' => 'Anonimo',
+                    'Ser Piero' => 'Ser Piero',
+                ]),
+                TernaryFilter::make('bad_ocr'),
+            ]);
     }
 
     public static function getPages(): array
