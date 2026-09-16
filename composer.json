@@ -11,7 +11,7 @@
         "filament",
         "vector-search"
     ],
-    "homepage": "https://github.com/Murkrow02/laravel-rag",
+    "homepage": "https://github.com/Murkrow02/filament-ai",
     "license": "MIT",
     "authors": [
         {
@@ -19,8 +19,8 @@
         }
     ],
     "support": {
-        "issues": "https://github.com/Murkrow02/laravel-rag/issues",
-        "source": "https://github.com/Murkrow02/laravel-rag"
+        "issues": "https://github.com/Murkrow02/filament-ai/issues",
+        "source": "https://github.com/Murkrow02/filament-ai"
     },
     "require": {
         "php": "^8.3",

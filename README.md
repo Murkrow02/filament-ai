@@ -1,6 +1,6 @@
 # Laravel RAG
 
-[![Tests](https://github.com/Murkrow02/laravel-rag/actions/workflows/tests.yml/badge.svg)](https://github.com/Murkrow02/laravel-rag/actions/workflows/tests.yml)
+[![Tests](https://github.com/Murkrow02/filament-ai/actions/workflows/tests.yml/badge.svg)](https://github.com/Murkrow02/filament-ai/actions/workflows/tests.yml)
 [![Latest Version](https://img.shields.io/packagist/v/murkrow/filament-ai.svg)](https://packagist.org/packages/murkrow/filament-ai)
 [![License](https://img.shields.io/packagist/l/murkrow/filament-ai.svg)](LICENSE.md)
 

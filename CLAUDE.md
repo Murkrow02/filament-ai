@@ -6,7 +6,7 @@ Handoff notes for an AI agent continuing this package. Read `README.md` first fo
 
 Mid-migration to `murkrow/filament-ai` on branch `feat/filament-ai`: Filament v5, laravel/ai drivers and the agent core (knowledge tools, resource read tools, resource write tools behind user approval) are in; the in-panel chat page is in (answers are not streamed yet); budgets and turn auditing, admin metrics, user widgets and MCP parity are not built. Green: 258 tests on SQLite + 14 pgvector.
 
-**Do not merge this branch to `main` as-is.** `release.yml` would tag it as a *patch* of `murkrow/laravel-rag`, and the renamed `name` in `composer.json` conflicts with that repo's Packagist entry. Settle the new repository/Packagist package and tag a major by hand first. Hosts pinned to `murkrow/laravel-rag ^1.0` (Filament 4) stay on 1.x.
+**Do not merge this branch to `main` as-is.** `release.yml` would tag it as a *patch* of `murkrow/filament-ai`, and the renamed `name` in `composer.json` conflicts with that repo's Packagist entry. Settle the new repository/Packagist package and tag a major by hand first. Hosts pinned to `murkrow/filament-ai ^1.0` (Filament 4) stay on 1.x.
 
 ```bash
 composer install
