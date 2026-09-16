@@ -99,6 +99,32 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
         ];
     }
 
+    /**
+     * The provider the panel answers with.
+     *
+     * laravel/ai asks the agent for `provider()` and `model()` before it falls
+     * back to its own `ai.default`, which is how the package's configuration
+     * reaches an agent at all: `LaravelAiLanguageModel` is the *retrieval*
+     * pipeline's model and is never consulted here. Without these two methods
+     * a host that configured `RAG_LLM_PROVIDER=anthropic` still had its panel
+     * agent call OpenAI with no key.
+     *
+     * Null on either leaves laravel/ai's own defaults in charge.
+     */
+    public function provider(): ?string
+    {
+        $provider = config('rag.agent.provider') ?? config('rag.llm.provider');
+
+        return blank($provider) ? null : (string) $provider;
+    }
+
+    public function model(): ?string
+    {
+        $model = config('rag.agent.model') ?? config('rag.llm.model');
+
+        return blank($model) ? null : (string) $model;
+    }
+
     protected function persona(): string
     {
         return 'You are the assistant built into this administration panel. You help the signed-in user find information and understand the data they manage, so they can ask instead of navigating.';

@@ -363,6 +363,13 @@ return [
         // give it a persona, a domain and extra tools.
         'assistant' => \Murkrow\FilamentAi\Agent\PanelAssistant::class,
 
+        // Which model answers in the panel. Both fall back to the generation
+        // model configured above, so a host that set RAG_LLM_* once does not
+        // have to say it twice; null then leaves laravel/ai's own defaults
+        // (config/ai.php) in charge.
+        'provider' => env('RAG_AGENT_PROVIDER'),
+        'model' => env('RAG_AGENT_MODEL'),
+
         // fn (?Authenticatable $user): bool -- who may use the assistant.
         // null lets every user who can reach the panel use it.
         'authorize' => null,
