@@ -9,6 +9,57 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+### Added
+
+- **One chat, two modes.** The standalone page and the panel's Assistant page
+  now render the same component -- plain HTML and CSS custom properties, no
+  Filament UI inside it -- with a **Knowledge** mode (the grounded pipeline,
+  citations, feedback) and an **Assistant** mode (the panel agent, its tools
+  and approvals). Embedded in a panel it takes its colours from Filament's
+  tokens and follows the panel's dark mode.
+- **Assistant answers stream**, with a `tool` event for every call and an
+  `approval` event for every pending change. Decisions are posted to
+  `POST rag/chat/a/{conversation}/decisions` and checked against what is
+  actually waiting.
+- **A "Keep trying" toggle** in the composer when iterative solving is on and
+  the user holds the new `solve` ability: the question starts a run and the
+  page follows it wave by wave.
+- **`SolveStrategy`.** An application describes how its problems are solved --
+  one `SolvePhase` per wave, each with its own instructions, attempts,
+  temperature, tools and step limit -- and may sharpen the criteria or bring
+  its own verifier. `DefaultStrategy` keeps the previous behaviour. The
+  strategy is stored on the run (`solve_runs.strategy`) and each attempt keeps
+  its phase (`solve_attempts.phase`); run the new migration.
+- `PanelAssistant::onlyTools()` and `withMaxSteps()`.
+- The `agent` and `solve` chat abilities.
+
+### Changed
+
+- **Breaking:** `AssistantChat` is no longer a Livewire chat. Its `send()`,
+  `decide()`, `newChat()` and `openChat()` actions and the `prompt`,
+  `decisions` and `error` properties are gone; the page renders the shared
+  component, and turns go over HTTP. A host that extended the page or its
+  view must follow.
+- `SolveAttemptJob` no longer builds the prompt; the strategy does.
+  `SolveOptions` takes a new, last, `strategy` argument.
+- The chat routes stay registered while either chat is on. `rag.chat.enabled`
+  now switches off the standalone page only, checked when the request arrives.
+- `ConversationTranscript::recent()` returns `updated_at` as an ISO 8601
+  timestamp instead of a relative phrase.
+
+### Fixed
+
+- Approving a change after the assistant had already looked something up in
+  the same turn failed with a provider error, although the change had been
+  made. laravel/ai 0.11.2 replays such a pause with a tool result Anthropic
+  rejects; the package now binds `ReplaySafeConversationStore`, which replays
+  the earlier step on its own. A host that bound its own store keeps it.
+- Links in answers are rendered (only `http(s)` and same-site paths).
+
+### Removed
+
+- `resources/views/partials/assistant-styles.blade.php`.
+
 ## [2.0.0] - 2026-09-16
 
 The knowledge base is still here; around it there is now an agent that works

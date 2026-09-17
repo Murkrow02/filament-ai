@@ -127,6 +127,23 @@ Source (class)   →  DocumentIngestor  →  Chunker  →  ChunkDiffer  →  Chu
 - **The assistant page is styled with plain CSS.** The panel stylesheet only contains the Tailwind classes Filament itself uses, so the page combines `x-filament::*` components with `partials/assistant-styles` instead of utility classes that would silently not exist in a host panel.
 - **The `job_batches` migration is dated `9999_12_31`.** It must run *after* every host migration so an application that publishes its own always wins and ours no-ops. Dated normally it created the table first and made the host's migration fail with a duplicate-table error — which is exactly what happened in this repo.
 
+### One chat, two doors
+
+- The standalone page and `AssistantChat` render the same Blade component (`resources/views/components/chat.blade.php`) and the same framework-free `resources/dist/rag-chat.{js,css}`. Do not add Livewire or Filament components to it: it must run on a page with no panel. `embedded` only swaps CSS custom properties and hides the panel-duplicated chrome.
+- Filament v4+/v5 colour tokens (`--gray-200`, `--primary-600`) are **complete colours in oklch**, not RGB triplets. `rgb(var(--gray-200))` is invalid CSS and paints nothing, silently. Use `var(--gray-200, #fallback)` and `color-mix()` for alpha.
+- Two modes, two stores: knowledge threads live in `rag_conversations`, agent threads in laravel/ai's tables (the only place an approval pause can resume from). A thread never changes mode; switching mode starts a new thread.
+- The routes in `routes/chat.php` are the transport for both surfaces, so they stay registered while either chat is on. `rag.chat.enabled` gates only the page (`ChatController::page()`), checked at request time because routes are bound at boot.
+- The payload carries only the context `AssistantTurn::resolvedContext()` accepted -- never the record key the browser sent.
+- `ReplaySafeConversationStore` works around laravel/ai 0.11.2 replaying a paused *multi-step* turn (a read, then a write awaiting approval) with a `tool_result` Anthropic rejects -- after the approved write already ran. `ReplaySafeConversationStoreTest` has a case that fails the day upstream fixes it; then delete the class and its binding.
+- `rag-chat.js`'s Markdown subset escapes first and only produces its own tags. Links are limited to `http(s)://` and same-site `/path` (not `//host`). The code-block placeholder uses control characters, which is why `grep` calls the file binary.
+
+### Solving strategies
+
+- The engine (waves, budgets, judging) is the package's; the method is a `SolveStrategy` in the application. `DefaultStrategy::promptFor()` is byte-for-byte the prompt runs had before the contract, and a test pins it.
+- The strategy class is stored on the run and re-resolved in every job (`Strategies::for()`), falling back to the default if the class is gone. Strategies must be stateless.
+- A phase's `tools` only ever narrows (`PanelAssistant::onlyTools()`); a phase's `phases()` count overrides the configured `max_waves` but an explicit `SolveOptions::maxWaves` wins over both. Use `Strategies::plannedAttempts()` for any "N attempts" shown to a user -- phases can differ in size.
+- The chat's "Keep trying" stream follows a queued run by polling `SolveRun`; it cannot be tested with a worker beside the request, so `SolveFromChatTest` swaps the `Solver` for one returning a finished run.
+
 ## Testing notes
 
 | Suite | Runs on |
@@ -164,6 +181,10 @@ Source (class)   →  DocumentIngestor  →  Chunker  →  ChunkDiffer  →  Chu
 | Every question errors, none reach the model | is the embedder reachable? `rag.embeddings` is called on *every query*, not just at ingestion |
 | The chat streams nothing under Octane | a worker's `flush()` may never reach the client; set `rag.answering.stream` to false for one plain XHR instead |
 | Every streamed question refuses | `PrismLanguageModel::stream()` and the shape of Prism's events; compare against the non-streaming path |
+| The panel chat is unstyled or colourless | `rag-chat.css` loaded? then `[data-rag-embedded]` tokens: `rgb(var(--x))` around an oklch token paints nothing |
+| Approving a change errors, but the change happened | a multi-step pause replayed wrongly; is `ConversationStore` resolving to `ReplaySafeConversationStore`? |
+| The "Keep trying" toggle is missing | `rag.agent.solving.enabled`, the `solve` and `agent` abilities, and laravel/ai's tables (`AssistantTurn::available()`) |
+| A solve from the chat never finishes | is a worker consuming the solving queue? the page gives up after `max_seconds` + 60s; the run carries on |
 
 ## Not built (deliberately)
 

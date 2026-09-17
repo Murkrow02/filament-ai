@@ -71,6 +71,15 @@ final class ChatAbilities
         // Copying or downloading a conversation.
         'export' => true,
 
+        // The agent mode: tools, writes and approvals, as opposed to answers
+        // built from the knowledge base. Still subject to rag.agent.authorize:
+        // this ability can only take the mode away, never grant it.
+        'agent' => true,
+
+        // The iterative search toggle in the composer. Subject to
+        // rag.agent.solving.enabled the same way.
+        'solve' => true,
+
         // Reading conversations that belong to somebody else.
         'all_conversations' => false,
     ];

@@ -169,6 +169,13 @@ it('keeps producing the prompt every run had before strategies existed', functio
         ->not->toContain('HOW TO GO ABOUT IT:');
 });
 
+it('plans the attempts phase by phase', function (): void {
+    // Two, then one: three attempts, whatever attempts_per_wave says.
+    expect(Strategies::plannedAttempts(new StagedStrategy, 2, 4))->toBe(3)
+        ->and((new SolveOptions(attemptsPerWave: 4, strategy: StagedStrategy::class))->maxAgentCalls())->toBe(3)
+        ->and((new SolveOptions(attemptsPerWave: 4, maxWaves: 3))->maxAgentCalls())->toBe(12);
+});
+
 it('falls back to the default method when the stored one is gone', function (): void {
     expect(Strategies::for('App\\Solving\\Deleted'))->toBeInstanceOf(DefaultStrategy::class)
         ->and(Strategies::for(null))->toBeInstanceOf(DefaultStrategy::class)

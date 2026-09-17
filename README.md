@@ -489,9 +489,47 @@ Off by default (`rag.agent.solving`), because it multiplies the cost of an answe
 
 The judge is a `Verifier`. The shipped one is a language model; an application that already knows what correct means -- a treasure hunt holding the answer, a checksum, a test suite -- binds its own and pays nothing per attempt.
 
+#### Describing how a problem is solved
+
+The engine is generic; the method does not have to be. A `SolveStrategy` decides what each wave tries, how many attempts it gets and with which tools, so an application that knows how its own problems are usually cracked can say so:
+
+```php
+use Murkrow\FilamentAi\Agent\Solving\DefaultStrategy;
+use Murkrow\FilamentAi\Data\SolvePhase;
+
+final class HuntStrategy extends DefaultStrategy
+{
+    public function phases(): ?int
+    {
+        return 3; // the method has three steps, so the run has three waves
+    }
+
+    public function phaseFor(int $wave): SolvePhase
+    {
+        return match ($wave) {
+            1 => new SolvePhase(
+                label: 'Anagrams',
+                instructions: 'Generate the permutations of the odd words with run_code and keep the place names.',
+                attempts: 3,
+                tools: ['run_code'],
+                maxSteps: 8,
+            ),
+            2 => new SolvePhase(
+                label: 'Archive',
+                instructions: 'Look the candidates up in the documents and keep the one they mention.',
+                tools: ['search_knowledge', 'fetch_document'],
+            ),
+            default => new SolvePhase(label: 'Synthesis', temperature: 0.2, attempts: 1),
+        };
+    }
+}
+```
+
+Name it in `rag.agent.solving.strategy`, or per run with `new SolveOptions(strategy: HuntStrategy::class)`. A phase only ever narrows the tools; one that names none gets all of them. The strategy may also sharpen the criteria (`criteriaFor()`) and bring its own verifier (`verifier()`), and it is stored on the run, so changing the config halfway through does not change the method of a run already going. `DefaultStrategy` is what every run did before this existed: one phase, repeated, every tool.
+
 ### In the panel
 
-The plugin adds an **Assistant** page to the panel: the user's conversations in a sidebar, answers rendered as Markdown, and every pending change shown as a card with Approve and Reject. A button next to global search opens it about the page on screen, so "this order" means the order being viewed. History lives in laravel/ai's conversation tables -- run its migrations -- and is only ever visible to the user who wrote it.
+The plugin adds an **Assistant** page to the panel. It is not a second chat: it renders the same component as the standalone page at `/rag/chat` (see [Chat page](#chat-page)), talking to the same endpoints, with its colours taken from the panel's theme. It opens in **Assistant** mode -- tools, writes, a card with Approve and Reject for every pending change -- and the **Knowledge** mode, with citations, is one click away. A button next to global search opens it about the page on screen, so "this order" means the order being viewed. Assistant threads live in laravel/ai's conversation tables -- run its migrations -- and are only ever visible to the user who wrote them.
 
 ```php
 // config/rag.php
@@ -502,7 +540,7 @@ The plugin adds an **Assistant** page to the panel: the user's conversations in 
 ],
 ```
 
-Answers arrive whole, not streamed, for now.
+Answers stream, tool calls included. When iterative solving is on, the composer shows a **Keep trying** toggle: the question then starts a run instead of a turn, and the page follows it wave by wave until it ends, with a link to every attempt in `Solve runs`. The run lives on the queue, so closing the page does not stop it.
 
 The agent itself works with no class of your own:
 
@@ -583,6 +621,14 @@ to check it, not a retriever to tune.
 
 Nothing to publish and nothing to build. Set `RAG_CHAT_PATH` to move it,
 `RAG_CHAT_ENABLED=false` to switch it off.
+
+The panel's Assistant page renders this same component, so the two are one
+chat with two doors. Switching the standalone page off removes the page only:
+the endpoints behind it stay up while the panel chat is on
+(`rag.agent.chat.enabled`), because that page talks to them too. The chat has
+two modes -- **Knowledge**, the grounded answers described below, and
+**Assistant**, the panel agent with its tools and approvals -- and a thread
+belongs to the mode it was started in.
 
 - **Conversations are saved per user** and listed in the sidebar, grouped by
   day, renameable, pinnable, deletable. Each turn is still an ordinary

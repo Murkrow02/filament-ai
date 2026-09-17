@@ -474,3 +474,155 @@ body.rag-body,
   .rag-source--flash { animation: none; }
   .rag-caret, .rag-thinking i { animation: none; }
 }
+
+/* ------------------------------------------------------- modes and steps */
+
+/* The two backends of the same page. Which one a thread belongs to is decided
+   when it starts, so this is a switch between conversations, not a filter. */
+.rag-modes {
+  display: inline-flex; gap: 2px; padding: 2px;
+  border: 1px solid var(--rag-border); border-radius: 999px;
+  background: var(--rag-bg-sunken);
+}
+.rag-mode {
+  border: 0; border-radius: 999px; background: transparent;
+  padding: 4px 12px; font: inherit; font-size: 13px; color: var(--rag-text-muted);
+  cursor: pointer;
+}
+.rag-mode[aria-pressed="true"] {
+  background: var(--rag-bg-raised); color: var(--rag-text);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+}
+
+/* What the user was looking at when they opened the chat. */
+.rag-context {
+  display: inline-flex; align-items: center; gap: 6px;
+  max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 3px 10px; border-radius: 999px;
+  background: var(--rag-bg-sunken); color: var(--rag-text-muted); font-size: 12px;
+}
+
+/* One chip per tool call, plus the wave counter of an iterative run: this is
+   where a worked answer stops looking like a guess. */
+.rag-steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+.rag-steps:empty { display: none; }
+.rag-step {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 999px;
+  background: var(--rag-bg-sunken); color: var(--rag-text-muted); font-size: 12px;
+}
+.rag-step svg { width: 14px; height: 14px; }
+.rag-step[data-status="running"], .rag-step[data-status="solving"] { color: var(--rag-fair); }
+.rag-step[data-status="denied"], .rag-step[data-status="failed"] { color: var(--rag-weak); }
+
+/* ------------------------------------------------------------- approvals */
+
+/* Nothing the agent proposes runs until one of these two buttons is pressed.
+   It is rendered as a block in the thread rather than as a modal on purpose:
+   a dialog that steals focus gets dismissed, and a dismissed dialog leaves a
+   change nobody decided on. */
+.rag-approvals {
+  margin-top: 12px; border: 1px solid var(--rag-border-strong); border-radius: var(--rag-radius);
+  background: var(--rag-bg-sunken);
+}
+.rag-approvals__head {
+  display: flex; align-items: center; gap: 6px;
+  margin: 0; padding: 10px 14px; border-bottom: 1px solid var(--rag-border);
+  font-weight: 550; font-size: 13px; color: var(--rag-fair);
+}
+.rag-approval { padding: 12px 14px; }
+.rag-approval + .rag-approval { border-top: 1px solid var(--rag-border); }
+.rag-approval__tool { margin: 0; font-family: var(--rag-mono); font-size: 13px; }
+.rag-approval__reason { margin: 4px 0 0; font-size: 13px; color: var(--rag-text-muted); }
+.rag-approval__args {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px;
+  margin: 8px 0 0; font-size: 12.5px;
+}
+.rag-approval__args dt { color: var(--rag-text-faint); font-family: var(--rag-mono); }
+.rag-approval__args dd { margin: 0; overflow-wrap: anywhere; }
+.rag-approval__actions { display: flex; gap: 8px; margin-top: 10px; }
+.rag-approval__actions [data-action="approve"] { border-color: var(--rag-good); color: var(--rag-good); }
+.rag-approval__actions [data-action="reject"] { border-color: var(--rag-weak); color: var(--rag-weak); }
+.rag-approval__decided { display: inline-block; margin-top: 10px; font-size: 12px; color: var(--rag-text-muted); }
+
+/* ------------------------------------------------------- iterative toggle */
+
+.rag-toggle {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  margin-top: 8px; font-size: 12.5px; color: var(--rag-text-muted); cursor: pointer;
+}
+.rag-toggle__label { font-weight: 550; color: var(--rag-text); }
+.rag-toggle__hint { flex: 1; min-width: 0; }
+
+/* ------------------------------------------------------------- embedded */
+
+/* Inside a Filament page the chat borrows the panel's palette instead of
+   bringing its own: the same markup, painted in whatever theme the panel is
+   in. The variables are the entire interface between the two, which is why
+   this file never hardcodes a colour outside :root.
+
+   Filament's tokens are complete colours (oklch since v4), not channel
+   triplets: `rgb(var(--gray-200))` is invalid CSS and silently paints
+   nothing, which is exactly what the first version of this block did. */
+[data-rag-embedded] {
+  --rag-bg: var(--white, #fff);
+  --rag-bg-sunken: var(--gray-50, #f9fafb);
+  --rag-bg-raised: var(--white, #fff);
+  --rag-bg-hover: color-mix(in oklab, var(--gray-950, #030712) 4%, transparent);
+  --rag-bg-active: color-mix(in oklab, var(--gray-950, #030712) 8%, transparent);
+  --rag-border: var(--gray-200, #e5e7eb);
+  --rag-border-strong: var(--gray-300, #d1d5db);
+  --rag-text: var(--gray-950, #030712);
+  --rag-text-muted: var(--gray-500, #6b7280);
+  --rag-text-faint: var(--gray-400, #9ca3af);
+  --rag-accent: var(--primary-600, #4f46e5);
+  --rag-good: var(--success-600, #16a34a);
+  --rag-fair: var(--warning-600, #d97706);
+  --rag-weak: var(--danger-600, #dc2626);
+  --rag-radius: 0.5rem;
+
+  /* The page scrolls the panel, not the document: a fixed 100dvh island
+     inside a Filament page would fight the panel's own sticky header. */
+  height: min(72vh, 46rem);
+  border: 1px solid var(--rag-border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 2px color-mix(in oklab, var(--gray-950, #030712) 5%, transparent);
+}
+
+.dark [data-rag-embedded] {
+  --rag-bg: var(--gray-900, #111827);
+  --rag-bg-sunken: var(--gray-950, #030712);
+  --rag-bg-raised: var(--gray-800, #1f2937);
+  --rag-bg-hover: color-mix(in oklab, var(--white, #fff) 6%, transparent);
+  --rag-bg-active: color-mix(in oklab, var(--white, #fff) 10%, transparent);
+  --rag-border: color-mix(in oklab, var(--white, #fff) 10%, transparent);
+  --rag-border-strong: color-mix(in oklab, var(--white, #fff) 18%, transparent);
+  --rag-text: var(--white, #fff);
+  --rag-text-muted: var(--gray-400, #9ca3af);
+  --rag-text-faint: var(--gray-500, #6b7280);
+  --rag-accent: var(--primary-400, #818cf8);
+  --rag-good: var(--success-400, #4ade80);
+  --rag-fair: var(--warning-400, #fbbf24);
+  --rag-weak: var(--danger-400, #f87171);
+}
+
+/* The panel already has a theme switch and a sidebar of its own. */
+[data-rag-embedded] #rag-theme,
+[data-rag-embedded] .rag-brand { display: none; }
+
+[data-rag-embedded] .rag-topbar { border-radius: 0; }
+[data-rag-embedded] .rag-sidebar { border-right: 1px solid var(--rag-border); }
+
+@media (max-width: 900px) {
+  [data-rag-embedded] { height: min(80vh, 40rem); }
+}
+
+a.rag-step { text-decoration: none; }
+a.rag-step:hover { color: var(--rag-text); }
+
+.rag-toggle input { accent-color: var(--rag-accent); }
+
+.rag-answer a { color: var(--rag-accent); text-decoration: underline; text-underline-offset: 2px; }
+.rag-thread__mode { display: inline-flex; color: var(--rag-text-faint); margin-right: 4px; }
+.rag-thread__mode svg { width: 13px; height: 13px; }

@@ -29,6 +29,22 @@ final class Strategies
     }
 
     /**
+     * How many attempts a run can make in total, phase by phase: a strategy
+     * whose steps run two, two and one attempts plans five, not waves times
+     * the default.
+     */
+    public static function plannedAttempts(SolveStrategy $strategy, int $waves, int $defaultAttempts): int
+    {
+        $total = 0;
+
+        for ($wave = 1; $wave <= $waves; $wave++) {
+            $total += $strategy->phaseFor($wave)->attempts(max(1, $defaultAttempts));
+        }
+
+        return $total;
+    }
+
+    /**
      * @return class-string<SolveStrategy>
      */
     public static function configured(): string

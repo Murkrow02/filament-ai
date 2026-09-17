@@ -28,12 +28,33 @@ it('serves the page to a logged-in user', function (): void {
         ->assertSee('rag-chat.js', escape: false);
 });
 
-it('reports the chat as missing once it is switched off', function (): void {
-    // The routes were bound at boot and stay bound; the guard middleware is
-    // what turns the page off for an application that flips the flag later,
-    // and it reports 404 rather than 403 -- a disabled feature is not a
-    // permission problem.
+it('reports the page as missing once it is switched off', function (): void {
+    // The routes were bound at boot and stay bound; the checks at request
+    // time are what turn the page off for an application that flips the flag
+    // later, and they report 404 rather than 403 -- a disabled feature is not
+    // a permission problem.
     config()->set('rag.chat.enabled', false);
+
+    $this->actingAs($this->user());
+
+    $this->get('/rag/chat')->assertNotFound();
+});
+
+it('keeps the endpoints up for the panel chat when only the page is off', function (): void {
+    // The panel page renders the same component and talks to these same
+    // endpoints. Switching the standalone page off must not take the
+    // assistant in the panel down with it.
+    config()->set('rag.chat.enabled', false);
+    config()->set('rag.agent.chat.enabled', true);
+
+    $this->actingAs($this->user());
+
+    $this->postJson('/rag/chat/ask', ['question' => 'Chi convoco il consiglio?'])->assertOk();
+});
+
+it('reports every route as missing when both chats are off', function (): void {
+    config()->set('rag.chat.enabled', false);
+    config()->set('rag.agent.chat.enabled', false);
 
     $this->actingAs($this->user());
 

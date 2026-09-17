@@ -75,6 +75,19 @@ class AskRequest extends FormRequest
             'top_k' => ['sometimes', 'integer', 'min:1', 'max:50'],
             'min_score' => ['sometimes', 'numeric', 'min:0', 'max:1'],
             'retrieval_only' => ['sometimes', 'boolean'],
+
+            // Which half of the page asked: the knowledge pipeline, or the
+            // agent with its tools and approvals.
+            'mode' => ['sometimes', 'nullable', Rule::in(['knowledge', 'agent'])],
+
+            // Agent mode only: keep trying in waves instead of answering once.
+            'solve' => ['sometimes', 'boolean'],
+
+            // The page the user is on, so "this order" resolves. Checked
+            // against the resource's own policies before it is used, never
+            // trusted as sent.
+            'resource' => ['sometimes', 'nullable', 'string', 'max:191'],
+            'record' => ['sometimes', 'nullable', 'string', 'max:191'],
         ];
     }
 
@@ -97,6 +110,16 @@ class AskRequest extends FormRequest
             $drop = [...$drop, 'top_k', 'min_score', 'retrieval_only'];
         }
 
+        if (! $this->allows('agent')) {
+            // Without the agent there is no agent mode and nothing to solve
+            // with: both fall back to the knowledge pipeline.
+            $drop = [...$drop, 'mode', 'solve'];
+        }
+
+        if (! $this->allows('solve')) {
+            $drop[] = 'solve';
+        }
+
         if ($drop !== []) {
             $this->replace($this->except($drop));
         }
@@ -116,7 +139,46 @@ class AskRequest extends FormRequest
 
     public function retrievalOnly(): bool
     {
-        return (bool) $this->validated('retrieval_only', false);
+        // Retrieval with no model call is a knowledge-mode idea: the agent has
+        // no passages to return.
+        return ! $this->isAgentMode() && (bool) $this->validated('retrieval_only', false);
+    }
+
+    public function isAgentMode(): bool
+    {
+        return $this->validated('mode') === 'agent';
+    }
+
+    /**
+     * Whether this question should be answered by waves of attempts instead of
+     * one turn. Only ever true when solving is switched on for real.
+     */
+    public function solves(): bool
+    {
+        return $this->isAgentMode()
+            && (bool) $this->validated('solve', false)
+            && (bool) config('rag.agent.solving.enabled', false);
+    }
+
+    public function conversationId(): ?string
+    {
+        $conversation = $this->validated('conversation');
+
+        return is_string($conversation) && $conversation !== '' ? $conversation : null;
+    }
+
+    public function contextResource(): ?string
+    {
+        $resource = $this->validated('resource');
+
+        return is_string($resource) && $resource !== '' ? $resource : null;
+    }
+
+    public function contextRecord(): ?string
+    {
+        $record = $this->validated('record');
+
+        return is_string($record) && $record !== '' ? $record : null;
     }
 
     /**

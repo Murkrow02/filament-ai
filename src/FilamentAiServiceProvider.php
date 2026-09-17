@@ -52,6 +52,8 @@ class FilamentAiServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->patchConversationReplay();
+
         $this->mergeRagConfig();
 
         $this->registerManagers();
@@ -119,7 +121,31 @@ class FilamentAiServiceProvider extends ServiceProvider
     }
 
     /**
-     * The standalone chat page: gate abilities plus its own routes.
+     * Swap laravel/ai's database conversation store for one that replays a
+     * paused multi-step turn correctly. See ReplaySafeConversationStore.
+     *
+     * Only the stock store is replaced: a host that bound its own keeps it.
+     */
+    private function patchConversationReplay(): void
+    {
+        if (! interface_exists(\Laravel\Ai\Contracts\ConversationStore::class)) {
+            return;
+        }
+
+        $this->app->extend(\Laravel\Ai\Contracts\ConversationStore::class, static function (object $store): object {
+            return $store::class === \Laravel\Ai\Storage\DatabaseConversationStore::class
+                ? new \Murkrow\FilamentAi\Agent\Chat\ReplaySafeConversationStore(config('ai.conversations.connection'))
+                : $store;
+        });
+    }
+
+    /**
+     * The chat: gate abilities plus the routes it talks to.
+     *
+     * These routes are the transport for both surfaces -- the standalone page
+     * and the panel page, which render the same component -- so they are
+     * registered whenever either is switched on. `rag.chat.enabled` governs
+     * only the standalone page itself, inside routes/chat.php.
      *
      * Registered here rather than in register() because the container outlives
      * the request under Octane, and because a Gate ability defined per request
@@ -128,7 +154,10 @@ class FilamentAiServiceProvider extends ServiceProvider
      */
     private function registerChat(): void
     {
-        if (! config('rag.enabled', true) || ! config('rag.chat.enabled', true)) {
+        $standalone = (bool) config('rag.chat.enabled', true);
+        $inPanel = (bool) config('rag.agent.enabled', true) && (bool) config('rag.agent.chat.enabled', true);
+
+        if (! config('rag.enabled', true) || (! $standalone && ! $inPanel)) {
             return;
         }
 

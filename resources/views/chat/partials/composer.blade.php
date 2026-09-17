@@ -14,6 +14,19 @@
             </button>
         </div>
 
+        @if ($payload['solving'])
+            {{-- Only rendered where iterative solving is switched on and this
+                 user may use it; rag-chat.js shows it in agent mode only,
+                 because waves of attempts are the agent's, not the pipeline's. --}}
+            <label class="rag-toggle" id="rag-solve-row" hidden>
+                <input type="checkbox" id="rag-solve">
+                <span class="rag-toggle__label">{{ __('rag::rag.chat.js.iterative') }}</span>
+                <span class="rag-toggle__hint">
+                    {{ __('rag::rag.chat.js.iterativeHint', ['calls' => $payload['solving']['calls']]) }}
+                </span>
+            </label>
+        @endif
+
         <p class="rag-hint">{{ __('rag::rag.chat.hint') }}</p>
     </div>
 </div>

@@ -110,12 +110,34 @@ class ChatController
 
     private function page(Request $request, ?Conversation $conversation): View
     {
-        $data = $this->payload->build($request->user(), $conversation);
+        // The page, unlike the endpoints behind it, belongs to the standalone
+        // chat alone: switching that off leaves the panel's chat working.
+        abort_unless(config('rag.chat.enabled', true), 404);
+
+        $data = $this->payload->build($request->user(), $conversation, $this->options($request));
 
         return view('rag::chat.index', [
             'payload' => $data,
             'abilities' => $data['abilities'],
             'layout' => (string) config('rag.chat.layout', 'rag::chat.layout'),
         ]);
+    }
+
+    /**
+     * What the query string asks for: which mode, which agent thread, and
+     * which record the user came from. All of it is checked again inside the
+     * payload -- an ability that says no, a thread that is not theirs or a
+     * record they may not view simply produces nothing.
+     *
+     * @return array{mode: ?string, agent: ?string, resource: ?string, record: ?string}
+     */
+    private function options(Request $request): array
+    {
+        return [
+            'mode' => $request->string('mode')->toString() ?: null,
+            'agent' => $request->string('agent')->toString() ?: null,
+            'resource' => $request->string('resource')->toString() ?: null,
+            'record' => $request->string('record')->toString() ?: null,
+        ];
     }
 }

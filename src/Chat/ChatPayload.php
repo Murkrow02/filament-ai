@@ -6,6 +6,8 @@ namespace Murkrow\FilamentAi\Chat;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
+use Murkrow\FilamentAi\Agent\Chat\AssistantTurn;
+use Murkrow\FilamentAi\Data\SolveOptions;
 use Murkrow\FilamentAi\Models\Conversation;
 use Murkrow\FilamentAi\Models\QueryCitation;
 use Murkrow\FilamentAi\Models\QueryLog;
@@ -23,14 +25,25 @@ final class ChatPayload
 {
     public function __construct(
         private readonly SourceRegistry $sources,
+        private readonly AssistantTurn $turn,
     ) {}
 
     /**
+     * @param  array{mode?: string, agent?: ?string, resource?: ?string, record?: ?string}  $options
      * @return array<string, mixed>
      */
-    public function build(?Authenticatable $user, ?Conversation $current = null): array
+    public function build(?Authenticatable $user, ?Conversation $current = null, array $options = []): array
     {
         $allowed = ChatAbilities::allowed($user);
+
+        // The agent is a mode of this page, not a second page -- but only
+        // where it is actually usable: the ability, rag.agent.authorize and
+        // laravel/ai's tables all have to agree.
+        $agent = $allowed['agent'] && $this->turn->available();
+        $agentConversation = $agent ? $this->turn->ownedConversation($options['agent'] ?? null, $user) : null;
+        $mode = $agent && (($options['mode'] ?? null) === 'agent' || $agentConversation !== null)
+            ? 'agent'
+            : 'knowledge';
 
         // Being allowed to pick a model means nothing when none are on offer.
         // Left as-is, the page still sent the configured model with every
@@ -43,6 +56,10 @@ final class ChatPayload
 
         return [
             'abilities' => $allowed,
+            'modes' => ['knowledge' => true, 'agent' => $agent],
+            'mode' => $mode,
+            'context' => $this->context($agent ? ($options['resource'] ?? null) : null, $options['record'] ?? null),
+            'solving' => $this->solving($allowed, $agent),
             'persist' => $this->persists($allowed),
             'stream' => (bool) config('rag.answering.stream', true),
             'endpoints' => $this->endpoints(),
@@ -60,10 +77,94 @@ final class ChatPayload
                 'min_score' => (float) config('rag.retrieval.min_score', 0.25),
             ],
             'suggestions' => $this->suggestions(),
-            'conversations' => $allowed['history'] ? $this->conversations($user) : [],
-            'current' => $current === null ? null : $this->conversation($current, $allowed),
+            'conversations' => $allowed['history']
+                ? [...$this->conversations($user), ...($agent ? $this->agentConversations($user) : [])]
+                : [],
+            'current' => match (true) {
+                $agentConversation !== null => $this->agentConversation($agentConversation),
+                $current !== null => $this->conversation($current, $allowed),
+                default => null,
+            },
         ];
     }
+
+    /**
+     * What the user is looking at, so "this order" resolves. The label is
+     * resolved server-side against the resource's own policies: an id the
+     * browser made up produces no label and no context.
+     *
+     * @return array{resource: ?string, record: ?string, label: ?string}
+     */
+    private function context(?string $resource, ?string $record): array
+    {
+        return $this->turn->resolvedContext($resource, $record);
+    }
+
+    /**
+     * The iterative search, when it is switched on and this user may use it.
+     * Null keeps the toggle off the page entirely.
+     *
+     * @param  array<string, bool>  $allowed
+     * @return array<string, mixed>|null
+     */
+    private function solving(array $allowed, bool $agent): ?array
+    {
+        if (! $agent || ! $allowed['solve'] || ! config('rag.agent.solving.enabled', false)) {
+            return null;
+        }
+
+        $options = new SolveOptions;
+
+        return [
+            'attempts_per_wave' => $options->attemptsPerWave(),
+            'max_waves' => $options->maxWaves(),
+            // What the user is about to spend: one agent call per attempt,
+            // plus one judgement each.
+            'calls' => $options->maxAgentCalls(),
+        ];
+    }
+
+    /**
+     * The agent's own threads, in the shape the sidebar draws.
+     *
+     * They are a separate store -- laravel/ai's, the only place an approval
+     * pause can be resumed from -- so they carry their mode with them and the
+     * page knows not to offer renaming or cost for them.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function agentConversations(?Authenticatable $user): array
+    {
+        return array_map(static fn (array $thread): array => [
+            'uuid' => $thread['id'],
+            'title' => $thread['title'] !== '' ? $thread['title'] : (string) __('rag::rag.chat.untitled'),
+            'mode' => 'agent',
+            'pinned' => false,
+            'turns' => 0,
+            'cost_usd' => null,
+            'last_message_at' => $thread['updated_at'],
+        ], $this->turn->threads($user));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function agentConversation(string $conversationId): array
+    {
+        return [
+            'uuid' => $conversationId,
+            'mode' => 'agent',
+            'title' => (string) __('rag::rag.assistant.title'),
+            'pinned' => false,
+            'turns' => 0,
+            'cost_usd' => null,
+            'last_message_at' => null,
+            'settings' => [],
+            'messages' => $this->turn->messages($conversationId),
+            'pending' => $this->turn->approvalCards($conversationId),
+        ];
+    }
+
 
     /**
      * History needs somewhere to live. Without the query log there is no turn
@@ -86,16 +187,31 @@ final class ChatPayload
         // sent these requests cross-origin, the session cookie was not attached
         // and `auth` answered the question with a 302 to the login page.
         return [
-            'index' => route('rag.chat.index', [], false),
+            // The standalone page can be switched off while the panel chat
+            // keeps using the rest of these; the page knows to stay put
+            // instead of navigating when there is nowhere to navigate to.
+            'index' => $this->routeOrNull('rag.chat.index'),
             'store' => route('rag.chat.store', [], false),
             // ":uuid" is substituted in the browser; route() would percent-encode a placeholder.
-            'show' => route('rag.chat.show', ['conversation' => '__UUID__'], false),
+            'show' => $this->routeOrNull('rag.chat.show', ['conversation' => '__UUID__']),
             'messages' => route('rag.chat.messages', ['conversation' => '__UUID__'], false),
             'ask' => route('rag.chat.ask', ['conversation' => '__UUID__'], false),
             'update' => route('rag.chat.update', ['conversation' => '__UUID__'], false),
             'destroy' => route('rag.chat.destroy', ['conversation' => '__UUID__'], false),
             'feedback' => route('rag.chat.feedback', ['query' => '__UUID__'], false),
+            'agentMessages' => route('rag.chat.agent.messages', ['conversation' => '__UUID__'], false),
+            'agentDecide' => route('rag.chat.agent.decide', ['conversation' => '__UUID__'], false),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $parameters
+     */
+    private function routeOrNull(string $name, array $parameters = []): ?string
+    {
+        return \Illuminate\Support\Facades\Route::has($name)
+            ? route($name, $parameters, false)
+            : null;
     }
 
     /**
@@ -161,6 +277,7 @@ final class ChatPayload
     {
         return [
             'uuid' => $conversation->uuid,
+            'mode' => 'knowledge',
             'title' => $conversation->title ?: (string) __('rag::rag.chat.untitled'),
             'pinned' => (bool) $conversation->pinned,
             'turns' => (int) $conversation->turns,

@@ -54,7 +54,9 @@ final class ConversationTranscript
             ->map(static fn (Conversation $conversation): array => [
                 'id' => (string) $conversation->id,
                 'title' => (string) $conversation->title,
-                'updated_at' => $conversation->updated_at?->diffForHumans(),
+                // Sent as a timestamp, not as "3 minutes ago": the page sorts
+                // these against the knowledge threads and formats them itself.
+                'updated_at' => $conversation->updated_at?->toIso8601String(),
             ])
             ->all();
     }
@@ -126,7 +128,7 @@ final class ConversationTranscript
      * latest assistant turn counts: an older pause the user walked away from
      * must not block the conversation forever.
      *
-     * @return array<string, array{tool: string, reason: ?string}>
+     * @return array<string, array{tool: string, reason: ?string, arguments: array<string, mixed>}>
      */
     public function pendingApprovals(string $conversationId): array
     {
@@ -137,10 +139,12 @@ final class ConversationTranscript
         }
 
         $names = [];
+        $arguments = [];
 
         foreach ((array) $latest->tool_calls as $call) {
             if (is_array($call) && isset($call['id'])) {
                 $names[(string) $call['id']] = (string) ($call['name'] ?? '');
+                $arguments[(string) $call['id']] = is_array($call['arguments'] ?? null) ? $call['arguments'] : [];
             }
         }
 
@@ -150,6 +154,7 @@ final class ConversationTranscript
             $approvals[(string) $id] = [
                 'tool' => $names[(string) $id] ?? '',
                 'reason' => is_string($reason) && $reason !== '' ? $reason : null,
+                'arguments' => $arguments[(string) $id] ?? [],
             ];
         }
 

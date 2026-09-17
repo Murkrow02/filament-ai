@@ -5,10 +5,7 @@ declare(strict_types=1);
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Laravel\Ai\Ai;
-use Laravel\Ai\Gateway\FakeTextGateway;
 use Laravel\Ai\Models\Conversation;
-use Laravel\Ai\Responses\Data\ToolCall;
 use Livewire\Livewire;
 use Murkrow\FilamentAi\Agent\Chat\PageContext;
 use Murkrow\FilamentAi\Filament\Pages\AssistantChat;
@@ -16,18 +13,12 @@ use Murkrow\FilamentAi\Tests\Fixtures\Filament\TestBookResource;
 use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 /*
- * The chat page end to end. Like AgentApprovalFlowTest, responses are scripted
- * on the text provider rather than through PanelAssistant::fake(), which would
- * skip approval resumption.
+ * The panel page is a shell around the package's own chat component: the same
+ * markup the standalone page renders, talking to the same endpoints. So what
+ * is asserted here is the shell -- access, navigation, the page context and
+ * the bootstrap payload -- while the turn itself is exercised over HTTP in
+ * tests/Web/AgentChatTest.php, which is where it now happens.
  */
-
-/**
- * @param  list<mixed>  $responses
- */
-function scriptChat(array $responses): void
-{
-    Ai::textProvider()->useTextGateway(new FakeTextGateway($responses));
-}
 
 beforeEach(function (): void {
     $this->artisan('migrate', [
@@ -43,88 +34,39 @@ it('is registered on the panel', function (): void {
     expect(Filament::getPanel('testing')->getPages())->toContain(AssistantChat::class);
 });
 
-it('answers a question and keeps the conversation', function (): void {
-    scriptChat(['There are no books yet.']);
+it('renders the chat component, bootstrapped in agent mode', function (): void {
+    $html = Livewire::test(AssistantChat::class)->assertOk()->html();
 
-    $component = Livewire::test(AssistantChat::class)
-        ->set('prompt', 'How many books are there?')
-        ->call('send')
-        ->assertSet('error', null)
-        ->assertSet('prompt', '')
-        ->assertSee('How many books are there?')
-        ->assertSee('There are no books yet.');
+    expect($html)->toContain('id="rag-chat"')
+        ->toContain('data-rag-embedded')
+        ->toContain('rag-chat-payload')
+        // Assets come from the package's own route, so a host with no build
+        // step still gets a working page.
+        ->toContain('rag-chat.css')
+        ->toContain('rag-chat.js');
 
-    expect($component->get('conversationId'))->not->toBeNull()
-        ->and(Conversation::query()->count())->toBe(1);
+    $payload = payloadFrom($html);
+
+    expect($payload['mode'])->toBe('agent')
+        ->and($payload['modes']['agent'])->toBeTrue()
+        ->and($payload['embedded'])->toBeTrue()
+        ->and($payload['endpoints']['agentDecide'])->toContain('/decisions');
 });
 
-it('asks for approval before a write and applies it once approved', function (): void {
-    scriptChat([
-        new ToolCall('call_1', 'test_books_create', ['title' => 'Statuti del comune']),
-        'I added the book.',
-    ]);
+it('offers the knowledge mode alongside the agent', function (): void {
+    $html = Livewire::test(AssistantChat::class)->html();
 
-    $component = Livewire::test(AssistantChat::class)
-        ->set('prompt', 'Add a book called Statuti del comune')
-        ->call('send')
-        ->assertSet('error', null)
-        ->assertSee('Approve this change?')
-        ->assertSee('Create test book -- Title: Statuti del comune');
-
-    expect(TestBook::query()->count())->toBe(0);
-
-    $component->call('decide', 'call_1', true)
-        ->assertSet('error', null)
-        ->assertSee('I added the book.')
-        ->assertDontSee('Approve this change?');
-
-    expect(TestBook::query()->sole()->title)->toBe('Statuti del comune');
+    expect($html)->toContain('data-mode="knowledge"')
+        ->toContain('data-mode="agent"');
 });
 
-it('renders approval buttons the browser can actually run', function (): void {
-    scriptChat([new ToolCall('call_1', 'test_books_create', ['title' => 'Statuti del comune'])]);
+it('drops the agent mode when the assistant is switched off', function (): void {
+    config()->set('rag.chat.abilities.agent', false);
 
-    $html = Livewire::test(AssistantChat::class)
-        ->set('prompt', 'Add a book called Statuti del comune')
-        ->call('send')
-        ->html();
+    $payload = payloadFrom(Livewire::test(AssistantChat::class)->html());
 
-    // Blade compiles no directives inside a component tag's attributes: an
-    // @js() there reached the browser verbatim and Livewire refused the
-    // expression with "illegal character U+0040".
-    expect($html)->toContain("decide('call_1', true)")
-        ->toContain("decide('call_1', false)")
-        ->not->toContain('@js(');
-});
-
-it('discards a write the user rejects', function (): void {
-    scriptChat([
-        new ToolCall('call_1', 'test_books_create', ['title' => 'Statuti del comune']),
-        'Understood, I will not add it.',
-    ]);
-
-    Livewire::test(AssistantChat::class)
-        ->set('prompt', 'Add a book called Statuti del comune')
-        ->call('send')
-        ->call('decide', 'call_1', false)
-        ->assertSet('error', null)
-        ->assertSee('Understood, I will not add it.');
-
-    expect(TestBook::query()->count())->toBe(0);
-});
-
-it('ignores a new message while a change awaits a decision', function (): void {
-    scriptChat([
-        new ToolCall('call_1', 'test_books_create', ['title' => 'Statuti del comune']),
-    ]);
-
-    Livewire::test(AssistantChat::class)
-        ->set('prompt', 'Add a book called Statuti del comune')
-        ->call('send')
-        ->set('prompt', 'Never mind')
-        ->call('send')
-        ->assertDontSee('Never mind')
-        ->assertSee('Approve this change?');
+    expect($payload['modes']['agent'])->toBeFalse()
+        ->and($payload['mode'])->toBe('knowledge');
 });
 
 it('will not open a conversation that belongs to someone else', function (): void {
@@ -135,29 +77,38 @@ it('will not open a conversation that belongs to someone else', function (): voi
         'title' => 'Someone else',
     ]);
 
-    Livewire::withQueryParams(['conversation' => $foreign->id])
+    $html = Livewire::withQueryParams(['conversation' => $foreign->id])
         ->test(AssistantChat::class)
-        ->assertSet('conversationId', null)
-        ->call('openChat', $foreign->id)
-        ->assertSet('conversationId', null)
-        ->assertDontSee('Someone else');
+        ->assertOk()
+        ->assertDontSee('Someone else')
+        ->html();
+
+    expect(payloadFrom($html)['current'])->toBeNull();
 });
 
 it('shows the record the chat was opened about', function (): void {
     $book = TestBook::create(['title' => 'Cronaca cittadina']);
 
-    Livewire::withQueryParams(['resource' => 'test-books', 'record' => (string) $book->id])
+    $html = Livewire::withQueryParams(['resource' => 'test-books', 'record' => (string) $book->id])
         ->test(AssistantChat::class)
-        // Two assertions rather than one: Blade encodes the quotes around the
-        // title, which a single literal needle would have to mirror.
         ->assertSee('About test book')
-        ->assertSee('Cronaca cittadina');
+        ->assertSee('Cronaca cittadina')
+        ->html();
+
+    $context = payloadFrom($html)['context'];
+
+    expect($context['resource'])->toBe('test-books')
+        ->and($context['record'])->toBe((string) $book->id);
 });
 
 it('ignores a record key the user may not see', function (): void {
-    Livewire::withQueryParams(['resource' => 'test-books', 'record' => '999'])
+    $html = Livewire::withQueryParams(['resource' => 'test-books', 'record' => '999'])
         ->test(AssistantChat::class)
-        ->assertDontSee('About test book');
+        ->assertDontSee('About test book')
+        ->html();
+
+    // No label, no context: the id the browser sent is not passed on.
+    expect(payloadFrom($html)['context']['record'])->toBeNull();
 });
 
 it('builds the topbar link from the page context', function (): void {
@@ -179,3 +130,22 @@ it('explains itself instead of failing when laravel/ai tables are missing', func
         ->assertOk()
         ->assertSee('Publish and run laravel/ai');
 });
+
+/**
+ * The bootstrap payload, read back out of the rendered page.
+ *
+ * Asserting on the rendered HTML rather than on the component's state is
+ * deliberate: every server-side assertion passed once while the approval
+ * buttons were dead in the browser, and that is not a mistake worth making
+ * twice.
+ *
+ * @return array<string, mixed>
+ */
+function payloadFrom(string $html): array
+{
+    expect($html)->toContain('id="rag-chat-payload"');
+
+    preg_match('/<script type="application\/json" id="rag-chat-payload">(.*?)<\/script>/s', $html, $matches);
+
+    return json_decode(html_entity_decode($matches[1], ENT_QUOTES), true);
+}

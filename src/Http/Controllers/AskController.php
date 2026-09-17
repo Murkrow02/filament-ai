@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 use Murkrow\FilamentAi\Data\ScoredChunk;
 use Murkrow\FilamentAi\Enums\QueryChannel;
 use Murkrow\FilamentAi\Http\Concerns\InteractsWithConversations;
+use Murkrow\FilamentAi\Http\Concerns\StreamsServerSentEvents;
 use Murkrow\FilamentAi\Http\Requests\AskRequest;
 use Murkrow\FilamentAi\Models\Conversation;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -30,9 +31,17 @@ use Throwable;
 class AskController
 {
     use InteractsWithConversations;
+    use StreamsServerSentEvents;
 
     public function __invoke(AskRequest $request, Answerer $answerer, Retriever $retriever): StreamedResponse|JsonResponse
     {
+        // The agent is a different backend behind the same page: tools,
+        // writes and approvals rather than passages. Its conversations live in
+        // laravel/ai's store, so nothing below applies to it.
+        if ($request->isAgentMode()) {
+            return app(AssistantController::class)->ask($request);
+        }
+
         // Checked before the thread is resolved: retrieval-only produces no
         // turn, and starting a conversation for it left an untitled empty row
         // in everybody's sidebar.
@@ -102,14 +111,7 @@ class AskController
 
                 $this->send('error', ['message' => $exception->getMessage()]);
             }
-        }, 200, [
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache, no-store, must-revalidate',
-            'Connection' => 'keep-alive',
-            // nginx buffers proxied responses by default, which turns a stream
-            // into one delivery at the end.
-            'X-Accel-Buffering' => 'no',
-        ]);
+        }, 200, $this->eventStreamHeaders());
     }
 
     /**
@@ -221,21 +223,6 @@ class AskController
             'url' => $citation->chunk->url,
             'used' => $citation->used,
         ])->all();
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    private function send(string $event, array $data): void
-    {
-        echo 'event: '.$event."\n";
-        echo 'data: '.json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n\n";
-
-        if (ob_get_level() > 0) {
-            ob_flush();
-        }
-
-        flush();
     }
 
     private function resolveConversation(AskRequest $request): ?Conversation

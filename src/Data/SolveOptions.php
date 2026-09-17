@@ -30,8 +30,9 @@ final readonly class SolveOptions
         public ?int $maxSeconds = null,
         public array $context = [],
         public ?string $assistant = null,
-        public ?string $strategy = null,
         public ?float $temperatureSpread = null,
+        // Last, so a caller passing the others positionally is unaffected.
+        public ?string $strategy = null,
     ) {}
 
     public function attemptsPerWave(): int
@@ -95,7 +96,11 @@ final readonly class SolveOptions
      */
     public function maxAgentCalls(): int
     {
-        return $this->attemptsPerWave() * $this->maxWaves();
+        return \Murkrow\FilamentAi\Agent\Solving\Strategies::plannedAttempts(
+            \Murkrow\FilamentAi\Agent\Solving\Strategies::for($this->strategy()),
+            $this->maxWaves(),
+            $this->attemptsPerWave(),
+        );
     }
 
     private function positive(mixed $value): ?int
