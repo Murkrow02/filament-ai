@@ -12,11 +12,11 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Murkrow\FilamentAi\Agent\PanelAssistant;
 use Murkrow\FilamentAi\Agent\Solving\SolveProgress;
+use Murkrow\FilamentAi\Agent\Solving\Strategies;
 use Murkrow\FilamentAi\Enums\SolveAttemptStatus;
 use Murkrow\FilamentAi\Ingestion\CostCalculator;
 use Murkrow\FilamentAi\Jobs\Concerns\InteractsWithSolvingQueue;
 use Murkrow\FilamentAi\Models\SolveAttempt;
-use Murkrow\FilamentAi\Models\SolveRun;
 use Throwable;
 
 /**
@@ -61,14 +61,25 @@ final class SolveAttemptJob implements ShouldQueue
             return;
         }
 
+        $strategy = Strategies::for($run->strategy);
+        $phase = $strategy->phaseFor((int) $attempt->wave);
+
         $assistant = app($run->assistant ?: PanelAssistant::class);
 
-        if ($assistant instanceof PanelAssistant && $attempt->temperature !== null) {
-            $assistant = $assistant->withTemperature((float) $attempt->temperature);
+        if ($assistant instanceof PanelAssistant) {
+            if ($attempt->temperature !== null) {
+                $assistant = $assistant->withTemperature((float) $attempt->temperature);
+            }
+
+            // A phase that names its tools gets only those: "try the anagrams
+            // first" means nothing if the archive is one call away.
+            $assistant = $assistant->onlyTools($phase->tools)->withMaxSteps($phase->maxSteps);
         }
 
+        $prompt = $strategy->promptFor($run, $phase, (int) $attempt->position, $this->feedback);
+
         $startedAt = hrtime(true);
-        $response = $assistant->prompt($this->promptFor($run));
+        $response = $assistant->prompt($prompt);
         $durationMs = (int) ((hrtime(true) - $startedAt) / 1_000_000);
 
         $promptTokens = (int) ($response->usage->promptTokens ?? 0);
@@ -114,36 +125,5 @@ final class SolveAttemptJob implements ShouldQueue
     public function tags(): array
     {
         return ['rag', 'rag:solve', 'rag:solve:attempt:'.$this->attemptId];
-    }
-
-    private function promptFor(SolveRun $run): string
-    {
-        $lines = ['GOAL:', $run->goal];
-
-        if (! empty($run->context)) {
-            $lines[] = '';
-            $lines[] = 'CONTEXT:';
-            $lines[] = (string) json_encode($run->context, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-        }
-
-        if (filled($run->criteria)) {
-            $lines[] = '';
-            $lines[] = 'WHAT COUNTS AS A SOLUTION:';
-            $lines[] = (string) $run->criteria;
-        }
-
-        if (trim($this->feedback) !== '') {
-            $lines[] = '';
-            $lines[] = 'EARLIER ATTEMPTS WERE REJECTED:';
-            $lines[] = trim($this->feedback);
-            $lines[] = 'Do not repeat them. Try a different line of reasoning.';
-        }
-
-        $lines[] = '';
-        // The marker is what lets the run show a one-line answer next to a
-        // page of reasoning.
-        $lines[] = 'Work it out with the tools you have rather than guessing, then finish with a single line: ANSWER: <your answer>';
-
-        return implode("\n", $lines);
     }
 }

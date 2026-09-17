@@ -12,6 +12,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Str;
 use Murkrow\FilamentAi\Agent\Solving\SolveProgress;
 use Murkrow\FilamentAi\Agent\Solving\Solver;
+use Murkrow\FilamentAi\Agent\Solving\Strategies;
 use Murkrow\FilamentAi\Contracts\Verifier;
 use Murkrow\FilamentAi\Enums\SolveAttemptStatus;
 use Murkrow\FilamentAi\Enums\SolveStatus;
@@ -52,6 +53,13 @@ final class EvaluateWaveJob implements ShouldQueue
             return;
         }
 
+        // The strategy may judge with something of its own -- a checksum,
+        // a known answer -- in which case the language-model judge injected
+        // here is never called and costs nothing.
+        $strategy = Strategies::for($run->strategy);
+        $verifier = $strategy->verifier() ?? $verifier;
+        $criteria = $strategy->criteriaFor($run);
+
         $attempts = $run->attempts()->where('wave', $this->wave)->orderBy('position')->get();
         $accepted = null;
         $reasons = [];
@@ -72,7 +80,7 @@ final class EvaluateWaveJob implements ShouldQueue
                 continue;
             }
 
-            $verdict = $verifier->verify($attempt, $run->goal, (string) $run->criteria);
+            $verdict = $verifier->verify($attempt, $run->goal, $criteria);
 
             $attempt->forceFill([
                 'status' => match (true) {

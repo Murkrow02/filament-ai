@@ -55,6 +55,11 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
 
     protected ?float $temperature = null;
 
+    protected ?int $maxSteps = null;
+
+    /** @var list<string>|null */
+    protected ?array $onlyTools = null;
+
     public function inPanel(?Panel $panel): static
     {
         $this->panel = $panel;
@@ -89,18 +94,48 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
     }
 
     /**
+     * Answer this one with only these tools.
+     *
+     * A solving phase that says "try the anagrams first" means nothing while
+     * the archive is one call away, so a phase can narrow the agent down to
+     * the tools its step is about. Null puts every tool back.
+     *
+     * It only ever narrows: a name that is not among the agent's tools does
+     * not add one.
+     *
+     * @param  list<string>|null  $names
+     */
+    public function onlyTools(?array $names): static
+    {
+        $this->onlyTools = $names === null ? null : array_values(array_map(strval(...), $names));
+
+        return $this;
+    }
+
+    /**
      * @return iterable<Tool>
      */
     public function tools(): iterable
     {
         $sources = $this->knowledgeSources();
 
-        return [
+        $tools = [
             ...($sources === [] ? [] : [new SearchKnowledge($sources), new FetchDocument($sources)]),
             ...app(ResourceToolRegistry::class)->tools($this->panel()),
             ...(RunCode::enabled() ? [new RunCode] : []),
             ...$this->additionalTools(),
         ];
+
+        if ($this->onlyTools === null) {
+            return $tools;
+        }
+
+        $allowed = $this->onlyTools;
+
+        return array_values(array_filter(
+            $tools,
+            static fn (Tool $tool): bool => in_array($tool->name(), $allowed, strict: true),
+        ));
     }
 
     /**
@@ -148,11 +183,25 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
     }
 
     /**
+     * Cap this one turn's tool round trips, overriding the configured number.
+     */
+    public function withMaxSteps(?int $steps): static
+    {
+        $this->maxSteps = $steps;
+
+        return $this;
+    }
+
+    /**
      * How many tool round trips one answer may take. Writing a program,
      * running it, reading the error and fixing it is four on its own.
      */
     public function maxSteps(): ?int
     {
+        if ($this->maxSteps !== null) {
+            return $this->maxSteps;
+        }
+
         $steps = config('rag.agent.max_steps');
 
         return blank($steps) ? null : (int) $steps;

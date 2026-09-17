@@ -64,6 +64,7 @@ return [
     ],
 
     'solving' => [
+        'default_strategy' => 'Tentativi diretti',
         'stopped_waves' => 'dopo :waves ondate',
         'stopped_tokens' => 'dopo :tokens token',
         'stopped_cost' => 'dopo :cost USD',

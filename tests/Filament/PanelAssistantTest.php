@@ -20,6 +20,25 @@ it('drops the knowledge tools when no source is allowed', function (): void {
     expect($names)->toBe(['test_books_list', 'test_books_view', 'test_books_create', 'test_books_edit']);
 });
 
+it('narrows down to the tools a solving phase asked for', function (): void {
+    $assistant = (new PanelAssistant)->onlyTools(['search_knowledge', 'test_books_list', 'no_such_tool']);
+
+    $names = array_map(fn ($tool): string => $tool->name(), [...$assistant->tools()]);
+
+    // Narrowing only: a name the assistant does not have does not add a tool.
+    expect($names)->toBe(['search_knowledge', 'test_books_list'])
+        ->and(array_map(fn ($tool): string => $tool->name(), [...$assistant->onlyTools(null)->tools()]))
+        ->toContain('test_books_create');
+});
+
+it('lets a phase cap the tool round trips of one turn', function (): void {
+    config()->set('rag.agent.max_steps', 12);
+
+    expect((new PanelAssistant)->maxSteps())->toBe(12)
+        ->and((new PanelAssistant)->withMaxSteps(3)->maxSteps())->toBe(3)
+        ->and((new PanelAssistant)->withMaxSteps(3)->withMaxSteps(null)->maxSteps())->toBe(12);
+});
+
 it('tells the model who is asking, where, and what it can read', function (): void {
     $instructions = (new PanelAssistant)->instructions();
 

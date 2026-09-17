@@ -64,6 +64,7 @@ return [
     ],
 
     'solving' => [
+        'default_strategy' => 'Straight attempts',
         'stopped_waves' => 'after :waves wave(s)',
         'stopped_tokens' => 'after :tokens tokens',
         'stopped_cost' => 'after USD :cost',

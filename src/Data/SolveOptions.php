@@ -19,6 +19,7 @@ final readonly class SolveOptions
      * @param  string  $criteria  what the verifier checks an answer against
      * @param  array<string, mixed>  $context  extra facts handed to every attempt, and stored on the run
      * @param  class-string|null  $assistant  the agent to use; null takes rag.agent.assistant
+     * @param  class-string<\Murkrow\FilamentAi\Contracts\SolveStrategy>|null  $strategy  how to go about it; null takes rag.agent.solving.strategy
      */
     public function __construct(
         public string $criteria = '',
@@ -29,6 +30,7 @@ final readonly class SolveOptions
         public ?int $maxSeconds = null,
         public array $context = [],
         public ?string $assistant = null,
+        public ?string $strategy = null,
         public ?float $temperatureSpread = null,
     ) {}
 
@@ -39,7 +41,12 @@ final readonly class SolveOptions
 
     public function maxWaves(): int
     {
-        return max(1, $this->maxWaves ?? (int) config('rag.agent.solving.max_waves', 3));
+        $phases = \Murkrow\FilamentAi\Agent\Solving\Strategies::for($this->strategy())->phases();
+
+        // A method with three named steps is not improved by a fourth wave of
+        // the last one, so the strategy wins over the configured ceiling --
+        // but an explicit maxWaves from the caller still wins over both.
+        return max(1, $this->maxWaves ?? $phases ?? (int) config('rag.agent.solving.max_waves', 3));
     }
 
     public function maxTokens(): ?int
@@ -60,6 +67,16 @@ final readonly class SolveOptions
     public function assistant(): string
     {
         return $this->assistant ?? (string) config('rag.agent.assistant', \Murkrow\FilamentAi\Agent\PanelAssistant::class);
+    }
+
+    /**
+     * @return class-string<\Murkrow\FilamentAi\Contracts\SolveStrategy>
+     */
+    public function strategy(): string
+    {
+        return $this->strategy !== null && is_a($this->strategy, \Murkrow\FilamentAi\Contracts\SolveStrategy::class, allow_string: true)
+            ? $this->strategy
+            : \Murkrow\FilamentAi\Agent\Solving\Strategies::configured();
     }
 
     /**

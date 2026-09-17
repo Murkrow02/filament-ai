@@ -43,6 +43,7 @@ final class Solver
             'criteria' => $options->criteria,
             'context' => $options->context,
             'assistant' => $options->assistant(),
+            'strategy' => $options->strategy(),
             'waves_total' => $options->maxWaves(),
             'attempts_per_wave' => $options->attemptsPerWave(),
             // Snapshot of what it was allowed to spend: the config may have
@@ -67,11 +68,15 @@ final class Solver
      * One wave: N independent attempts, then a single evaluation of all of
      * them. The attempts never see each other -- that is where the variety
      * comes from -- while `$feedback` carries what the previous wave got wrong.
+     *
+     * What the wave is meant to try comes from the run's strategy: a generic
+     * run repeats the same phase, a domain strategy walks through its steps.
      */
     public function dispatchWave(SolveRun $run, int $wave, string $feedback = ''): void
     {
-        $count = max(1, (int) $run->attempts_per_wave);
-        $spread = (float) ($run->budgets['temperature_spread'] ?? 0.4);
+        $phase = Strategies::for($run->strategy)->phaseFor($wave);
+        $count = $phase->attempts(max(1, (int) $run->attempts_per_wave));
+        $spread = (float) ($phase->temperatureSpread ?? $run->budgets['temperature_spread'] ?? 0.4);
         $jobs = [];
 
         for ($position = 1; $position <= $count; $position++) {
@@ -79,8 +84,9 @@ final class Solver
                 'run_id' => $run->id,
                 'wave' => $wave,
                 'position' => $position,
+                'phase' => $phase->label === '' ? null : $phase->label,
                 'status' => SolveAttemptStatus::Pending,
-                'temperature' => $this->temperatureFor($position, $count, $spread),
+                'temperature' => $phase->temperature ?? $this->temperatureFor($position, $count, $spread),
             ]);
 
             $jobs[] = new SolveAttemptJob($attempt->id, $feedback);

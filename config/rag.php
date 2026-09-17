@@ -454,6 +454,14 @@ return [
             'attempts_per_wave' => (int) env('RAG_AGENT_SOLVING_ATTEMPTS', 4),
             'max_waves' => (int) env('RAG_AGENT_SOLVING_WAVES', 3),
 
+            // How a run goes about it. The default one tries the goal with
+            // every tool, wave after wave, learning only from what the judge
+            // rejected. An application that knows how its own problems are
+            // solved -- try the anagrams, then the archive, then the map --
+            // implements Contracts\SolveStrategy and names its class here;
+            // its phases then decide the number of waves.
+            'strategy' => \Murkrow\FilamentAi\Agent\Solving\DefaultStrategy::class,
+
             // How far apart the attempts of one wave are told to think. Zero
             // makes them near-copies, which wastes running several.
             'temperature_spread' => 0.4,

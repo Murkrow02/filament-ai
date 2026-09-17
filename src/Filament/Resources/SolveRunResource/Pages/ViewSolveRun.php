@@ -9,6 +9,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Murkrow\FilamentAi\Agent\Solving\Strategies;
 use Murkrow\FilamentAi\Enums\SolveAttemptStatus;
 use Murkrow\FilamentAi\Enums\SolveStatus;
 use Murkrow\FilamentAi\Filament\Resources\SolveRunResource;
@@ -49,6 +50,9 @@ class ViewSolveRun extends ViewRecord
                         ->state(static fn (SolveRun $record): string => $record->wave.' / '.$record->waves_total
                             .' ('.$record->attempts_per_wave.' attempts each)'),
                     TextEntry::make('attempts_total')->label('Attempts')->numeric(),
+                    TextEntry::make('strategy')
+                        ->label('Method')
+                        ->state(static fn (SolveRun $record): string => Strategies::for($record->strategy)->label()),
                     TextEntry::make('cost')
                         ->label('Cost')
                         ->state(static fn (SolveRun $record): string => CostCalculator::format($record->cost_micros, 4))
@@ -84,7 +88,11 @@ class ViewSolveRun extends ViewRecord
                         ->schema([
                             TextEntry::make('wave')
                                 ->label('Wave')
-                                ->state(static fn (SolveAttempt $record): string => "w{$record->wave} #{$record->position}"),
+                                ->state(static fn (SolveAttempt $record): string => "w{$record->wave} #{$record->position}")
+                                // The phase is what the wave was told to try;
+                                // without it two waves of a staged strategy
+                                // read as the same thing twice.
+                                ->helperText(static fn (SolveAttempt $record): ?string => $record->phase),
                             TextEntry::make('status')
                                 ->badge()
                                 ->formatStateUsing(static fn (SolveAttemptStatus $state): string => $state->label())
