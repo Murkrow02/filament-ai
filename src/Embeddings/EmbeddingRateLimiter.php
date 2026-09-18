@@ -13,12 +13,12 @@ use Illuminate\Support\Facades\RateLimiter;
  */
 final class EmbeddingRateLimiter
 {
-    public const NAME = 'rag-embeddings';
+    public const NAME = 'fai-embeddings';
 
     public static function register(): void
     {
-        $requests = (int) config('rag.queue.rate_limit.requests', 500);
-        $perSeconds = (int) config('rag.queue.rate_limit.per_seconds', 60);
+        $requests = (int) config('filament-ai.queue.rate_limit.requests', 500);
+        $perSeconds = (int) config('filament-ai.queue.rate_limit.per_seconds', 60);
 
         RateLimiter::for(self::NAME, static fn (): Limit => Limit::perSecond($requests, $perSeconds)
             ->by(self::NAME));

@@ -21,7 +21,7 @@ use Murkrow\FilamentAi\Models\Document;
  * Chunks and reconciles a single document.
  *
  * Usable both from the queue and synchronously, which is what makes
- * `rag:ingest --sync` a real end-to-end path rather than a second
+ * `ai:ingest --sync` a real end-to-end path rather than a second
  * implementation that can drift from the queued one.
  */
 final class DocumentIngestor

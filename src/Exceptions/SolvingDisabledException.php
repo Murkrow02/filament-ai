@@ -14,6 +14,6 @@ final class SolvingDisabledException extends RuntimeException
 {
     public static function make(): self
     {
-        return new self('Iterative solving is switched off. Set rag.agent.solving.enabled (RAG_AGENT_SOLVING=true) to use it.');
+        return new self('Iterative solving is switched off. Set rag.agent.solving.enabled (FILAMENT_AI_AGENT_SOLVING=true) to use it.');
     }
 }

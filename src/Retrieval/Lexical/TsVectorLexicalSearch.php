@@ -17,7 +17,7 @@ use Murkrow\FilamentAi\Support\Tables;
  * names, dates, catalogue numbers and rare proper nouns, where lexical match is
  * precisely what the user meant.
  *
- * Requires the GIN index created by `rag:install --fulltext`; without it this
+ * Requires the GIN index created by `ai:install --fulltext`; without it this
  * still returns correct results, just with a sequential scan.
  */
 final class TsVectorLexicalSearch implements LexicalSearch
@@ -36,7 +36,7 @@ final class TsVectorLexicalSearch implements LexicalSearch
             return [];
         }
 
-        $language = (string) config('rag.retrieval.hybrid.tsvector_language', 'simple');
+        $language = (string) config('filament-ai.retrieval.hybrid.tsvector_language', 'simple');
         $chunks = Tables::chunks();
 
         $builder = $this->connection()->table($chunks)

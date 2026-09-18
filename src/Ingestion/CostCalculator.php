@@ -19,7 +19,7 @@ final class CostCalculator
 {
     public static function embeddingMicros(string $model, int $tokens): int
     {
-        $perMillion = self::priceFor('rag.embeddings.pricing', $model);
+        $perMillion = self::priceFor('filament-ai.embeddings.pricing', $model);
 
         if ($perMillion === null) {
             return 0;
@@ -30,7 +30,7 @@ final class CostCalculator
 
     public static function completionMicros(string $model, int $promptTokens, int $completionTokens): int
     {
-        $pricing = self::priceFor('rag.llm.pricing', $model);
+        $pricing = self::priceFor('filament-ai.llm.pricing', $model);
 
         if (! is_array($pricing)) {
             return 0;

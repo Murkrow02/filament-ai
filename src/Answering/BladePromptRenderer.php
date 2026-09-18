@@ -24,14 +24,14 @@ final class BladePromptRenderer implements PromptRenderer
      */
     public function context(Collection $citations): string
     {
-        return trim(View::make((string) config('rag.answering.context_view', 'rag::prompts.context'), [
+        return trim(View::make((string) config('filament-ai.answering.context_view', 'filament-ai::prompts.context'), [
             'citations' => $citations,
         ])->render());
     }
 
     public function system(string $language, ?string $refusalMessage, bool $requireCitations): string
     {
-        return trim(View::make((string) config('rag.answering.system_view', 'rag::prompts.system'), [
+        return trim(View::make((string) config('filament-ai.answering.system_view', 'filament-ai::prompts.system'), [
             'language' => $language,
             'refusalMessage' => $refusalMessage,
             'requireCitations' => $requireCitations,
@@ -43,7 +43,7 @@ final class BladePromptRenderer implements PromptRenderer
      */
     public function user(string $question, string $context, array $history = []): string
     {
-        return trim(View::make((string) config('rag.answering.user_view', 'rag::prompts.user'), [
+        return trim(View::make((string) config('filament-ai.answering.user_view', 'filament-ai::prompts.user'), [
             'question' => $question,
             'context' => $context,
             'history' => $history,

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Murkrow\FilamentAi\Settings\SettingsRepository;
 
 beforeEach(function (): void {
-    config()->set('rag.settings.enabled', true);
+    config()->set('filament-ai.settings.enabled', true);
 });
 
 it('stores an override for a whitelisted key', function (): void {
@@ -40,17 +40,17 @@ it('layers overrides onto the config repository', function (): void {
     $settings->set('retrieval.top_k', 3);
     $settings->apply();
 
-    expect(config('rag.retrieval.top_k'))->toBe(3);
+    expect(config('filament-ai.retrieval.top_k'))->toBe(3);
 });
 
 it('falls back to config when there is no override', function (): void {
-    config()->set('rag.retrieval.top_k', 9);
+    config()->set('filament-ai.retrieval.top_k', 9);
 
     expect(app(SettingsRepository::class)->effective('retrieval.top_k'))->toBe(9);
 });
 
 it('reverts to the config value when an override is forgotten', function (): void {
-    config()->set('rag.retrieval.top_k', 9);
+    config()->set('filament-ai.retrieval.top_k', 9);
 
     $settings = app(SettingsRepository::class);
     $settings->set('retrieval.top_k', 3);

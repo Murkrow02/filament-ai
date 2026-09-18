@@ -15,19 +15,19 @@ use Illuminate\Support\Facades\Gate;
  * Every control on the page maps to one ability here, so "who may pick the
  * model" is answered in one place instead of being scattered through a Blade
  * template. The abilities are registered as ordinary Gate abilities named
- * `rag.chat.<name>`, which means a host can override any of them the way it
+ * `filament-ai.chat.<name>`, which means a host can override any of them the way it
  * overrides anything else -- Gate::define, a policy, spatie's permission
  * strings -- without the package knowing about it.
  *
  * The resolution order is deliberate:
  *
  *   1. an ability the host has already defined on the Gate wins outright;
- *   2. otherwise config('rag.chat.abilities.<name>') decides;
+ *   2. otherwise config('filament-ai.chat.abilities.<name>') decides;
  *   3. otherwise the default below.
  */
 final class ChatAbilities
 {
-    public const PREFIX = 'rag.chat.';
+    public const PREFIX = 'filament-ai.chat.';
 
     /**
      * Every ability, with the answer given when neither the host's Gate nor
@@ -117,7 +117,7 @@ final class ChatAbilities
      */
     public static function resolve(string $name, ?Authenticatable $user): bool
     {
-        $configured = config('rag.chat.abilities.'.$name);
+        $configured = config('filament-ai.chat.abilities.'.$name);
 
         if ($configured === null) {
             return self::DEFAULTS[$name] ?? false;

@@ -10,7 +10,7 @@ use Murkrow\FilamentAi\Chunking\Normalizers\StripControlChars;
 
 return [
 
-    'enabled' => env('RAG_ENABLED', true),
+    'enabled' => env('FILAMENT_AI_ENABLED', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -24,8 +24,8 @@ return [
     */
 
     'database' => [
-        'connection' => env('RAG_DB_CONNECTION'),
-        'prefix' => env('RAG_TABLE_PREFIX', 'rag_'),
+        'connection' => env('FILAMENT_AI_DB_CONNECTION'),
+        'prefix' => env('FILAMENT_AI_TABLE_PREFIX', 'rag_'),
         'tables' => [
             'documents' => 'documents',
             'chunks' => 'chunks',
@@ -49,32 +49,32 @@ return [
     | config/ai.php's "providers" (null uses ai.default_for_embeddings), so
     | keys and base URLs are configured once for the whole application.
     | "dimensions" MUST match what the model returns -- it defines the width of
-    | the pgvector column, so changing it requires `rag:vector:reindex`.
+    | the pgvector column, so changing it requires `ai:vector:reindex`.
     |
     */
 
     'embeddings' => [
-        'driver' => env('RAG_EMBEDDING_DRIVER', 'laravel-ai'), // laravel-ai | prism (deprecated) | fake
-        'provider' => env('RAG_EMBEDDING_PROVIDER'),
+        'driver' => env('FILAMENT_AI_EMBEDDING_DRIVER', 'laravel-ai'), // laravel-ai | prism (deprecated) | fake
+        'provider' => env('FILAMENT_AI_EMBEDDING_PROVIDER'),
         // Read only by the deprecated prism driver.
-        'prism_provider' => env('RAG_EMBEDDING_PROVIDER', 'openai'),
-        'model' => env('RAG_EMBEDDING_MODEL', 'text-embedding-3-small'),
+        'prism_provider' => env('FILAMENT_AI_EMBEDDING_PROVIDER', 'openai'),
+        'model' => env('FILAMENT_AI_EMBEDDING_MODEL', 'text-embedding-3-small'),
         // Seconds per request; null keeps laravel/ai's default.
-        'timeout' => env('RAG_EMBEDDING_TIMEOUT'),
-        'dimensions' => (int) env('RAG_EMBEDDING_DIMENSIONS', 1536),
+        'timeout' => env('FILAMENT_AI_EMBEDDING_TIMEOUT'),
+        'dimensions' => (int) env('FILAMENT_AI_EMBEDDING_DIMENSIONS', 1536),
         // Texts per embedding request. A queued job carries
-        // rag.queue.chunks_per_job chunks and sends them in requests of this
+        // filament-ai.queue.chunks_per_job chunks and sends them in requests of this
         // size. Keep it small (1-2) for a self-hosted embedder: Ollama serves
         // one request at a time, so a search waits behind the one in flight.
-        'batch_size' => (int) env('RAG_EMBEDDING_BATCH_SIZE', 96),
-        'max_input_tokens' => (int) env('RAG_EMBEDDING_MAX_INPUT_TOKENS', 8000),
+        'batch_size' => (int) env('FILAMENT_AI_EMBEDDING_BATCH_SIZE', 96),
+        'max_input_tokens' => (int) env('FILAMENT_AI_EMBEDDING_MAX_INPUT_TOKENS', 8000),
 
         // L2-normalise vectors on write so cosine similarity == dot product.
         'normalize' => true,
 
         // Some open models expect asymmetric prefixes (e5, bge, nomic, ...).
-        'document_prefix' => env('RAG_EMBEDDING_DOC_PREFIX', ''),
-        'query_prefix' => env('RAG_EMBEDDING_QUERY_PREFIX', ''),
+        'document_prefix' => env('FILAMENT_AI_EMBEDDING_DOC_PREFIX', ''),
+        'query_prefix' => env('FILAMENT_AI_EMBEDDING_QUERY_PREFIX', ''),
 
         'cache_queries' => true,
         'query_cache_ttl' => 3600,
@@ -97,14 +97,14 @@ return [
     */
 
     'llm' => [
-        'driver' => env('RAG_LLM_DRIVER', 'laravel-ai'), // laravel-ai | prism (deprecated) | fake
+        'driver' => env('FILAMENT_AI_LLM_DRIVER', 'laravel-ai'), // laravel-ai | prism (deprecated) | fake
         // An entry of config/ai.php's "providers"; null uses ai.default.
-        'provider' => env('RAG_LLM_PROVIDER'),
+        'provider' => env('FILAMENT_AI_LLM_PROVIDER'),
         // Read only by the deprecated prism driver.
-        'prism_provider' => env('RAG_LLM_PROVIDER', 'openai'),
-        'model' => env('RAG_LLM_MODEL', 'gpt-4o-mini'),
+        'prism_provider' => env('FILAMENT_AI_LLM_PROVIDER', 'openai'),
+        'model' => env('FILAMENT_AI_LLM_MODEL', 'gpt-4o-mini'),
         // Seconds per request; null keeps laravel/ai's default.
-        'timeout' => env('RAG_LLM_TIMEOUT'),
+        'timeout' => env('FILAMENT_AI_LLM_TIMEOUT'),
 
         // Selectable at query time (e.g. the Filament Playground's model
         // dropdown). All options share the single provider above -- a
@@ -112,7 +112,7 @@ return [
         // picker: callers just get the 'model' key above.
         'available_models' => [],
         // Empty disables it (required by Claude's Fable/Opus/Sonnet 5 tier, which reject the parameter with a 400).
-        'temperature' => env('RAG_LLM_TEMPERATURE', '0.1') === '' ? null : (float) env('RAG_LLM_TEMPERATURE', '0.1'),
+        'temperature' => env('FILAMENT_AI_LLM_TEMPERATURE', '0.1') === '' ? null : (float) env('FILAMENT_AI_LLM_TEMPERATURE', '0.1'),
         'max_tokens' => 1200,
         'provider_options' => [],
 
@@ -136,12 +136,12 @@ return [
     */
 
     'vector' => [
-        'driver' => env('RAG_VECTOR_DRIVER', 'pgvector'),
+        'driver' => env('FILAMENT_AI_VECTOR_DRIVER', 'pgvector'),
 
         'drivers' => [
             'pgvector' => [
-                'type' => env('RAG_PGVECTOR_TYPE', 'vector'), // vector | halfvec
-                'index' => env('RAG_PGVECTOR_INDEX', 'hnsw'), // hnsw | ivfflat | none
+                'type' => env('FILAMENT_AI_PGVECTOR_TYPE', 'vector'), // vector | halfvec
+                'index' => env('FILAMENT_AI_PGVECTOR_INDEX', 'hnsw'), // hnsw | ivfflat | none
                 'ops' => 'vector_cosine_ops',
                 'hnsw' => ['m' => 16, 'ef_construction' => 64, 'ef_search' => 100],
                 'ivfflat' => ['lists' => 1000, 'probes' => 10],
@@ -221,11 +221,11 @@ return [
         'expand_neighbors' => 0,
 
         'hybrid' => [
-            'driver' => env('RAG_HYBRID_DRIVER'), // null | tsvector | scout
+            'driver' => env('FILAMENT_AI_HYBRID_DRIVER'), // null | tsvector | scout
             'candidates' => 100,
             'rrf_k' => 60,
             'weight' => 0.35,
-            'tsvector_language' => env('RAG_TSVECTOR_LANGUAGE', 'italian'),
+            'tsvector_language' => env('FILAMENT_AI_TSVECTOR_LANGUAGE', 'italian'),
         ],
 
         'log_queries' => true,
@@ -243,12 +243,12 @@ return [
     */
 
     'answering' => [
-        'system_view' => 'rag::prompts.system',
-        'context_view' => 'rag::prompts.context',
-        'user_view' => 'rag::prompts.user',
-        'language' => env('RAG_LANGUAGE', 'en'),
+        'system_view' => 'filament-ai::prompts.system',
+        'context_view' => 'filament-ai::prompts.context',
+        'user_view' => 'filament-ai::prompts.user',
+        'language' => env('FILAMENT_AI_LANGUAGE', 'en'),
         'require_citations' => true,
-        'refusal_message' => null, // null => localised default from rag::rag.refusal
+        'refusal_message' => null, // null => localised default from filament-ai::messages.refusal
         'max_context_tokens' => 6000,
         'stream' => true,
     ],
@@ -260,9 +260,12 @@ return [
     */
 
     'queue' => [
-        'connection' => env('RAG_QUEUE_CONNECTION', env('QUEUE_CONNECTION', 'database')),
-        'queue' => env('RAG_QUEUE', 'rag'),
-        'chunks_per_job' => (int) env('RAG_CHUNKS_PER_JOB', 96),
+        'connection' => env('FILAMENT_AI_QUEUE_CONNECTION', env('QUEUE_CONNECTION', 'database')),
+        // The queue name keeps its old default on purpose: renaming it would
+        // strand whatever is already queued under the old one, and the host's
+        // worker configuration with it.
+        'queue' => env('FILAMENT_AI_QUEUE', 'rag'),
+        'chunks_per_job' => (int) env('FILAMENT_AI_CHUNKS_PER_JOB', 96),
         'tries' => 5,
         'backoff' => [10, 30, 60, 120, 300],
         'timeout' => 300,
@@ -277,10 +280,10 @@ return [
     |
     | Sources are classes, not configuration. Generate one with
     |
-    |     php artisan rag:make:source BookSource --model=App\Models\Book
+    |     php artisan ai:make:source BookSource --model=App\Models\Book
     |
     | and list it here. Each is resolved through the container, so it may take
-    | constructor dependencies, and its `key()` is what `rag:ingest` and every
+    | constructor dependencies, and its `key()` is what `ai:ingest` and every
     | stored document refer to. This list is the only place a host model is
     | reached at all: the package itself names none.
     |
@@ -301,29 +304,29 @@ return [
     */
 
     'mcp' => [
-        'enabled' => env('RAG_MCP_ENABLED', true),
+        'enabled' => env('FILAMENT_AI_MCP_ENABLED', true),
 
         'server' => [
-            'name' => env('RAG_MCP_NAME', 'knowledge'),
+            'name' => env('FILAMENT_AI_MCP_NAME', 'knowledge'),
             'version' => '1.0.0',
             'instructions' => null, // null => localised default
         ],
 
         'web' => [
-            'enabled' => env('RAG_MCP_WEB_ENABLED', true),
-            'path' => env('RAG_MCP_WEB_PATH', 'mcp/knowledge'),
+            'enabled' => env('FILAMENT_AI_MCP_WEB_ENABLED', true),
+            'path' => env('FILAMENT_AI_MCP_WEB_PATH', 'mcp/knowledge'),
             'middleware' => ['auth:sanctum'],
         ],
 
         'local' => [
-            'enabled' => env('RAG_MCP_LOCAL_ENABLED', true),
-            'handle' => env('RAG_MCP_LOCAL_HANDLE', 'knowledge'),
+            'enabled' => env('FILAMENT_AI_MCP_LOCAL_ENABLED', true),
+            'handle' => env('FILAMENT_AI_MCP_LOCAL_HANDLE', 'knowledge'),
         ],
 
         'tools' => [
-            'search' => ['enabled' => true, 'name' => env('RAG_MCP_TOOL_SEARCH', 'search_knowledge')],
-            'fetch' => ['enabled' => true, 'name' => env('RAG_MCP_TOOL_FETCH', 'fetch_document')],
-            'answer' => ['enabled' => true, 'name' => env('RAG_MCP_TOOL_ANSWER', 'answer_question')],
+            'search' => ['enabled' => true, 'name' => env('FILAMENT_AI_MCP_TOOL_SEARCH', 'search_knowledge')],
+            'fetch' => ['enabled' => true, 'name' => env('FILAMENT_AI_MCP_TOOL_FETCH', 'fetch_document')],
+            'answer' => ['enabled' => true, 'name' => env('FILAMENT_AI_MCP_TOOL_ANSWER', 'answer_question')],
         ],
 
         'resources' => [
@@ -347,7 +350,7 @@ return [
     */
 
     'agent' => [
-        'enabled' => env('RAG_AGENT_ENABLED', true),
+        'enabled' => env('FILAMENT_AI_AGENT_ENABLED', true),
 
         'knowledge' => [
             'enabled' => true,
@@ -377,11 +380,11 @@ return [
         'assistant' => \Murkrow\FilamentAi\Agent\PanelAssistant::class,
 
         // Which model answers in the panel. Both fall back to the generation
-        // model configured above, so a host that set RAG_LLM_* once does not
+        // model configured above, so a host that set FILAMENT_AI_LLM_* once does not
         // have to say it twice; null then leaves laravel/ai's own defaults
         // (config/ai.php) in charge.
-        'provider' => env('RAG_AGENT_PROVIDER'),
-        'model' => env('RAG_AGENT_MODEL'),
+        'provider' => env('FILAMENT_AI_AGENT_PROVIDER'),
+        'model' => env('FILAMENT_AI_AGENT_MODEL'),
 
         // fn (?Authenticatable $user): bool -- who may use the assistant.
         // null lets every user who can reach the panel use it.
@@ -390,7 +393,7 @@ return [
         // How many tool round trips one answer may take. A sandbox needs
         // several (write, run, read the error, fix); null keeps
         // laravel/ai's own default.
-        'max_steps' => env('RAG_AGENT_MAX_STEPS'),
+        'max_steps' => env('FILAMENT_AI_AGENT_MAX_STEPS'),
 
         /*
         | Code execution.
@@ -403,17 +406,17 @@ return [
         | or network.
         */
         'sandbox' => [
-            'enabled' => (bool) env('RAG_AGENT_SANDBOX', false),
-            'driver' => env('RAG_AGENT_SANDBOX_DRIVER', 'piston'), // piston | fake
-            'url' => env('RAG_AGENT_SANDBOX_URL', 'http://piston:2000'),
+            'enabled' => (bool) env('FILAMENT_AI_AGENT_SANDBOX', false),
+            'driver' => env('FILAMENT_AI_AGENT_SANDBOX_DRIVER', 'piston'), // piston | fake
+            'url' => env('FILAMENT_AI_AGENT_SANDBOX_URL', 'http://piston:2000'),
 
             // Language => version selector Piston understands; '*' takes
             // whatever is installed, which is worth pinning in production.
             'languages' => [
-                'python' => env('RAG_AGENT_SANDBOX_PYTHON', '*'),
+                'python' => env('FILAMENT_AI_AGENT_SANDBOX_PYTHON', '*'),
             ],
 
-            'timeout' => (int) env('RAG_AGENT_SANDBOX_TIMEOUT', 5000), // ms of wall clock per run
+            'timeout' => (int) env('FILAMENT_AI_AGENT_SANDBOX_TIMEOUT', 5000), // ms of wall clock per run
             'memory_limit' => 128 * 1024 * 1024,
             'http_timeout' => 15, // seconds to wait for the sandbox itself
 
@@ -422,7 +425,7 @@ return [
             'max_code_characters' => 20000,
 
             // Every run is logged. null uses the application's default channel.
-            'log_channel' => env('RAG_AGENT_SANDBOX_LOG'),
+            'log_channel' => env('FILAMENT_AI_AGENT_SANDBOX_LOG'),
         ],
 
         // The chat page inside the panel. It keeps its history in laravel/ai's
@@ -449,10 +452,10 @@ return [
         | by attempts x waves, plus one judgement each.
         */
         'solving' => [
-            'enabled' => (bool) env('RAG_AGENT_SOLVING', false),
+            'enabled' => (bool) env('FILAMENT_AI_AGENT_SOLVING', false),
 
-            'attempts_per_wave' => (int) env('RAG_AGENT_SOLVING_ATTEMPTS', 4),
-            'max_waves' => (int) env('RAG_AGENT_SOLVING_WAVES', 3),
+            'attempts_per_wave' => (int) env('FILAMENT_AI_AGENT_SOLVING_ATTEMPTS', 4),
+            'max_waves' => (int) env('FILAMENT_AI_AGENT_SOLVING_WAVES', 3),
 
             // How a run goes about it. The default one tries the goal with
             // every tool, wave after wave, learning only from what the judge
@@ -470,25 +473,25 @@ return [
             // reported as "no solution found" with the best attempt kept.
             // null switches one off; leaving them all off is asking for a
             // surprise on the invoice.
-            'max_tokens' => (int) env('RAG_AGENT_SOLVING_MAX_TOKENS', 300000),
-            'max_cost_micros' => (int) env('RAG_AGENT_SOLVING_MAX_COST', 2000000), // USD 2.00
-            'max_seconds' => (int) env('RAG_AGENT_SOLVING_MAX_SECONDS', 300),
+            'max_tokens' => (int) env('FILAMENT_AI_AGENT_SOLVING_MAX_TOKENS', 300000),
+            'max_cost_micros' => (int) env('FILAMENT_AI_AGENT_SOLVING_MAX_COST', 2000000), // USD 2.00
+            'max_seconds' => (int) env('FILAMENT_AI_AGENT_SOLVING_MAX_SECONDS', 300),
 
             // The judge. A cheaper model than the one doing the work is the
             // point: null falls back to the agent's own.
             'judge' => [
-                'provider' => env('RAG_AGENT_JUDGE_PROVIDER'),
-                'model' => env('RAG_AGENT_JUDGE_MODEL'),
+                'provider' => env('FILAMENT_AI_AGENT_JUDGE_PROVIDER'),
+                'model' => env('FILAMENT_AI_AGENT_JUDGE_MODEL'),
             ],
 
             'queue' => [
-                'connection' => env('RAG_AGENT_SOLVING_QUEUE_CONNECTION', env('RAG_QUEUE_CONNECTION')),
-                'queue' => env('RAG_AGENT_SOLVING_QUEUE', env('RAG_QUEUE', 'rag')),
+                'connection' => env('FILAMENT_AI_AGENT_SOLVING_QUEUE_CONNECTION', env('FILAMENT_AI_QUEUE_CONNECTION')),
+                'queue' => env('FILAMENT_AI_AGENT_SOLVING_QUEUE', env('FILAMENT_AI_QUEUE', 'rag')),
             ],
         ],
 
         // The admin page that edits everything above at runtime. It is
-        // gated by rag.filament.authorize, not by rag.agent.authorize:
+        // gated by filament-ai.filament.authorize, not by filament-ai.agent.authorize:
         // using the assistant and deciding what it may do are different
         // permissions.
         'settings' => [
@@ -516,30 +519,30 @@ return [
     |     'some.permission'                  delegated to $user->can('some.permission')
     |     null                               the package default
     |
-    | Anything the host registers itself with Gate::define('rag.chat.<name>')
+    | Anything the host registers itself with Gate::define('filament-ai.chat.<name>')
     | wins over this file entirely.
     |
     */
 
     'chat' => [
-        'enabled' => env('RAG_CHAT_ENABLED', true),
+        'enabled' => env('FILAMENT_AI_CHAT_ENABLED', true),
 
-        'path' => env('RAG_CHAT_PATH', 'rag/chat'),
-        'domain' => env('RAG_CHAT_DOMAIN'),
+        'path' => env('FILAMENT_AI_CHAT_PATH', 'ai/chat'),
+        'domain' => env('FILAMENT_AI_CHAT_DOMAIN'),
 
         // The panel here is often mounted at the site root, so the chat gets
         // its own prefix rather than sharing the panel's routing space.
         'middleware' => ['web', 'auth'],
 
         // Applied to the ask endpoint only: "max,minutes", or null to disable.
-        'throttle' => env('RAG_CHAT_THROTTLE', '30,1'),
+        'throttle' => env('FILAMENT_AI_CHAT_THROTTLE', '30,1'),
 
-        'layout' => 'rag::chat.layout',
+        'layout' => 'filament-ai::chat.layout',
 
         'brand' => [
-            'name' => env('RAG_CHAT_BRAND'),
-            'logo' => env('RAG_CHAT_LOGO'),
-            'accent' => env('RAG_CHAT_ACCENT', '#2f6f4f'),
+            'name' => env('FILAMENT_AI_CHAT_BRAND'),
+            'logo' => env('FILAMENT_AI_CHAT_LOGO'),
+            'accent' => env('FILAMENT_AI_CHAT_ACCENT', '#2f6f4f'),
         ],
 
         // How many previous turns of the conversation are replayed into the
@@ -575,10 +578,10 @@ return [
     */
 
     'filament' => [
-        'enabled' => env('RAG_FILAMENT_ENABLED', true),
+        'enabled' => env('FILAMENT_AI_FILAMENT_ENABLED', true),
         'navigation_group' => 'Knowledge',
         'navigation_sort' => 90,
-        'slug_prefix' => 'rag',
+        'slug_prefix' => 'ai',
         // How often the run views refresh *while a run is in flight*. Idle
         // pages do not poll at all: several Livewire components refreshing at
         // once can race the AuthenticateSession middleware into regenerating
@@ -616,13 +619,13 @@ return [
     |
     | Note: embeddings.model and embeddings.dimensions are deliberately NOT
     | overridable -- changing them invalidates every stored vector and requires
-    | `rag:vector:reindex` plus a full re-embed.
+    | `ai:vector:reindex` plus a full re-embed.
     |
     */
 
     'settings' => [
         'enabled' => true,
-        'cache_key' => 'rag.settings',
+        'cache_key' => 'filament-ai.settings',
         'cache_ttl' => 300,
 
         'overridable' => [

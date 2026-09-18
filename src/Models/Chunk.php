@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Murkrow\FilamentAi\Database\Factories\ChunkFactory;
-use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Models\Concerns\UsesAiConnection;
 use Murkrow\FilamentAi\Support\Text;
 use Pgvector\Laravel\Vector;
 
@@ -44,11 +44,11 @@ class Chunk extends Model
     /** @use HasFactory<ChunkFactory> */
     use HasFactory;
 
-    use UsesRagConnection;
+    use UsesAiConnection;
 
     protected $guarded = [];
 
-    protected function ragTableKey(): string
+    protected function aiTableKey(): string
     {
         return 'chunks';
     }
@@ -75,7 +75,7 @@ class Chunk extends Model
             'metadata' => 'array',
         ];
 
-        if (config('rag.vector.driver', 'pgvector') === 'pgvector' && class_exists(Vector::class)) {
+        if (config('filament-ai.vector.driver', 'pgvector') === 'pgvector' && class_exists(Vector::class)) {
             $casts['embedding'] = Vector::class;
         }
 

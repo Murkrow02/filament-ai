@@ -132,7 +132,7 @@ final class EvaluateWaveJob implements ShouldQueue
      */
     public function tags(): array
     {
-        return ['rag', 'rag:solve', 'rag:solve:run:'.$this->runId];
+        return ['filament-ai', 'ai:solve', 'ai:solve:run:'.$this->runId];
     }
 
     private function rememberBest(SolveRun $run): ?SolveAttempt
@@ -164,25 +164,25 @@ final class EvaluateWaveJob implements ShouldQueue
         $budgets = (array) $run->budgets;
 
         if ($this->wave >= (int) $run->waves_total) {
-            return (string) __('rag::rag.solving.stopped_waves', ['waves' => $run->waves_total]);
+            return (string) __('filament-ai::messages.solving.stopped_waves', ['waves' => $run->waves_total]);
         }
 
         $maxTokens = $budgets['max_tokens'] ?? null;
 
         if ($maxTokens !== null && $run->tokens_used >= (int) $maxTokens) {
-            return (string) __('rag::rag.solving.stopped_tokens', ['tokens' => $run->tokens_used]);
+            return (string) __('filament-ai::messages.solving.stopped_tokens', ['tokens' => $run->tokens_used]);
         }
 
         $maxCost = $budgets['max_cost_micros'] ?? null;
 
         if ($maxCost !== null && $run->cost_micros >= (int) $maxCost) {
-            return (string) __('rag::rag.solving.stopped_cost', ['cost' => number_format($run->costUsd(), 2)]);
+            return (string) __('filament-ai::messages.solving.stopped_cost', ['cost' => number_format($run->costUsd(), 2)]);
         }
 
         $maxSeconds = $budgets['max_seconds'] ?? null;
 
         if ($maxSeconds !== null && ($run->durationSeconds() ?? 0) >= (int) $maxSeconds) {
-            return (string) __('rag::rag.solving.stopped_seconds', ['seconds' => $run->durationSeconds()]);
+            return (string) __('filament-ai::messages.solving.stopped_seconds', ['seconds' => $run->durationSeconds()]);
         }
 
         return null;
@@ -191,15 +191,15 @@ final class EvaluateWaveJob implements ShouldQueue
     private function exhaustedMessage(SolveRun $run, ?SolveAttempt $best, string $stop): string
     {
         if ($best === null) {
-            return (string) __('rag::rag.solving.exhausted_empty', ['stop' => $stop]);
+            return (string) __('filament-ai::messages.solving.exhausted_empty', ['stop' => $stop]);
         }
 
-        return (string) __('rag::rag.solving.exhausted', [
+        return (string) __('filament-ai::messages.solving.exhausted', [
             'stop' => $stop,
             'attempts' => $run->attempts_total,
             'answer' => Str::limit($best->finalAnswer(), 300),
             'reason' => trim((string) $best->reason) === ''
-                ? (string) __('rag::rag.solving.no_reason')
+                ? (string) __('filament-ai::messages.solving.no_reason')
                 : trim((string) $best->reason),
         ]);
     }

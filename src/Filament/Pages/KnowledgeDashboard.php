@@ -6,7 +6,7 @@ namespace Murkrow\FilamentAi\Filament\Pages;
 
 use Filament\Actions\Action;
 use Filament\Pages\Page;
-use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Concerns\HasAiNavigation;
 use Murkrow\FilamentAi\Ingestion\CostCalculator;
 use Murkrow\FilamentAi\Models\Chunk;
 use Murkrow\FilamentAi\Models\Document;
@@ -24,9 +24,9 @@ use Murkrow\FilamentAi\Models\QueryLog;
  * and rendered as static Blade -- a full page load is the only way to see
  * fresh numbers, which is the point.
  */
-class RagDashboard extends Page
+class KnowledgeDashboard extends Page
 {
-    use HasRagNavigation;
+    use HasAiNavigation;
 
     protected static string|null|\BackedEnum $navigationIcon = 'heroicon-o-cpu-chip';
 
@@ -34,7 +34,7 @@ class RagDashboard extends Page
 
     protected static ?string $navigationLabel = 'Overview';
 
-    protected string $view = 'rag::filament.pages.dashboard';
+    protected string $view = 'filament-ai::filament.pages.dashboard';
 
     /** @var array<string, mixed> */
     public array $stats = [];
@@ -53,17 +53,17 @@ class RagDashboard extends Page
 
     public static function getSlug(?\Filament\Panel $panel = null): string
     {
-        return static::ragSlug('dashboard');
+        return static::aiSlug('dashboard');
     }
 
     public static function getNavigationSort(): ?int
     {
-        return (int) config('rag.filament.navigation_sort', 90) - 1;
+        return (int) config('filament-ai.filament.navigation_sort', 90) - 1;
     }
 
     public function mount(): void
     {
-        abort_unless(static::canAccessRag(), 403);
+        abort_unless(static::canAccessAi(), 403);
 
         $this->stats = $this->computeStats();
         $this->coverageBySource = $this->computeCoverageBySource();
@@ -82,8 +82,8 @@ class RagDashboard extends Page
         $embedded = Chunk::query()->whereNotNull('embedded_at')->count();
         $pending = $chunks - $embedded;
 
-        $model = (string) config('rag.embeddings.model');
-        $dimensions = (int) config('rag.embeddings.dimensions');
+        $model = (string) config('filament-ai.embeddings.model');
+        $dimensions = (int) config('filament-ai.embeddings.dimensions');
 
         $stale = Chunk::query()
             ->whereNotNull('embedded_at')
@@ -238,7 +238,7 @@ class RagDashboard extends Page
      */
     protected function getHeaderActions(): array
     {
-        if (! config('rag.filament.pages.ingest', true)) {
+        if (! config('filament-ai.filament.pages.ingest', true)) {
             return [];
         }
 

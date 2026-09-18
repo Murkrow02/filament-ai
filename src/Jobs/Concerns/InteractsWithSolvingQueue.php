@@ -21,13 +21,13 @@ trait InteractsWithSolvingQueue
 
     public static function solvingConnection(): ?string
     {
-        $connection = config('rag.agent.solving.queue.connection', config('rag.queue.connection'));
+        $connection = config('filament-ai.agent.solving.queue.connection', config('filament-ai.queue.connection'));
 
         return blank($connection) ? null : (string) $connection;
     }
 
     public static function solvingQueue(): string
     {
-        return (string) config('rag.agent.solving.queue.queue', config('rag.queue.queue', 'rag'));
+        return (string) config('filament-ai.agent.solving.queue.queue', config('filament-ai.queue.queue', 'rag'));
     }
 }

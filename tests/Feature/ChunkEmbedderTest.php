@@ -6,7 +6,7 @@ use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
 use Murkrow\FilamentAi\Contracts\VectorStore;
 use Murkrow\FilamentAi\Data\EmbeddingBatch;
 use Murkrow\FilamentAi\Embeddings\FakeEmbeddingProvider;
-use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Ingestion\ChunkEmbedder;
 use Murkrow\FilamentAi\Models\Chunk;
 use Murkrow\FilamentAi\Models\Document;
@@ -25,8 +25,8 @@ final class RecordingEmbeddingProvider implements EmbeddingProvider
     public function __construct(private readonly int $batchSize, private readonly ?int $failOnCall = null)
     {
         $this->inner = new FakeEmbeddingProvider(
-            dimensions: (int) config('rag.embeddings.dimensions'),
-            model: (string) config('rag.embeddings.model'),
+            dimensions: (int) config('filament-ai.embeddings.dimensions'),
+            model: (string) config('filament-ai.embeddings.model'),
             batchSize: $batchSize,
         );
     }
@@ -76,10 +76,10 @@ final class RecordingEmbeddingProvider implements EmbeddingProvider
 function chunkedBookWithoutVectors(): array
 {
     config([
-        'rag.chunking.target_tokens' => 64,
-        'rag.chunking.max_tokens' => 96,
-        'rag.chunking.min_tokens' => 16,
-        'rag.chunking.overlap_tokens' => 0,
+        'filament-ai.chunking.target_tokens' => 64,
+        'filament-ai.chunking.max_tokens' => 96,
+        'filament-ai.chunking.min_tokens' => 16,
+        'filament-ai.chunking.overlap_tokens' => 0,
     ]);
 
     $book = TestBook::create(['title' => 'Cronaca in piccoli pezzi']);
@@ -94,7 +94,7 @@ function chunkedBookWithoutVectors(): array
         $book->pages()->create(['number' => $page, 'content' => implode(' ', $sentences)]);
     }
 
-    Rag::ingestSync('books');
+    FilamentAi::ingestSync('books');
 
     $ids = Chunk::query()->orderBy('id')->pluck('id')->map(intval(...))->all();
 

@@ -11,7 +11,7 @@ use Throwable;
 
 class SourcesCommand extends Command
 {
-    protected $signature = 'rag:sources';
+    protected $signature = 'ai:sources';
 
     protected $description = 'List the configured knowledge sources and their filters';
 
@@ -20,7 +20,7 @@ class SourcesCommand extends Command
         $keys = $registry->keys();
 
         if ($keys === []) {
-            $this->components->warn('No knowledge sources configured. Generate one with `php artisan rag:make:source` and list it under rag.sources.');
+            $this->components->warn('No knowledge sources configured. Generate one with `php artisan ai:make:source` and list it under rag.sources.');
 
             return self::SUCCESS;
         }

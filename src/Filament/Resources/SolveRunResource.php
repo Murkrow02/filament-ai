@@ -12,7 +12,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 use Murkrow\FilamentAi\Enums\SolveStatus;
-use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Concerns\HasAiNavigation;
 use Murkrow\FilamentAi\Filament\Resources\SolveRunResource\Pages\ListSolveRuns;
 use Murkrow\FilamentAi\Filament\Resources\SolveRunResource\Pages\ViewSolveRun;
 use Murkrow\FilamentAi\Ingestion\CostCalculator;
@@ -27,7 +27,7 @@ use Murkrow\FilamentAi\Models\SolveRun;
  */
 class SolveRunResource extends Resource
 {
-    use HasRagNavigation;
+    use HasAiNavigation;
 
     protected static ?string $model = SolveRun::class;
 
@@ -39,7 +39,7 @@ class SolveRunResource extends Resource
 
     public static function getSlug(?\Filament\Panel $panel = null): string
     {
-        return static::ragSlug('solve-runs');
+        return static::aiSlug('solve-runs');
     }
 
     public static function canCreate(): bool
@@ -49,7 +49,7 @@ class SolveRunResource extends Resource
 
     public static function canAccess(): bool
     {
-        return static::canAccessRag();
+        return static::canAccessAi();
     }
 
     public static function table(Table $table): Table
@@ -57,7 +57,7 @@ class SolveRunResource extends Resource
         return $table
             ->defaultSort('id', 'desc')
             // Nothing polls unless something is actually running.
-            ->poll(fn (): ?string => SolveRun::query()->running()->exists() ? static::ragPollInterval() : null)
+            ->poll(fn (): ?string => SolveRun::query()->running()->exists() ? static::aiPollInterval() : null)
             ->columns([
                 TextColumn::make('uuid')
                     ->label('Run')

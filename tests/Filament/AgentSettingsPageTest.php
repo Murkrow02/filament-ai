@@ -7,12 +7,12 @@ use Livewire\Livewire;
 use Murkrow\FilamentAi\Agent\Resources\AgentTools;
 use Murkrow\FilamentAi\Agent\Resources\ResourceToolRegistry;
 use Murkrow\FilamentAi\Filament\Pages\AgentSettings;
-use Murkrow\FilamentAi\Filament\Pages\RagSettings;
+use Murkrow\FilamentAi\Filament\Pages\KnowledgeSettings;
 use Murkrow\FilamentAi\Settings\SettingsRepository;
 use Murkrow\FilamentAi\Tests\Fixtures\Filament\TestBookResource;
 
 beforeEach(function (): void {
-    config()->set('rag.settings.enabled', true);
+    config()->set('filament-ai.settings.enabled', true);
 });
 
 /**
@@ -93,8 +93,8 @@ it('changes the assistant model and the record cap', function (): void {
 
     $settings->apply();
 
-    expect(config('rag.agent.provider'))->toBe('anthropic')
-        ->and(config('rag.agent.model'))->toBe('claude-sonnet-5')
+    expect(config('filament-ai.agent.provider'))->toBe('anthropic')
+        ->and(config('filament-ai.agent.model'))->toBe('claude-sonnet-5')
         ->and(app(ResourceToolRegistry::class)->blueprints()[0]->maxRecords)->toBe(5);
 });
 
@@ -111,8 +111,8 @@ it('reverts to what the code says', function (): void {
 });
 
 it('offers the languages the sandbox actually has, and pins their versions', function (): void {
-    config()->set('rag.agent.sandbox.driver', 'fake');
-    config()->set('rag.agent.sandbox.languages', ['python' => '*', 'javascript' => '*']);
+    config()->set('filament-ai.agent.sandbox.driver', 'fake');
+    config()->set('filament-ai.agent.sandbox.languages', ['python' => '*', 'javascript' => '*']);
     $settings = app(SettingsRepository::class);
 
     Livewire::test(AgentSettings::class)
@@ -126,7 +126,7 @@ it('offers the languages the sandbox actually has, and pins their versions', fun
     $settings->apply();
 
     expect($settings->get('agent.sandbox.languages'))->toBe(['python' => '1.0.0'])
-        ->and(config('rag.agent.sandbox.timeout'))->toBe(8000)
+        ->and(config('filament-ai.agent.sandbox.timeout'))->toBe(8000)
         ->and(Murkrow\FilamentAi\Agent\Tools\RunCode::enabled())->toBeTrue();
 });
 
@@ -147,13 +147,13 @@ it('keeps the sandbox url out of the form', function (): void {
 });
 
 it('is closed to whoever may not administer the knowledge panel', function (): void {
-    config()->set('rag.filament.authorize', fn (): bool => false);
+    config()->set('filament-ai.filament.authorize', fn (): bool => false);
 
     Livewire::test(AgentSettings::class)->assertForbidden();
 });
 
 it('keeps the agent keys out of the knowledge settings form', function (): void {
-    $html = Livewire::test(RagSettings::class)->assertOk()->html();
+    $html = Livewire::test(KnowledgeSettings::class)->assertOk()->html();
 
     expect($html)->not->toContain('agent__resources__overrides')
         ->and($html)->toContain('retrieval__top_k');

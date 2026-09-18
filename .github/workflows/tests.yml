@@ -32,11 +32,11 @@ jobs:
           --health-retries=10
 
     env:
-      RAG_TEST_PG_HOST: 127.0.0.1
-      RAG_TEST_PG_PORT: 5432
-      RAG_TEST_PG_DATABASE: rag_test
-      RAG_TEST_PG_USERNAME: rag
-      RAG_TEST_PG_PASSWORD: rag
+      FILAMENT_AI_TEST_PG_HOST: 127.0.0.1
+      FILAMENT_AI_TEST_PG_PORT: 5432
+      FILAMENT_AI_TEST_PG_DATABASE: rag_test
+      FILAMENT_AI_TEST_PG_USERNAME: rag
+      FILAMENT_AI_TEST_PG_PASSWORD: rag
 
     steps:
       - uses: actions/checkout@v4

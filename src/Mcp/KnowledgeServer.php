@@ -48,15 +48,15 @@ class KnowledgeServer extends Server
 
     public function name(): string
     {
-        return (string) config('rag.mcp.server.name', 'knowledge');
+        return (string) config('filament-ai.mcp.server.name', 'knowledge');
     }
 
     public function instructions(): string
     {
-        $configured = config('rag.mcp.server.instructions');
+        $configured = config('filament-ai.mcp.server.instructions');
 
         return $configured === null || $configured === ''
-            ? (string) __('rag::rag.mcp.instructions')
+            ? (string) __('filament-ai::messages.mcp.instructions')
             : (string) $configured;
     }
 }

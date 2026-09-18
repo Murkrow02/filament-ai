@@ -24,9 +24,9 @@ use Murkrow\FilamentAi\Tests\Fixtures\StagedStrategy;
  */
 
 beforeEach(function (): void {
-    config()->set('rag.agent.solving.enabled', true);
-    config()->set('rag.agent.solving.queue.connection', 'database');
-    config()->set('rag.agent.solving.queue.queue', 'rag');
+    config()->set('filament-ai.agent.solving.enabled', true);
+    config()->set('filament-ai.agent.solving.queue.connection', 'database');
+    config()->set('filament-ai.agent.solving.queue.queue', 'rag');
     config()->set('queue.default', 'database');
 
     $this->createQueueTables();

@@ -7,14 +7,14 @@
 
 @extends($layout)
 
-@section('rag-title', __('rag::rag.chat.title'))
+@section('fai-title', __('filament-ai::messages.chat.title'))
 
-@section('rag-head')
-    <link rel="stylesheet" href="{{ AssetController::url('rag-chat.css') }}">
+@section('fai-head')
+    <link rel="stylesheet" href="{{ AssetController::url('filament-ai-chat.css') }}">
 
     {{-- The accent is the one thing a host is likely to want to change, so it
          is a variable rather than a rebuild. --}}
-    <style>:root { --rag-accent: {{ $payload['brand']['accent'] }}; }</style>
+    <style>:root { --fai-accent: {{ $payload['brand']['accent'] }}; }</style>
 
     {{-- Applied before first paint. Reading the stored preference afterwards
          would flash the light theme at somebody who chose dark. --}}
@@ -22,20 +22,20 @@
         (function () {
             var theme = 'light';
             try {
-                var stored = localStorage.getItem('rag-chat-theme');
+                var stored = localStorage.getItem('filament-ai-chat-theme');
                 theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             } catch (error) { /* storage unavailable */ }
-            document.documentElement.dataset.ragTheme = theme;
+            document.documentElement.dataset.faiTheme = theme;
         })();
     </script>
 @endsection
 
-@section('rag-content')
+@section('fai-content')
     {{-- The stylesheet is already in the head above, so the component does not
          emit it again: a stylesheet loaded from the body flashes. --}}
-    <x-rag::chat :payload="$payload" :abilities="$abilities" :assets="false" />
+    <x-filament-ai::chat :payload="$payload" :abilities="$abilities" :assets="false" />
 @endsection
 
-@section('rag-scripts')
-    <script src="{{ AssetController::url('rag-chat.js') }}" defer></script>
+@section('fai-scripts')
+    <script src="{{ AssetController::url('filament-ai-chat.js') }}" defer></script>
 @endsection

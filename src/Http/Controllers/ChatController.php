@@ -74,7 +74,7 @@ class ChatController
     {
         // The page, unlike the endpoints behind it, belongs to the standalone
         // chat alone: switching that off leaves the panel's chat working.
-        abort_unless(config('rag.chat.enabled', true), 404);
+        abort_unless(config('filament-ai.chat.enabled', true), 404);
 
         $data = $this->payload->build($request->user(), [
             'conversation' => $conversation,
@@ -82,10 +82,10 @@ class ChatController
             'record' => $request->string('record')->toString() ?: null,
         ]);
 
-        return view('rag::chat.index', [
+        return view('filament-ai::chat.index', [
             'payload' => $data,
             'abilities' => $data['abilities'],
-            'layout' => (string) config('rag.chat.layout', 'rag::chat.layout'),
+            'layout' => (string) config('filament-ai.chat.layout', 'filament-ai::chat.layout'),
         ]);
     }
 

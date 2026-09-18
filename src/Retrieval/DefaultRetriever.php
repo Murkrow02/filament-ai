@@ -45,13 +45,13 @@ final class DefaultRetriever implements Retriever
     {
         $timings = [];
 
-        $topK = $options->topK ?? (int) config('rag.retrieval.top_k', 8);
-        $fetchK = max($topK, $options->fetchK ?? (int) config('rag.retrieval.fetch_k', 40));
-        $minScore = $options->minScore ?? (float) config('rag.retrieval.min_score', 0.0);
-        $useMmr = $options->mmr ?? (bool) config('rag.retrieval.mmr.enabled', true);
-        $lambda = $options->mmrLambda ?? (float) config('rag.retrieval.mmr.lambda', 0.6);
-        $dedupeThreshold = (float) config('rag.retrieval.dedupe_threshold', 0.97);
-        $expand = $options->expandNeighbors ?? (int) config('rag.retrieval.expand_neighbors', 0);
+        $topK = $options->topK ?? (int) config('filament-ai.retrieval.top_k', 8);
+        $fetchK = max($topK, $options->fetchK ?? (int) config('filament-ai.retrieval.fetch_k', 40));
+        $minScore = $options->minScore ?? (float) config('filament-ai.retrieval.min_score', 0.0);
+        $useMmr = $options->mmr ?? (bool) config('filament-ai.retrieval.mmr.enabled', true);
+        $lambda = $options->mmrLambda ?? (float) config('filament-ai.retrieval.mmr.lambda', 0.6);
+        $dedupeThreshold = (float) config('filament-ai.retrieval.dedupe_threshold', 0.97);
+        $expand = $options->expandNeighbors ?? (int) config('filament-ai.retrieval.expand_neighbors', 0);
 
         $start = hrtime(true);
         $vector = $this->embedQuery($question);
@@ -138,16 +138,16 @@ final class DefaultRetriever implements Retriever
             return [];
         }
 
-        if (! config('rag.embeddings.cache_queries', true)) {
+        if (! config('filament-ai.embeddings.cache_queries', true)) {
             return $this->embeddings->embedQuery($question);
         }
 
-        $key = 'rag:q:'.sha1($this->embeddings->model().'|'.$question);
+        $key = 'ai:q:'.sha1($this->embeddings->model().'|'.$question);
 
         /** @var array<int, float> */
         return Cache::remember(
             $key,
-            (int) config('rag.embeddings.query_cache_ttl', 3600),
+            (int) config('filament-ai.embeddings.query_cache_ttl', 3600),
             fn (): array => $this->embeddings->embedQuery($question),
         );
     }
@@ -164,7 +164,7 @@ final class DefaultRetriever implements Retriever
         RetrievalOptions $options,
         array &$timings,
     ): Collection {
-        $driver = $options->hybridDriver ?? config('rag.retrieval.hybrid.driver');
+        $driver = $options->hybridDriver ?? config('filament-ai.retrieval.hybrid.driver');
 
         if ($driver === null || $driver === '' || $driver === 'null') {
             return $hits;
@@ -181,14 +181,14 @@ final class DefaultRetriever implements Retriever
         $ids = $search->candidates(
             $question,
             $query,
-            (int) config('rag.retrieval.hybrid.candidates', 100),
+            (int) config('filament-ai.retrieval.hybrid.candidates', 100),
         );
 
         $fused = $this->fusion->fuse(
             $hits,
             $ids,
-            (int) config('rag.retrieval.hybrid.rrf_k', 60),
-            (float) config('rag.retrieval.hybrid.weight', 0.35),
+            (int) config('filament-ai.retrieval.hybrid.rrf_k', 60),
+            (float) config('filament-ai.retrieval.hybrid.weight', 0.35),
         );
 
         $timings['lexical_ms'] = $this->msSince($start);

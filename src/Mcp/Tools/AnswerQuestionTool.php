@@ -27,17 +27,17 @@ class AnswerQuestionTool extends Tool
 {
     public function name(): string
     {
-        return (string) config('rag.mcp.tools.answer.name', 'answer_question');
+        return (string) config('filament-ai.mcp.tools.answer.name', 'answer_question');
     }
 
     public function description(): string
     {
-        return (string) __('rag::rag.mcp.answer_description');
+        return (string) __('filament-ai::messages.mcp.answer_description');
     }
 
     public function shouldRegister(): bool
     {
-        return (bool) config('rag.mcp.tools.answer.enabled', true);
+        return (bool) config('filament-ai.mcp.tools.answer.enabled', true);
     }
 
     /**

@@ -13,11 +13,11 @@ use Symfony\Component\Console\Input\InputOption;
  *
  * Sources are code, not configuration: a class is type-checked, can take
  * constructor dependencies and is testable in isolation. Publish the stub with
- * `vendor:publish --tag=rag-stubs` to change what this writes.
+ * `vendor:publish --tag=filament-ai-stubs` to change what this writes.
  */
 class MakeSourceCommand extends GeneratorCommand
 {
-    protected $name = 'rag:make:source';
+    protected $name = 'ai:make:source';
 
     protected $description = 'Create a knowledge source class';
 
@@ -32,7 +32,7 @@ class MakeSourceCommand extends GeneratorCommand
         }
 
         $this->components->info(sprintf(
-            'Register it by adding %s::class to the sources array in config/rag.php.',
+            'Register it by adding %s::class to the sources array in config/filament-ai.php.',
             $this->qualifyClass($this->getNameInput()),
         ));
 
@@ -84,7 +84,7 @@ class MakeSourceCommand extends GeneratorCommand
     {
         return [
             ['model', 'm', InputOption::VALUE_OPTIONAL, 'The Eloquent model the source indexes'],
-            ['key', null, InputOption::VALUE_OPTIONAL, 'The source key used by rag:ingest and stored on every document'],
+            ['key', null, InputOption::VALUE_OPTIONAL, 'The source key used by ai:ingest and stored on every document'],
             ['relation', null, InputOption::VALUE_OPTIONAL, 'The has-many relation holding the ordered text', 'pages'],
             ['text', null, InputOption::VALUE_OPTIONAL, 'The column on the related model holding the text', 'content'],
             ['position', null, InputOption::VALUE_OPTIONAL, 'The column holding the human-meaningful position', 'number'],

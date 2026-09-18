@@ -6,6 +6,6 @@ namespace Murkrow\FilamentAi\Exceptions;
 
 use RuntimeException;
 
-class RagException extends RuntimeException
+class FilamentAiException extends RuntimeException
 {
 }

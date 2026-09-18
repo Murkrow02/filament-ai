@@ -20,7 +20,7 @@ use Murkrow\FilamentAi\Support\Tables;
  * time, so the size of each call is how long a search query can wait behind
  * an ingestion that is running.
  *
- * Shared by the queued job and by `rag:ingest --sync` so the two paths cannot
+ * Shared by the queued job and by `ai:ingest --sync` so the two paths cannot
  * drift. Idempotent by design: it re-reads the rows and skips anything already
  * embedded, which makes a retried job safe rather than a double charge.
  *

@@ -7,7 +7,7 @@ namespace Murkrow\FilamentAi\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Murkrow\FilamentAi\Enums\RunItemStatus;
-use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Models\Concerns\UsesAiConnection;
 
 /**
  * Per-document outcome inside an ingestion run. Kept as its own table so a
@@ -27,11 +27,11 @@ use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
  */
 class IngestionRunItem extends Model
 {
-    use UsesRagConnection;
+    use UsesAiConnection;
 
     protected $guarded = [];
 
-    protected function ragTableKey(): string
+    protected function aiTableKey(): string
     {
         return 'run_items';
     }

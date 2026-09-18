@@ -37,13 +37,13 @@ it('is registered on the panel', function (): void {
 it('renders the chat component', function (): void {
     $html = Livewire::test(AssistantChat::class)->assertOk()->html();
 
-    expect($html)->toContain('id="rag-chat"')
-        ->toContain('data-rag-embedded')
-        ->toContain('rag-chat-payload')
+    expect($html)->toContain('id="fai-chat"')
+        ->toContain('data-fai-embedded')
+        ->toContain('fai-chat-payload')
         // Assets come from the package's own route, so a host with no build
         // step still gets a working page.
-        ->toContain('rag-chat.css')
-        ->toContain('rag-chat.js');
+        ->toContain('filament-ai-chat.css')
+        ->toContain('filament-ai-chat.js');
 
     $payload = payloadFrom($html);
 
@@ -54,12 +54,12 @@ it('renders the chat component', function (): void {
 
 it('is the same component the standalone page renders', function (): void {
     $panel = Livewire::test(AssistantChat::class)->html();
-    $standalone = $this->get('/rag/chat')->getContent();
+    $standalone = $this->get('/ai/chat')->getContent();
 
     // One chat, two doors: the difference is the embedding flag and nothing
     // else about the markup.
-    expect($panel)->toContain('id="rag-chat"')
-        ->and($standalone)->toContain('id="rag-chat"')
+    expect($panel)->toContain('id="fai-chat"')
+        ->and($standalone)->toContain('id="fai-chat"')
         ->and(payloadFrom($panel)['embedded'])->toBeTrue()
         ->and(payloadFrom($standalone)['embedded'])->toBeFalse();
 });
@@ -113,7 +113,7 @@ it('builds the topbar link from the page context', function (): void {
 });
 
 it('is forbidden when the authorize callback denies', function (): void {
-    config()->set('rag.agent.authorize', fn (): bool => false);
+    config()->set('filament-ai.agent.authorize', fn (): bool => false);
 
     Livewire::test(AssistantChat::class)->assertForbidden();
 });

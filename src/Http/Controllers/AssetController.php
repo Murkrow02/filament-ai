@@ -18,8 +18,8 @@ use Symfony\Component\HttpFoundation\Response;
 class AssetController
 {
     private const ALLOWED = [
-        'rag-chat.css' => 'text/css; charset=utf-8',
-        'rag-chat.js' => 'text/javascript; charset=utf-8',
+        'filament-ai-chat.css' => 'text/css; charset=utf-8',
+        'filament-ai-chat.js' => 'text/javascript; charset=utf-8',
         'alpine.js' => 'text/javascript; charset=utf-8',
     ];
 
@@ -50,6 +50,6 @@ class AssetController
         $path = self::path($file);
         $version = is_file($path) ? substr(md5_file($path) ?: '', 0, 8) : 'dev';
 
-        return route('rag.chat.asset', ['file' => $file]).'?v='.$version;
+        return route('filament-ai.chat.asset', ['file' => $file]).'?v='.$version;
     }
 }

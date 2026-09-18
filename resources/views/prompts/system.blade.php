@@ -1,7 +1,7 @@
 {{--
     The grounding contract.
 
-    Published with `php artisan vendor:publish --tag=rag-views` and tuned per
+    Published with `php artisan vendor:publish --tag=filament-ai-views` and tuned per
     domain. Two rules earn their keep on OCR'd corpora in particular: never
     invent a position label, and say when the source text is garbled rather
     than quietly "correcting" it into something plausible.

@@ -11,7 +11,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Murkrow\FilamentAi\Enums\QueryChannel;
-use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Concerns\HasAiNavigation;
 use Murkrow\FilamentAi\Filament\Resources\QueryResource\Pages\ListQueries;
 use Murkrow\FilamentAi\Filament\Resources\QueryResource\Pages\ViewQuery;
 use Murkrow\FilamentAi\Ingestion\CostCalculator;
@@ -26,7 +26,7 @@ use Murkrow\FilamentAi\Models\QueryLog;
  */
 class QueryResource extends Resource
 {
-    use HasRagNavigation;
+    use HasAiNavigation;
 
     protected static ?string $model = QueryLog::class;
 
@@ -38,7 +38,7 @@ class QueryResource extends Resource
 
     public static function getSlug(?\Filament\Panel $panel = null): string
     {
-        return static::ragSlug('queries');
+        return static::aiSlug('queries');
     }
 
     public static function canCreate(): bool
@@ -48,7 +48,7 @@ class QueryResource extends Resource
 
     public static function canAccess(): bool
     {
-        return static::canAccessRag();
+        return static::canAccessAi();
     }
 
     public static function table(Table $table): Table

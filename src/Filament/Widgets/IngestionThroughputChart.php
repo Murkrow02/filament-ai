@@ -6,7 +6,7 @@ namespace Murkrow\FilamentAi\Filament\Widgets;
 
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
-use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Concerns\HasAiNavigation;
 use Murkrow\FilamentAi\Models\Chunk;
 
 /**
@@ -18,7 +18,7 @@ use Murkrow\FilamentAi\Models\Chunk;
  */
 class IngestionThroughputChart extends ChartWidget
 {
-    use HasRagNavigation;
+    use HasAiNavigation;
 
     protected ?string $heading = 'Embedding throughput (last 24h)';
 
@@ -26,7 +26,7 @@ class IngestionThroughputChart extends ChartWidget
 
     protected function getPollingInterval(): ?string
     {
-        return static::ragPollIntervalWhileRunning();
+        return static::aiPollIntervalWhileRunning();
     }
 
     protected function getType(): string
@@ -70,6 +70,6 @@ class IngestionThroughputChart extends ChartWidget
 
     public static function canView(): bool
     {
-        return (bool) config('rag.filament.pages.dashboard', true);
+        return (bool) config('filament-ai.filament.pages.dashboard', true);
     }
 }

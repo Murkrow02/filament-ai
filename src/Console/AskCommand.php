@@ -14,7 +14,7 @@ use Murkrow\FilamentAi\Ingestion\CostCalculator;
 
 class AskCommand extends Command
 {
-    protected $signature = 'rag:ask
+    protected $signature = 'ai:ask
                             {question* : The question to answer}
                             {--source=* : Restrict to one or more sources}
                             {--document=* : Restrict to specific document identifiers}

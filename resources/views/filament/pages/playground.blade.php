@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    @include('rag::partials.styles')
+    @include('filament-ai::partials.styles')
 
     <form wire:submit="run">
         {{ $this->form }}
@@ -9,7 +9,7 @@
                 Run
             </x-filament::button>
 
-            <span wire:loading wire:target="run" style="font-size:.875rem;color:var(--rag-muted);">
+            <span wire:loading wire:target="run" style="font-size:.875rem;color:var(--fai-muted);">
                 Retrieving...
             </span>
         </div>
@@ -35,10 +35,10 @@
             @php
                 // Turn "[#1]" into a markdown link to its passage card below --
                 // clicking a citation should jump to the source, not just claim one.
-                $linkedAnswer = preg_replace('/\[#(\d+)\]/', '[#$1](#rag-passage-$1)', $answer);
+                $linkedAnswer = preg_replace('/\[#(\d+)\]/', '[#$1](#fai-passage-$1)', $answer);
             @endphp
 
-            <div class="rag-answer">
+            <div class="fai-answer">
                 {!! \Illuminate\Support\Str::markdown($linkedAnswer, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
             </div>
         </x-filament::section>
@@ -54,7 +54,7 @@
 
             <div style="display:flex;flex-direction:column;gap:1rem;">
                 @foreach ($passages as $passage)
-                    <x-rag::chunk-card :passage="$passage" />
+                    <x-filament-ai::chunk-card :passage="$passage" />
                 @endforeach
             </div>
         </x-filament::section>
@@ -71,40 +71,40 @@
     <style>
         /* Markdown body. Replaces the Typography plugin so that installing this
            package never drags a Tailwind plugin into the host application. */
-        .rag-answer { font-size: .875rem; line-height: 1.7; }
-        .rag-answer > :first-child { margin-top: 0; }
-        .rag-answer > :last-child { margin-bottom: 0; }
-        .rag-answer p, .rag-answer ul, .rag-answer ol, .rag-answer pre { margin: .75rem 0; }
-        .rag-answer ul, .rag-answer ol { padding-inline-start: 1.25rem; }
-        .rag-answer ul { list-style: disc; }
-        .rag-answer ol { list-style: decimal; }
-        .rag-answer li { margin: .25rem 0; }
-        .rag-answer h1, .rag-answer h2, .rag-answer h3 { font-weight: 600; margin: 1rem 0 .5rem; }
-        .rag-answer h1 { font-size: 1.125rem; }
-        .rag-answer h2 { font-size: 1rem; }
-        .rag-answer h3 { font-size: .9375rem; }
-        .rag-answer code { font-size: .8125rem; padding: .075rem .25rem; border-radius: .25rem; background: var(--rag-track); }
-        .rag-answer pre { padding: .75rem; border-radius: .5rem; overflow-x: auto; background: var(--rag-track); }
-        .rag-answer pre code { background: none; padding: 0; }
-        .rag-answer blockquote { margin: .75rem 0; padding-inline-start: .75rem; border-inline-start: 3px solid var(--rag-line); color: var(--rag-muted); }
-        .rag-answer a { color: var(--primary-600); text-decoration: underline; }
+        .fai-answer { font-size: .875rem; line-height: 1.7; }
+        .fai-answer > :first-child { margin-top: 0; }
+        .fai-answer > :last-child { margin-bottom: 0; }
+        .fai-answer p, .fai-answer ul, .fai-answer ol, .fai-answer pre { margin: .75rem 0; }
+        .fai-answer ul, .fai-answer ol { padding-inline-start: 1.25rem; }
+        .fai-answer ul { list-style: disc; }
+        .fai-answer ol { list-style: decimal; }
+        .fai-answer li { margin: .25rem 0; }
+        .fai-answer h1, .fai-answer h2, .fai-answer h3 { font-weight: 600; margin: 1rem 0 .5rem; }
+        .fai-answer h1 { font-size: 1.125rem; }
+        .fai-answer h2 { font-size: 1rem; }
+        .fai-answer h3 { font-size: .9375rem; }
+        .fai-answer code { font-size: .8125rem; padding: .075rem .25rem; border-radius: .25rem; background: var(--fai-track); }
+        .fai-answer pre { padding: .75rem; border-radius: .5rem; overflow-x: auto; background: var(--fai-track); }
+        .fai-answer pre code { background: none; padding: 0; }
+        .fai-answer blockquote { margin: .75rem 0; padding-inline-start: .75rem; border-inline-start: 3px solid var(--fai-line); color: var(--fai-muted); }
+        .fai-answer a { color: var(--primary-600); text-decoration: underline; }
 
-        @keyframes rag-passage-flash {
+        @keyframes fai-passage-flash {
             0% { box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.9); background-color: rgba(250, 204, 21, 0.15); }
             100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); background-color: transparent; }
         }
-        .rag-passage-highlight {
-            animation: rag-passage-flash 1.6s ease-out;
+        .fai-passage-highlight {
+            animation: fai-passage-flash 1.6s ease-out;
         }
     </style>
 
     <script>
         // Guarded against Livewire re-rendering this script tag on every "Run".
-        if (! window.__ragPassageHighlightBound) {
-            window.__ragPassageHighlightBound = true;
+        if (! window.__faiPassageHighlightBound) {
+            window.__faiPassageHighlightBound = true;
 
             document.addEventListener('click', (event) => {
-                const link = event.target.closest('a[href^="#rag-passage-"]');
+                const link = event.target.closest('a[href^="#fai-passage-"]');
 
                 if (! link) {
                     return;
@@ -118,10 +118,10 @@
 
                 event.preventDefault();
                 target.scrollIntoView({behavior: 'smooth', block: 'center'});
-                target.classList.remove('rag-passage-highlight');
+                target.classList.remove('fai-passage-highlight');
                 // Force a reflow so the animation restarts on repeat clicks.
                 void target.offsetWidth;
-                target.classList.add('rag-passage-highlight');
+                target.classList.add('fai-passage-highlight');
             });
         }
     </script>

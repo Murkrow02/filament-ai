@@ -10,7 +10,7 @@ use Murkrow\FilamentAi\Data\VectorQuery;
 use Murkrow\FilamentAi\Embeddings\FakeEmbeddingProvider;
 use Murkrow\FilamentAi\Embeddings\VectorMath;
 use Murkrow\FilamentAi\Ingestion\ChunkEmbedder;
-use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Models\Chunk;
 use Murkrow\FilamentAi\Models\Document;
 use Murkrow\FilamentAi\Support\Tables;
@@ -30,7 +30,7 @@ function seedPgLibrary(): TestBook
         'content' => 'Il grano venne razionato per tutto inverno successivo. I mercanti protestarono a lungo davanti al palazzo comunale della citta.',
     ]);
 
-    Rag::ingestSync('books');
+    FilamentAi::ingestSync('books');
 
     return $book;
 }
@@ -43,7 +43,7 @@ it('installs a real vector column of the configured width', function (): void {
     );
 
     expect($column)->not->toBeNull()
-        ->and((int) $column->atttypmod)->toBe((int) config('rag.embeddings.dimensions'));
+        ->and((int) $column->atttypmod)->toBe((int) config('filament-ai.embeddings.dimensions'));
 });
 
 it('builds an HNSW index on the embedding column', function (): void {
@@ -64,7 +64,7 @@ it('stores vectors that postgres can read back', function (): void {
     $vectors = app(VectorStore::class)->read([(int) $chunk->id]);
 
     expect($vectors)->toHaveKey($chunk->id)
-        ->and($vectors[$chunk->id])->toHaveCount((int) config('rag.embeddings.dimensions'));
+        ->and($vectors[$chunk->id])->toHaveCount((int) config('filament-ai.embeddings.dimensions'));
 
     // Written normalised, so the norm must come back as 1.
     $norm = sqrt(array_sum(array_map(static fn (float $v): float => $v * $v, $vectors[$chunk->id])));
@@ -167,7 +167,7 @@ function pgColumnWidth(): int
 
 it('reports the width the column was installed with', function (): void {
     expect(app(VectorStore::class)->installedDimensions())
-        ->toBe((int) config('rag.embeddings.dimensions'));
+        ->toBe((int) config('filament-ai.embeddings.dimensions'));
 });
 
 it('keeps every vector when reindexing at the same width', function (): void {
@@ -175,24 +175,24 @@ it('keeps every vector when reindexing at the same width', function (): void {
 
     $embedded = app(VectorStore::class)->countEmbedded();
 
-    $this->artisan('rag:vector:reindex', ['--force' => true])->assertExitCode(0);
+    $this->artisan('ai:vector:reindex', ['--force' => true])->assertExitCode(0);
 
     expect($embedded)->toBeGreaterThan(0)
         ->and(app(VectorStore::class)->countEmbedded())->toBe($embedded)
-        ->and(pgColumnWidth())->toBe((int) config('rag.embeddings.dimensions'));
+        ->and(pgColumnWidth())->toBe((int) config('filament-ai.embeddings.dimensions'));
 });
 
 it('resizes the column when the configured dimensions changed', function (): void {
     seedPgLibrary();
 
-    $installed = (int) config('rag.embeddings.dimensions');
+    $installed = (int) config('filament-ai.embeddings.dimensions');
     $configured = intdiv($installed, 2);
 
     // What happens in a real deployment: the migration ran with one width,
     // then the model changed and the config with it.
-    config(['rag.embeddings.dimensions' => $configured]);
+    config(['filament-ai.embeddings.dimensions' => $configured]);
 
-    $this->artisan('rag:vector:reindex', ['--force' => true])
+    $this->artisan('ai:vector:reindex', ['--force' => true])
         ->expectsOutputToContain('--mode=embeddings_only')
         ->assertExitCode(0);
 
@@ -216,12 +216,12 @@ it('resizes the column when the configured dimensions changed', function (): voi
 it('does nothing when the resize is not confirmed', function (): void {
     seedPgLibrary();
 
-    $installed = (int) config('rag.embeddings.dimensions');
+    $installed = (int) config('filament-ai.embeddings.dimensions');
     $embedded = app(VectorStore::class)->countEmbedded();
 
-    config(['rag.embeddings.dimensions' => intdiv($installed, 2)]);
+    config(['filament-ai.embeddings.dimensions' => intdiv($installed, 2)]);
 
-    $this->artisan('rag:vector:reindex')
+    $this->artisan('ai:vector:reindex')
         ->expectsConfirmation('Discard '.number_format($embedded).' stored vectors, resize the column and rebuild the index?', 'no')
         ->assertExitCode(0);
 

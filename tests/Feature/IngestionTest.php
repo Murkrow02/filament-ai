@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Murkrow\FilamentAi\Enums\DocumentStatus;
 use Murkrow\FilamentAi\Enums\IngestionMode;
 use Murkrow\FilamentAi\Enums\RunStatus;
-use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Models\Chunk;
 use Murkrow\FilamentAi\Models\Document;
 use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
@@ -41,7 +41,7 @@ function seedBook(string $title = 'Cronaca', int $pages = 3): TestBook
 it('runs an ingestion end to end and embeds every chunk', function (): void {
     seedBook();
 
-    $run = Rag::ingestSync('books');
+    $run = FilamentAi::ingestSync('books');
 
     expect($run->status)->toBe(RunStatus::Completed)
         ->and($run->documents_done)->toBe(1)
@@ -62,7 +62,7 @@ it('runs an ingestion end to end and embeds every chunk', function (): void {
 it('records the page range each chunk came from', function (): void {
     seedBook(pages: 4);
 
-    Rag::ingestSync('books');
+    FilamentAi::ingestSync('books');
 
     $chunks = Chunk::query()->orderBy('ordinal')->get();
 
@@ -80,8 +80,8 @@ it('records the page range each chunk came from', function (): void {
 it('skips unchanged documents on an incremental re-run', function (): void {
     seedBook();
 
-    Rag::ingestSync('books');
-    $second = Rag::ingestSync('books', mode: IngestionMode::Incremental);
+    FilamentAi::ingestSync('books');
+    $second = FilamentAi::ingestSync('books', mode: IngestionMode::Incremental);
 
     expect($second->documents_skipped)->toBe(1)
         ->and($second->documents_done)->toBe(0)
@@ -94,7 +94,7 @@ it('reuses the vectors of text that did not change', function (): void {
     // reason.
     $book = seedBook(pages: 8);
 
-    Rag::ingestSync('books');
+    FilamentAi::ingestSync('books');
 
     $before = Chunk::query()->orderBy('ordinal')->get();
     $untouched = $before->first();
@@ -107,7 +107,7 @@ it('reuses the vectors of text that did not change', function (): void {
         'content' => 'Una pagina finale completamente diversa, con parole nuove e nessun riferimento al passato.',
     ]);
 
-    $run = Rag::ingestSync('books', mode: IngestionMode::Full);
+    $run = FilamentAi::ingestSync('books', mode: IngestionMode::Full);
 
     expect($run->chunks_reused)->toBeGreaterThan(0)
         ->and($run->chunks_created)->toBeGreaterThan(0)
@@ -124,12 +124,12 @@ it('reuses the vectors of text that did not change', function (): void {
 it('deletes chunks whose source text disappeared', function (): void {
     $book = seedBook(pages: 4);
 
-    Rag::ingestSync('books');
+    FilamentAi::ingestSync('books');
     $before = Chunk::query()->count();
 
     $book->pages()->where('number', '>', 2)->delete();
 
-    $run = Rag::ingestSync('books', mode: IngestionMode::Full);
+    $run = FilamentAi::ingestSync('books', mode: IngestionMode::Full);
 
     expect($run->chunks_deleted)->toBeGreaterThan(0)
         ->and(Chunk::query()->count())->toBeLessThan($before);
@@ -139,7 +139,7 @@ it('honours a filter when selecting documents', function (): void {
     $first = seedBook('Primo');
     seedBook('Secondo');
 
-    $run = Rag::ingestSync('books', ['ids' => (string) $first->id]);
+    $run = FilamentAi::ingestSync('books', ['ids' => (string) $first->id]);
 
     expect($run->documents_total)->toBe(1)
         ->and(Document::query()->count())->toBe(1)
@@ -149,7 +149,7 @@ it('honours a filter when selecting documents', function (): void {
 it('estimates work before anything is queued', function (): void {
     seedBook(pages: 5);
 
-    $estimate = Rag::estimate('books');
+    $estimate = FilamentAi::estimate('books');
 
     expect($estimate->documents)->toBe(1)
         ->and($estimate->chunks)->toBeGreaterThan(0)

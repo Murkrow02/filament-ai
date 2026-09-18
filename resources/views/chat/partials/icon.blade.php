@@ -2,7 +2,7 @@
     The page's icon set, inline.
 
     An external icon font or sprite would be one more asset to publish, and
-    the same twelve shapes are also needed from JavaScript -- rag-chat.js
+    the same twelve shapes are also needed from JavaScript -- filament-ai-chat.js
     carries the identical set, so the markup rendered on the server and the
     markup rendered in the browser look the same.
 --}}

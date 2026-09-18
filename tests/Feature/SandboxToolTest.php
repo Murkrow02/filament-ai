@@ -16,9 +16,9 @@ use Murkrow\FilamentAi\Contracts\CodeSandbox;
 
 function fakeSandbox(array $languages = ['python']): FakeSandbox
 {
-    config()->set('rag.agent.sandbox.enabled', true);
-    config()->set('rag.agent.sandbox.driver', 'fake');
-    config()->set('rag.agent.sandbox.languages', array_fill_keys($languages, '*'));
+    config()->set('filament-ai.agent.sandbox.enabled', true);
+    config()->set('filament-ai.agent.sandbox.driver', 'fake');
+    config()->set('filament-ai.agent.sandbox.languages', array_fill_keys($languages, '*'));
 
     $sandbox = new FakeSandbox($languages);
 
@@ -28,7 +28,7 @@ function fakeSandbox(array $languages = ['python']): FakeSandbox
 }
 
 it('is off unless the host switches it on', function (): void {
-    config()->set('rag.agent.sandbox.enabled', false);
+    config()->set('filament-ai.agent.sandbox.enabled', false);
 
     expect(RunCode::enabled())->toBeFalse()
         ->and((new RunCode)->handle(new Request(['language' => 'python', 'code' => 'print(1)'])))
@@ -82,7 +82,7 @@ it('refuses a language nobody allowed', function (): void {
 
 it('refuses an empty or oversized program before running anything', function (): void {
     $sandbox = fakeSandbox();
-    config()->set('rag.agent.sandbox.max_code_characters', 50);
+    config()->set('filament-ai.agent.sandbox.max_code_characters', 50);
 
     expect((new RunCode)->handle(new Request(['language' => 'python', 'code' => '   '])))->toStartWith('Error:')
         ->and((new RunCode)->handle(new Request(['language' => 'python', 'code' => str_repeat('a', 100)])))->toStartWith('Error:')
@@ -92,7 +92,7 @@ it('refuses an empty or oversized program before running anything', function ():
 it('truncates a flood of output from the end', function (): void {
     $sandbox = fakeSandbox();
     $sandbox->respondWith(new SandboxResult(stdout: str_repeat('x', 5000).'ULTIMA RIGA', exitCode: 0));
-    config()->set('rag.agent.sandbox.max_output', 200);
+    config()->set('filament-ai.agent.sandbox.max_output', 200);
 
     $output = (new RunCode)->handle(new Request(['language' => 'python', 'code' => 'print("x" * 5000)']));
 

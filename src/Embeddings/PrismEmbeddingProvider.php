@@ -38,15 +38,15 @@ final class PrismEmbeddingProvider implements EmbeddingProvider
     public static function fromConfig(): self
     {
         return new self(
-            provider: (string) config('rag.embeddings.prism_provider', 'openai'),
-            model: (string) config('rag.embeddings.model', 'text-embedding-3-small'),
-            dimensions: (int) config('rag.embeddings.dimensions', 1536),
-            batchSize: (int) config('rag.embeddings.batch_size', 96),
-            maxInputTokens: (int) config('rag.embeddings.max_input_tokens', 8000),
-            normalize: (bool) config('rag.embeddings.normalize', true),
-            documentPrefix: (string) config('rag.embeddings.document_prefix', ''),
-            queryPrefix: (string) config('rag.embeddings.query_prefix', ''),
-            providerOptions: (array) config('rag.embeddings.provider_options', []),
+            provider: (string) config('filament-ai.embeddings.prism_provider', 'openai'),
+            model: (string) config('filament-ai.embeddings.model', 'text-embedding-3-small'),
+            dimensions: (int) config('filament-ai.embeddings.dimensions', 1536),
+            batchSize: (int) config('filament-ai.embeddings.batch_size', 96),
+            maxInputTokens: (int) config('filament-ai.embeddings.max_input_tokens', 8000),
+            normalize: (bool) config('filament-ai.embeddings.normalize', true),
+            documentPrefix: (string) config('filament-ai.embeddings.document_prefix', ''),
+            queryPrefix: (string) config('filament-ai.embeddings.query_prefix', ''),
+            providerOptions: (array) config('filament-ai.embeddings.provider_options', []),
         );
     }
 

@@ -1,15 +1,15 @@
-# Laravel RAG
+# Filament AI
 
 [![Tests](https://github.com/Murkrow02/filament-ai/actions/workflows/tests.yml/badge.svg)](https://github.com/Murkrow02/filament-ai/actions/workflows/tests.yml)
 [![Latest Version](https://img.shields.io/packagist/v/murkrow/filament-ai.svg)](https://packagist.org/packages/murkrow/filament-ai)
 [![License](https://img.shields.io/packagist/l/murkrow/filament-ai.svg)](LICENSE.md)
 
-A configuration-driven RAG toolkit for Laravel: chunking, embeddings, pgvector retrieval, grounded answering, an MCP server and a Filament control panel.
+An assistant for Filament panels, on a knowledge base you describe in configuration: chunking, embeddings, pgvector retrieval, grounded answering, agent tools over your own resources, an MCP server and a control panel.
 
-The package knows nothing about your models. You describe them once in `config/rag.php` — a model, a relation that yields ordered text, a couple of columns — and everything else follows: ingestion, incremental re-indexing, semantic search with page-accurate citations, a chat endpoint, an MCP server for external agents, and a dashboard to drive it all.
+The package knows nothing about your models. You describe them once in `config/filament-ai.php` — a model, a relation that yields ordered text, a couple of columns — and everything else follows: ingestion, incremental re-indexing, semantic search with page-accurate citations, a chat endpoint, an MCP server for external agents, and a dashboard to drive it all.
 
 ```php
-Rag::ask('Who convened the council, and when?')->answer;
+FilamentAi::ask('Who convened the council, and when?')->answer;
 // "The podestà Guido Novello convened the general council in March. [#1]"
 ```
 
@@ -43,25 +43,25 @@ RUN apk add --no-cache --virtual .build build-base git postgresql17-dev \
 
 ```bash
 composer require murkrow/filament-ai
-php artisan rag:install     # verifies the extension, publishes the config
+php artisan ai:install     # verifies the extension, publishes the config
 php artisan migrate
 ```
 
-`rag:install` tells you, in plain language, what is missing before anything else can go wrong — a database that cannot host vectors, a missing `job_batches` table, a corpus with no source configured.
+`ai:install` tells you, in plain language, what is missing before anything else can go wrong — a database that cannot host vectors, a missing `job_batches` table, a corpus with no source configured.
 
-Add your provider key and pick your models. Credentials and base URLs live in laravel/ai's `config/ai.php` (`php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"`); `RAG_EMBEDDING_PROVIDER` and `RAG_LLM_PROVIDER` name one of its `providers` and fall back to its defaults when unset:
+Add your provider key and pick your models. Credentials and base URLs live in laravel/ai's `config/ai.php` (`php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"`); `FILAMENT_AI_EMBEDDING_PROVIDER` and `FILAMENT_AI_LLM_PROVIDER` name one of its `providers` and fall back to its defaults when unset:
 
 ```dotenv
 OPENAI_API_KEY=sk-...
 
-RAG_EMBEDDING_PROVIDER=openai
-RAG_EMBEDDING_MODEL=text-embedding-3-small
-RAG_EMBEDDING_DIMENSIONS=1536
-RAG_LLM_PROVIDER=openai
-RAG_LLM_MODEL=gpt-4o-mini
+FILAMENT_AI_EMBEDDING_PROVIDER=openai
+FILAMENT_AI_EMBEDDING_MODEL=text-embedding-3-small
+FILAMENT_AI_EMBEDDING_DIMENSIONS=1536
+FILAMENT_AI_LLM_PROVIDER=openai
+FILAMENT_AI_LLM_MODEL=gpt-4o-mini
 
-RAG_QUEUE_CONNECTION=redis
-RAG_QUEUE=rag
+FILAMENT_AI_QUEUE_CONNECTION=redis
+FILAMENT_AI_QUEUE=rag   # the queue name keeps its old default; rename it only with an empty queue
 ```
 
 Then run a worker for the ingestion queue:
@@ -73,8 +73,8 @@ php artisan queue:work redis --queue=rag,default
 Your `config/rag.php` only needs the keys you actually change: the package's defaults are merged underneath it recursively, so overriding one nested value never drops its siblings. Publish the full, commented file when you want to read the defaults:
 
 ```bash
-php artisan vendor:publish --tag=rag-config     # every default, documented
-php artisan vendor:publish --tag=rag-stubs      # the source stub rag:make:source writes
+php artisan vendor:publish --tag=filament-ai-config     # every default, documented
+php artisan vendor:publish --tag=filament-ai-stubs      # the source stub rag:make:source writes
 ```
 
 ---
@@ -84,7 +84,7 @@ php artisan vendor:publish --tag=rag-stubs      # the source stub rag:make:sourc
 A **source** maps one Eloquent model to a document, and an ordered relation to that document's text segments. It is a class, and it is the only place your own models appear.
 
 ```bash
-php artisan rag:make:source BookSource --model=App\\Models\\Book --relation=pages --text=content --position=number
+php artisan ai:make:source BookSource --model=App\\Models\\Book --relation=pages --text=content --position=number
 ```
 
 ```php
@@ -214,7 +214,7 @@ Positions are ordinals inside the group, so a citation reads "Toponyms - S, entr
 **Not an Eloquent model?** Build a source at runtime:
 
 ```php
-Rag::source('handbook')
+FilamentAi::source('handbook')
     ->setLabel('Employee handbook')
     ->loadDocumentsUsing(fn (array $filters) => LazyCollection::make(/* … DocumentDraft … */))
     ->loadSegmentsUsing(function (string $id): Generator { yield new Segment(1, $text); })
@@ -226,12 +226,12 @@ Rag::source('handbook')
 ## Indexing
 
 ```bash
-php artisan rag:ingest books                      # queued, incremental
-php artisan rag:ingest books --sync                # in this process
-php artisan rag:ingest books --dry-run             # estimate only
-php artisan rag:ingest books --filter=id_range:1-50
-php artisan rag:ingest books --mode=full           # re-chunk everything
-php artisan rag:ingest books --mode=embeddings_only
+php artisan ai:ingest books                      # queued, incremental
+php artisan ai:ingest books --sync                # in this process
+php artisan ai:ingest books --dry-run             # estimate only
+php artisan ai:ingest books --filter=id_range:1-50
+php artisan ai:ingest books --mode=full           # re-chunk everything
+php artisan ai:ingest books --mode=embeddings_only
 ```
 
 `--dry-run` answers the question worth asking first:
@@ -246,7 +246,7 @@ php artisan rag:ingest books --mode=embeddings_only
 
 ### Incremental re-indexing is the default, and it is cheap
 
-Chunks are matched by a hash of their embedding input. Re-running an ingestion over a corpus where one page changed re-embeds the chunks covering that page and **keeps every other vector**. A nightly `rag:ingest books` over an unchanged library costs nothing and finishes in seconds.
+Chunks are matched by a hash of their embedding input. Re-running an ingestion over a corpus where one page changed re-embeds the chunks covering that page and **keeps every other vector**. A nightly `ai:ingest books` over an unchanged library costs nothing and finishes in seconds.
 
 Three things invalidate a chunk: its text, the document title (it is part of the embedded context header), and the chunking parameters. All three are captured in the hash, so the system can never quietly serve a stale mixture.
 
@@ -257,11 +257,11 @@ Ingestion only ever walks what a source still returns, so it cannot notice that 
 Immediately, from wherever the host deletes the record — a model observer is the place that cannot be bypassed:
 
 ```php
-use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 
 public function deleted(Book $book): void
 {
-    Rag::forget('books', $book->getKey());
+    FilamentAi::forget('books', $book->getKey());
 }
 ```
 
@@ -278,7 +278,7 @@ It asks each source whether every document's host record still exists, and drops
 **A grouped source is different.** Its `external_id` is the group, not the row — deleting one of the thousands of rows that share a document must *re-ingest that group*, not forget it:
 
 ```php
-Rag::ingest('toponyms', ['initials' => 'S']);   // incremental: re-embeds only what changed
+FilamentAi::ingest('toponyms', ['initials' => 'S']);   // incremental: re-embeds only what changed
 ```
 
 `forget()` on a grouped source would delete every entry that shares the group. Reach for it only when the whole group is gone, and let the nightly prune handle that case instead.
@@ -301,14 +301,14 @@ Every parameter is configurable per source, and the chunker is deterministic: th
 ## Searching and answering
 
 ```php
-use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Data\{AnswerOptions, RetrievalOptions};
 
 // Retrieval only — no model call, no cost.
-$chunks = Rag::search('who convened the council?');
+$chunks = FilamentAi::search('who convened the council?');
 
 // Grounded answer with citations.
-$result = Rag::ask('who convened the council?', new AnswerOptions(
+$result = FilamentAi::ask('who convened the council?', new AnswerOptions(
     retrieval: new RetrievalOptions(
         sourceKeys:   ['books'],
         externalIds:  ['42'],       // one book
@@ -327,7 +327,7 @@ $result->usage->costUsd();
 Streaming:
 
 ```php
-$stream = Rag::stream($question);
+$stream = FilamentAi::stream($question);
 
 foreach ($stream as $delta) {
     echo $delta;
@@ -351,14 +351,14 @@ The system prompt is a publishable Blade view. The default is deliberately stric
 Two guardrails are enforced in code rather than trusted to the model: **when retrieval returns nothing the model is never called at all** (an LLM handed no context will answer from its parameters, which is the exact failure a grounded system exists to prevent), and an answer citing nothing is treated as ungrounded and reported as a refusal.
 
 ```bash
-php artisan rag:search "chi era il podestà" --source=books --from=40 --to=60
-php artisan rag:ask "chi era il podestà" --stream
-php artisan rag:status
+php artisan ai:search "chi era il podestà" --source=books --from=40 --to=60
+php artisan ai:ask "chi era il podestà" --stream
+php artisan ai:status
 ```
 
 ### Hybrid retrieval (optional)
 
-Embeddings are weakest at exactly what lexical search is best at: names, dates, catalogue numbers, rare proper nouns. Set `RAG_HYBRID_DRIVER=tsvector` to fuse a PostgreSQL full-text leg into the ranking with reciprocal rank fusion, or `scout` to use whichever engine Scout is already configured with.
+Embeddings are weakest at exactly what lexical search is best at: names, dates, catalogue numbers, rare proper nouns. Set `FILAMENT_AI_HYBRID_DRIVER=tsvector` to fuse a PostgreSQL full-text leg into the ranking with reciprocal rank fusion, or `scout` to use whichever engine Scout is already configured with.
 
 ---
 
@@ -445,10 +445,10 @@ piston:
 ```
 
 ```dotenv
-RAG_AGENT_SANDBOX=true
-RAG_AGENT_SANDBOX_URL=http://piston:2000
-RAG_AGENT_SANDBOX_PYTHON=3.12.0   # pin it, or answers change when the sandbox does
-RAG_AGENT_MAX_STEPS=10            # write, run, read the error, fix
+FILAMENT_AI_AGENT_SANDBOX=true
+FILAMENT_AI_AGENT_SANDBOX_URL=http://piston:2000
+FILAMENT_AI_AGENT_SANDBOX_PYTHON=3.12.0   # pin it, or answers change when the sandbox does
+FILAMENT_AI_AGENT_MAX_STEPS=10            # write, run, read the error, fix
 ```
 
 Install the language once: `POST /api/v2/packages {"language":"python","version":"3.12.0"}`.
@@ -571,8 +571,8 @@ With `laravel/mcp` installed, the package registers a server automatically — n
 Rename the tools to suit your domain — the name is most of what a model uses to decide whether to reach for a tool:
 
 ```dotenv
-RAG_MCP_TOOL_SEARCH=search_books_knowledge
-RAG_MCP_WEB_PATH=mcp/knowledge
+FILAMENT_AI_MCP_TOOL_SEARCH=search_books_knowledge
+FILAMENT_AI_MCP_WEB_PATH=mcp/knowledge
 ```
 
 ```bash
@@ -588,7 +588,7 @@ Restrict what MCP can reach with `rag.mcp.sources`. An empty allow-list exposes 
 
 ```php
 // app/Providers/Filament/AdminPanelProvider.php
-->plugin(\Murkrow\FilamentAi\Filament\RagPlugin::make())
+->plugin(\Murkrow\FilamentAi\Filament\FilamentAiPlugin::make())
 ```
 
 That is the whole installation. Add `'Knowledge'` to your panel's `navigationGroups()`, or point `rag.filament.navigation_group` at a group you already have.
@@ -619,8 +619,8 @@ to check it, not a retriever to tune.
 /rag/chat
 ```
 
-Nothing to publish and nothing to build. Set `RAG_CHAT_PATH` to move it,
-`RAG_CHAT_ENABLED=false` to switch it off.
+Nothing to publish and nothing to build. Set `FILAMENT_AI_CHAT_PATH` to move it,
+`FILAMENT_AI_CHAT_ENABLED=false` to switch it off.
 
 The panel's Assistant page renders this same component, so the two are one
 chat with two doors. Switching the standalone page off removes the page only:
@@ -645,7 +645,7 @@ belongs to the mode it was started in.
 
 ### Who sees what
 
-Every control maps to an ability named `rag.chat.<name>`:
+Every control maps to an ability named `filament-ai.chat.<name>`:
 
 | Ability | Controls | Default |
 |---|---|---|
@@ -674,7 +674,7 @@ Each takes one of four shapes in `config/rag.php`:
 ],
 ```
 
-`Gate::define('rag.chat.cost', ...)` in your own provider overrides all of it.
+`Gate::define('filament-ai.chat.cost', ...)` in your own provider overrides all of it.
 
 Two things are worth knowing. **A closure here cannot be `config:cache`d** --
 use a `[Policy::class, 'method']` array, which is callable and survives
@@ -691,30 +691,30 @@ hand to an account that may not tune retrieval gets the configured default.
 - **Streaming follows `rag.answering.stream`.** Turn it off and the endpoint
   returns the whole answer in one JSON response instead of server-sent events
   -- worth doing if your application server buffers streamed responses.
-- **Authentication is `rag.chat.middleware`**, `['web', 'auth']` by default.
+- **Authentication is `filament-ai.chat.middleware`**, `['web', 'auth']` by default.
   An application whose login route is not *named* `login` (a Filament panel's
   is `filament.<panel>.auth.login`) must say so here, or Laravel's `auth`
   middleware cannot build its redirect for a guest.
 - The stylesheet and script are served from inside the package by a route, not
   published, so they can never be a stale copy in `public/`. Publish them with
-  `--tag=rag-chat-assets` if you would rather serve them yourself.
+  `--tag=filament-ai-chat-assets` if you would rather serve them yourself.
 
 ---
 
 ## Operating it
 
 ```bash
-php artisan rag:status              # coverage, stale vectors, recent runs, spend
-php artisan rag:status --watch
-php artisan rag:sources
-php artisan rag:make:source BookSource --model=App\\Models\\Book
-php artisan rag:vector:reindex      # rebuild the ANN index after a bulk load
-php artisan rag:purge books --embeddings-only
+php artisan ai:status              # coverage, stale vectors, recent runs, spend
+php artisan ai:status --watch
+php artisan ai:sources
+php artisan ai:make:source BookSource --model=App\\Models\\Book
+php artisan ai:vector:reindex      # rebuild the ANN index after a bulk load
+php artisan ai:purge books --embeddings-only
 ```
 
-**Build the index after a bulk load, not before.** `rag:vector:reindex` drops and rebuilds it, which produces a better graph and is substantially faster than incremental inserts. Raise `maintenance_work_mem` first on a large corpus.
+**Build the index after a bulk load, not before.** `ai:vector:reindex` drops and rebuilds it, which produces a better graph and is substantially faster than incremental inserts. Raise `maintenance_work_mem` first on a large corpus.
 
-**Changing the embedding model invalidates every vector.** Vectors from two models are not comparable, and a pgvector column has a fixed width that the migration set once, from the config of that moment. The change is a deployment, not a setting: update the config, then run `rag:vector:reindex`. When `rag.embeddings.dimensions` no longer matches the column, the command says so, discards the stored vectors, resizes the column and rebuilds the index; re-embed afterwards with `rag:ingest <source> --mode=embeddings_only`. A new model with the same width needs only that last step, and `rag:status` reports vectors from another model as stale so the condition is visible rather than silent.
+**Changing the embedding model invalidates every vector.** Vectors from two models are not comparable, and a pgvector column has a fixed width that the migration set once, from the config of that moment. The change is a deployment, not a setting: update the config, then run `ai:vector:reindex`. When `rag.embeddings.dimensions` no longer matches the column, the command says so, discards the stored vectors, resizes the column and rebuilds the index; re-embed afterwards with `ai:ingest <source> --mode=embeddings_only`. A new model with the same width needs only that last step, and `ai:status` reports vectors from another model as stale so the condition is visible rather than silent.
 
 ### Cost
 
@@ -762,12 +762,12 @@ vendor/bin/pest --testsuite=Pgvector  # needs a real PostgreSQL with pgvector
 The pgvector suite skips itself when no database is reachable. Point it somewhere with:
 
 ```dotenv
-RAG_TEST_PG_HOST=localhost
-RAG_TEST_PG_PORT=55432
+FILAMENT_AI_TEST_PG_HOST=localhost
+FILAMENT_AI_TEST_PG_PORT=55432
 ```
 
 ```bash
-docker run -d --name rag-test-pg -e POSTGRES_USER=rag -e POSTGRES_PASSWORD=rag \
+docker run -d --name fai-test-pg -e POSTGRES_USER=rag -e POSTGRES_PASSWORD=rag \
   -e POSTGRES_DB=rag_test -p 55432:5432 pgvector/pgvector:pg17
 ```
 

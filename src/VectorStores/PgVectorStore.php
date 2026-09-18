@@ -143,7 +143,7 @@ final class PgVectorStore extends AbstractVectorStore implements ResizableVector
 
     /**
      * Enable the extension. Requires a superuser or an image that pre-installs
-     * it; `rag:install` calls this and reports the failure in plain language.
+     * it; `ai:install` calls this and reports the failure in plain language.
      */
     public function createExtension(): void
     {
@@ -324,7 +324,7 @@ final class PgVectorStore extends AbstractVectorStore implements ResizableVector
 
     private function option(string $key, mixed $default = null): mixed
     {
-        return config("rag.vector.drivers.pgvector.{$key}", $default);
+        return config("filament-ai.vector.drivers.pgvector.{$key}", $default);
     }
 
     private function connection(): Connection

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use Murkrow\FilamentAi\Enums\SolveAttemptStatus;
-use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Models\Concerns\UsesAiConnection;
 
 /**
  * One try at the goal: what the agent answered, what the verifier made of it,
@@ -19,11 +19,11 @@ use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
  */
 class SolveAttempt extends Model
 {
-    use UsesRagConnection;
+    use UsesAiConnection;
 
     protected $guarded = [];
 
-    protected function ragTableKey(): string
+    protected function aiTableKey(): string
     {
         return 'solve_attempts';
     }

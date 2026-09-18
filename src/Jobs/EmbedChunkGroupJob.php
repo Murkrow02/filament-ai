@@ -45,8 +45,8 @@ class EmbedChunkGroupJob implements ShouldQueue
         public readonly array $chunkIds,
         public readonly ?int $runId = null,
     ) {
-        $this->tries = (int) config('rag.queue.tries', 5);
-        $this->timeout = (int) config('rag.queue.timeout', 300);
+        $this->tries = (int) config('filament-ai.queue.tries', 5);
+        $this->timeout = (int) config('filament-ai.queue.timeout', 300);
 
         $this->configureRagQueue();
     }
@@ -118,6 +118,6 @@ class EmbedChunkGroupJob implements ShouldQueue
      */
     public function tags(): array
     {
-        return array_filter(['rag', 'rag:embed', $this->runId === null ? null : 'rag:run:'.$this->runId]);
+        return array_filter(['filament-ai', 'ai:embed', $this->runId === null ? null : 'ai:run:'.$this->runId]);
     }
 }

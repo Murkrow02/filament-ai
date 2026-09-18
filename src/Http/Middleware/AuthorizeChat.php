@@ -19,14 +19,14 @@ use Symfony\Component\HttpFoundation\Response;
  * standalone page, so they stay up while either one is on: switching the
  * standalone page off removes the page, not the assistant.
  */
-final class AuthorizeRagChat
+final class AuthorizeChat
 {
     public function handle(Request $request, Closure $next): Response
     {
-        abort_unless(config('rag.enabled', true), 404);
+        abort_unless(config('filament-ai.enabled', true), 404);
         abort_unless(
-            config('rag.chat.enabled', true)
-                || (config('rag.agent.enabled', true) && config('rag.agent.chat.enabled', true)),
+            config('filament-ai.chat.enabled', true)
+                || (config('filament-ai.agent.enabled', true) && config('filament-ai.agent.chat.enabled', true)),
             404,
         );
         abort_unless(ChatAbilities::allows('view', $request->user()), 403);

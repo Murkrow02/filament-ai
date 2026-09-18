@@ -37,11 +37,11 @@ final class PistonSandbox implements CodeSandbox, ListsRuntimes
     public static function fromConfig(): self
     {
         return new self(
-            url: rtrim((string) config('rag.agent.sandbox.url', 'http://piston:2000'), '/'),
-            languages: (array) config('rag.agent.sandbox.languages', ['python' => '*']),
-            runTimeoutMs: (int) config('rag.agent.sandbox.timeout', 5000),
-            memoryLimitBytes: (int) config('rag.agent.sandbox.memory_limit', 134217728),
-            httpTimeoutSeconds: (int) config('rag.agent.sandbox.http_timeout', 15),
+            url: rtrim((string) config('filament-ai.agent.sandbox.url', 'http://piston:2000'), '/'),
+            languages: (array) config('filament-ai.agent.sandbox.languages', ['python' => '*']),
+            runTimeoutMs: (int) config('filament-ai.agent.sandbox.timeout', 5000),
+            memoryLimitBytes: (int) config('filament-ai.agent.sandbox.memory_limit', 134217728),
+            httpTimeoutSeconds: (int) config('filament-ai.agent.sandbox.http_timeout', 15),
         );
     }
 

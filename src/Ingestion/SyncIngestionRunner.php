@@ -145,7 +145,7 @@ final class SyncIngestionRunner
             return;
         }
 
-        $perCall = max(1, (int) config('rag.queue.chunks_per_job', 96));
+        $perCall = max(1, (int) config('filament-ai.queue.chunks_per_job', 96));
         $done = 0;
 
         foreach (array_chunk($chunkIds, $perCall) as $group) {

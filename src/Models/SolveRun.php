@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Murkrow\FilamentAi\Enums\SolveStatus;
-use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Models\Concerns\UsesAiConnection;
 
 /**
  * One iterative search for an answer: a goal, the criteria it is judged
@@ -17,11 +17,11 @@ use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
  */
 class SolveRun extends Model
 {
-    use UsesRagConnection;
+    use UsesAiConnection;
 
     protected $guarded = [];
 
-    protected function ragTableKey(): string
+    protected function aiTableKey(): string
     {
         return 'solve_runs';
     }

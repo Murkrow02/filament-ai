@@ -14,9 +14,9 @@ final class AssistantAccess
 {
     public static function enabled(): bool
     {
-        return (bool) config('rag.enabled', true)
-            && (bool) config('rag.agent.enabled', true)
-            && (bool) config('rag.agent.chat.enabled', true);
+        return (bool) config('filament-ai.enabled', true)
+            && (bool) config('filament-ai.agent.enabled', true)
+            && (bool) config('filament-ai.agent.chat.enabled', true);
     }
 
     public static function allows(?Authenticatable $user = null): bool
@@ -31,7 +31,7 @@ final class AssistantAccess
             return false;
         }
 
-        $callback = config('rag.agent.authorize');
+        $callback = config('filament-ai.agent.authorize');
 
         return is_callable($callback) ? (bool) $callback($user) : true;
     }

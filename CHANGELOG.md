@@ -9,6 +9,27 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking: the package speaks its own name.** `config/rag.php` is now
+  `config/filament-ai.php` and its keys `filament-ai.*`; environment variables
+  are `FILAMENT_AI_*`; console commands are `ai:*`; route names are
+  `filament-ai.chat.*` and the chat lives at `/ai/chat`; panel pages sit under
+  the `ai/` slug prefix; views and translations resolve as `filament-ai::`
+  (the translation file is `messages.php`); gate abilities are unchanged in
+  shape but read from the new config root; the facade is `FilamentAi`; and the
+  classes that carried the old name -- `RagPlugin`, `RagDashboard`,
+  `RagSettings`, `RagPlayground`, `RagManager`, `RagException`,
+  `AuthorizeRagChat`, `HasRagNavigation`, `UsesRagConnection` -- are
+  `FilamentAiPlugin`, `KnowledgeDashboard`, `KnowledgeSettings`,
+  `KnowledgePlayground`, `FilamentAiManager`, `FilamentAiException`,
+  `AuthorizeChat`, `HasAiNavigation`, `UsesAiConnection`.
+- **Table names are untouched.** They keep the `rag_` prefix, which stays
+  configurable under `filament-ai.database.prefix`: no application has to
+  migrate its data to take this release. The queue name keeps its `rag`
+  default for the same reason -- renaming it would strand whatever is already
+  queued.
+
 ## [3.0.0] - 2026-09-18
 
 ### Added
@@ -44,7 +65,7 @@ Versions before 2.0.0 were released under the package's former name,
   view must follow.
 - `SolveAttemptJob` no longer builds the prompt; the strategy does.
   `SolveOptions` takes a new, last, `strategy` argument.
-- The chat routes stay registered while either chat is on. `rag.chat.enabled`
+- The chat routes stay registered while either chat is on. `filament-ai.chat.enabled`
   now switches off the standalone page only, checked when the request arrives.
 - `ConversationTranscript::recent()` returns `updated_at` as an ISO 8601
   timestamp instead of a relative phrase.

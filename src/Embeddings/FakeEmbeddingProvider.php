@@ -26,9 +26,9 @@ final class FakeEmbeddingProvider implements EmbeddingProvider
     public static function fromConfig(): self
     {
         return new self(
-            dimensions: (int) config('rag.embeddings.dimensions', 1536),
-            model: (string) config('rag.embeddings.model', 'fake-embedding'),
-            batchSize: (int) config('rag.embeddings.batch_size', 96),
+            dimensions: (int) config('filament-ai.embeddings.dimensions', 1536),
+            model: (string) config('filament-ai.embeddings.model', 'fake-embedding'),
+            batchSize: (int) config('filament-ai.embeddings.batch_size', 96),
         );
     }
 

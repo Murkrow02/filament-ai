@@ -49,7 +49,7 @@ final class Strategies
      */
     public static function configured(): string
     {
-        $class = (string) config('rag.agent.solving.strategy', DefaultStrategy::class);
+        $class = (string) config('filament-ai.agent.solving.strategy', DefaultStrategy::class);
 
         return is_a($class, SolveStrategy::class, allow_string: true) ? $class : DefaultStrategy::class;
     }

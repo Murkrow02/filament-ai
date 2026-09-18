@@ -49,7 +49,7 @@ final class EmbeddingDispatcher
             return null;
         }
 
-        $perJob = max(1, (int) config('rag.queue.chunks_per_job', 96));
+        $perJob = max(1, (int) config('filament-ai.queue.chunks_per_job', 96));
 
         $jobs = array_map(
             static fn (array $group): EmbedChunkGroupJob => new EmbedChunkGroupJob(
@@ -62,10 +62,10 @@ final class EmbeddingDispatcher
         $runId = $run->id;
 
         $batch = Bus::batch($jobs)
-            ->name("rag:embed:{$run->uuid}")
-            ->onConnection((string) config('rag.queue.connection'))
-            ->onQueue((string) config('rag.queue.queue', 'rag'))
-            ->allowFailures((bool) config('rag.queue.allow_failures', true))
+            ->name("ai:embed:{$run->uuid}")
+            ->onConnection((string) config('filament-ai.queue.connection'))
+            ->onQueue((string) config('filament-ai.queue.queue', 'rag'))
+            ->allowFailures((bool) config('filament-ai.queue.allow_failures', true))
             ->finally(static function () use ($runId): void {
                 $run = IngestionRun::query()->find($runId);
 

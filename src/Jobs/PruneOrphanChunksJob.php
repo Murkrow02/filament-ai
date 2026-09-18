@@ -71,6 +71,6 @@ class PruneOrphanChunksJob implements ShouldQueue
      */
     public function tags(): array
     {
-        return array_filter(['rag', 'rag:prune', $this->sourceKey]);
+        return array_filter(['filament-ai', 'ai:prune', $this->sourceKey]);
     }
 }

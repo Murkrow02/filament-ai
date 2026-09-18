@@ -13,7 +13,7 @@ use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Murkrow\FilamentAi\Filament\RagPlugin;
+use Murkrow\FilamentAi\Filament\FilamentAiPlugin;
 
 /**
  * A minimal host panel, so the plugin is exercised the way a real application
@@ -41,6 +41,6 @@ class TestPanelProvider extends PanelProvider
                 Filament\TestBookResource::class,
                 Filament\TestBookPageResource::class,
             ])
-            ->plugin(RagPlugin::make());
+            ->plugin(FilamentAiPlugin::make());
     }
 }

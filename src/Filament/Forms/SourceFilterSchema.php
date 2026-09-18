@@ -23,7 +23,7 @@ use Murkrow\FilamentAi\Sources\Filters\RangeFilter;
  *
  * The mapping lives here, in the optional Filament layer, so a filter class
  * stays a plain query constraint: the same declaration drives
- * `rag:ingest --filter=` and this form, and adding a filter to a source needs
+ * `ai:ingest --filter=` and this form, and adding a filter to a source needs
  * no Filament code at all. A filter class this does not recognise degrades to
  * a text input rather than disappearing.
  */

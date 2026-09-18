@@ -15,7 +15,7 @@ final class EmbeddingManager extends Manager
 {
     public function getDefaultDriver(): string
     {
-        return (string) $this->config->get('rag.embeddings.driver', 'laravel-ai');
+        return (string) $this->config->get('filament-ai.embeddings.driver', 'laravel-ai');
     }
 
     public function createLaravelAiDriver(): EmbeddingProvider

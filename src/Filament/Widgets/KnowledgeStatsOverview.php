@@ -6,7 +6,7 @@ namespace Murkrow\FilamentAi\Filament\Widgets;
 
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Concerns\HasAiNavigation;
 use Murkrow\FilamentAi\Ingestion\CostCalculator;
 use Murkrow\FilamentAi\Models\Chunk;
 use Murkrow\FilamentAi\Models\Document;
@@ -22,11 +22,11 @@ use Murkrow\FilamentAi\Models\QueryLog;
  */
 class KnowledgeStatsOverview extends StatsOverviewWidget
 {
-    use HasRagNavigation;
+    use HasAiNavigation;
 
     protected function getPollingInterval(): ?string
     {
-        return static::ragPollIntervalWhileRunning();
+        return static::aiPollIntervalWhileRunning();
     }
 
     protected function getStats(): array
@@ -36,8 +36,8 @@ class KnowledgeStatsOverview extends StatsOverviewWidget
         $embedded = Chunk::query()->whereNotNull('embedded_at')->count();
         $pending = $chunks - $embedded;
 
-        $model = (string) config('rag.embeddings.model');
-        $dimensions = (int) config('rag.embeddings.dimensions');
+        $model = (string) config('filament-ai.embeddings.model');
+        $dimensions = (int) config('filament-ai.embeddings.dimensions');
 
         $stale = Chunk::query()
             ->whereNotNull('embedded_at')
@@ -84,6 +84,6 @@ class KnowledgeStatsOverview extends StatsOverviewWidget
 
     public static function canView(): bool
     {
-        return (bool) config('rag.filament.pages.dashboard', true);
+        return (bool) config('filament-ai.filament.pages.dashboard', true);
     }
 }

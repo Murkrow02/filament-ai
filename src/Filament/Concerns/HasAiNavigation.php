@@ -15,23 +15,23 @@ use UnitEnum;
  * host that folds these pages into an existing group would otherwise have to
  * subclass every one of them.
  */
-trait HasRagNavigation
+trait HasAiNavigation
 {
     public static function getNavigationGroup(): string|UnitEnum|null
     {
-        $group = config('rag.filament.navigation_group', 'Knowledge');
+        $group = config('filament-ai.filament.navigation_group', 'Knowledge');
 
         return $group === null || $group === '' ? null : (string) $group;
     }
 
     public static function getNavigationSort(): ?int
     {
-        return (int) config('rag.filament.navigation_sort', 90);
+        return (int) config('filament-ai.filament.navigation_sort', 90);
     }
 
-    public static function canAccessRag(): bool
+    public static function canAccessAi(): bool
     {
-        $callback = config('rag.filament.authorize');
+        $callback = config('filament-ai.filament.authorize');
 
         if (! is_callable($callback)) {
             return true;
@@ -42,19 +42,19 @@ trait HasRagNavigation
 
     public static function shouldRegisterNavigation(): bool
     {
-        return static::canAccessRag();
+        return static::canAccessAi();
     }
 
-    protected static function ragSlug(string $suffix): string
+    protected static function aiSlug(string $suffix): string
     {
-        $prefix = trim((string) config('rag.filament.slug_prefix', 'rag'), '/');
+        $prefix = trim((string) config('filament-ai.filament.slug_prefix', 'ai'), '/');
 
         return $prefix === '' ? $suffix : $prefix.'/'.$suffix;
     }
 
-    protected static function ragPollInterval(): ?string
+    protected static function aiPollInterval(): ?string
     {
-        $interval = config('rag.filament.poll_interval', '5s');
+        $interval = config('filament-ai.filament.poll_interval', '5s');
 
         return $interval === null || $interval === '' ? null : (string) $interval;
     }
@@ -69,9 +69,9 @@ trait HasRagNavigation
      * browser then shows "This page has expired", and refreshing re-arms the same
      * pollers -- a loop. An idle dashboard has nothing to poll for anyway.
      */
-    protected static function ragPollIntervalWhileRunning(): ?string
+    protected static function aiPollIntervalWhileRunning(): ?string
     {
-        $interval = static::ragPollInterval();
+        $interval = static::aiPollInterval();
 
         if ($interval === null) {
             return null;

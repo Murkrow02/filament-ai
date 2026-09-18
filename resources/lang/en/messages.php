@@ -196,7 +196,7 @@ return [
         'empty_body' => 'Ask in your own words. Full questions work considerably better than keywords.',
         'suggestions' => [],
 
-        // Rendered in the browser by rag-chat.js.
+        // Rendered in the browser by filament-ai-chat.js.
         'js' => [
             'untitled' => 'Untitled chat',
             'newChat' => 'New chat',

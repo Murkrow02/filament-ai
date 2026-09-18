@@ -147,14 +147,14 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
      * back to its own `ai.default`, which is how the package's configuration
      * reaches an agent at all: `LaravelAiLanguageModel` is the *retrieval*
      * pipeline's model and is never consulted here. Without these two methods
-     * a host that configured `RAG_LLM_PROVIDER=anthropic` still had its panel
+     * a host that configured `FILAMENT_AI_LLM_PROVIDER=anthropic` still had its panel
      * agent call OpenAI with no key.
      *
      * Null on either leaves laravel/ai's own defaults in charge.
      */
     public function provider(): ?string
     {
-        $provider = config('rag.agent.provider') ?? config('rag.llm.provider');
+        $provider = config('filament-ai.agent.provider') ?? config('filament-ai.llm.provider');
 
         return blank($provider) ? null : (string) $provider;
     }
@@ -179,7 +179,7 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
             return $this->temperature;
         }
 
-        $temperature = config('rag.agent.temperature') ?? config('rag.llm.temperature');
+        $temperature = config('filament-ai.agent.temperature') ?? config('filament-ai.llm.temperature');
 
         return $temperature === null || $temperature === '' ? null : (float) $temperature;
     }
@@ -204,7 +204,7 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
             return $this->maxSteps;
         }
 
-        $steps = config('rag.agent.max_steps');
+        $steps = config('filament-ai.agent.max_steps');
 
         return blank($steps) ? null : (int) $steps;
     }
@@ -222,7 +222,7 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
 
     public function model(): ?string
     {
-        $model = $this->model ?? config('rag.agent.model') ?? config('rag.llm.model');
+        $model = $this->model ?? config('filament-ai.agent.model') ?? config('filament-ai.llm.model');
 
         return blank($model) ? null : (string) $model;
     }
@@ -259,12 +259,12 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
      */
     protected function knowledgeSources(): array
     {
-        if (! config('rag.enabled', true) || ! config('rag.agent.knowledge.enabled', true)) {
+        if (! config('filament-ai.enabled', true) || ! config('filament-ai.agent.knowledge.enabled', true)) {
             return [];
         }
 
         $keys = app(SourceRegistry::class)->keys();
-        $allowed = config('rag.agent.knowledge.sources');
+        $allowed = config('filament-ai.agent.knowledge.sources');
 
         return $allowed === null ? $keys : array_values(array_intersect($keys, (array) $allowed));
     }

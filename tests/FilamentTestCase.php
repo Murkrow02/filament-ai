@@ -62,10 +62,10 @@ abstract class FilamentTestCase extends TestCase
     {
         parent::defineEnvironment($app);
 
-        $app['config']->set('rag.filament.enabled', true);
+        $app['config']->set('filament-ai.filament.enabled', true);
         // The panel is built once at boot, so a resource gated by config has
         // to be switched on before the provider runs.
-        $app['config']->set('rag.agent.solving.enabled', true);
+        $app['config']->set('filament-ai.agent.solving.enabled', true);
         $app['config']->set('auth.providers.users.model', AuthUser::class);
         $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
     }

@@ -196,7 +196,7 @@ return [
         'empty_body' => 'Chiedi con parole tue. Le domande complete funzionano molto meglio delle parole chiave.',
         'suggestions' => [],
 
-        // Renderizzate nel browser da rag-chat.js.
+        // Renderizzate nel browser da filament-ai-chat.js.
         'js' => [
             'untitled' => 'Chat senza titolo',
             'newChat' => 'Nuova chat',

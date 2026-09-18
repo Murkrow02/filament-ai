@@ -36,14 +36,14 @@ final class PrismLanguageModel implements LanguageModel
 
     public static function fromConfig(): self
     {
-        $temperature = config('rag.llm.temperature', 0.1);
+        $temperature = config('filament-ai.llm.temperature', 0.1);
 
         return new self(
-            provider: (string) config('rag.llm.prism_provider', 'openai'),
-            model: (string) config('rag.llm.model', 'gpt-4o-mini'),
+            provider: (string) config('filament-ai.llm.prism_provider', 'openai'),
+            model: (string) config('filament-ai.llm.model', 'gpt-4o-mini'),
             temperature: $temperature === null || $temperature === '' ? null : (float) $temperature,
-            maxTokens: (int) config('rag.llm.max_tokens', 1200),
-            providerOptions: (array) config('rag.llm.provider_options', []),
+            maxTokens: (int) config('filament-ai.llm.max_tokens', 1200),
+            providerOptions: (array) config('filament-ai.llm.provider_options', []),
         );
     }
 

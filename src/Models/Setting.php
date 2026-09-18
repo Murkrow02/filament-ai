@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Models;
 
-use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Models\Concerns\UsesAiConnection;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -18,11 +18,11 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Setting extends Model
 {
-    use UsesRagConnection;
+    use UsesAiConnection;
 
     protected $guarded = [];
 
-    protected function ragTableKey(): string
+    protected function aiTableKey(): string
     {
         return 'settings';
     }

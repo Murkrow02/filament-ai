@@ -15,7 +15,7 @@ final class SandboxManager extends Manager
 {
     public function getDefaultDriver(): string
     {
-        return (string) $this->config->get('rag.agent.sandbox.driver', 'piston');
+        return (string) $this->config->get('filament-ai.agent.sandbox.driver', 'piston');
     }
 
     public function createPistonDriver(): CodeSandbox
@@ -25,7 +25,7 @@ final class SandboxManager extends Manager
 
     public function createFakeDriver(): CodeSandbox
     {
-        return new FakeSandbox(array_keys((array) $this->config->get('rag.agent.sandbox.languages', ['python' => '*'])));
+        return new FakeSandbox(array_keys((array) $this->config->get('filament-ai.agent.sandbox.languages', ['python' => '*'])));
     }
 
     /**

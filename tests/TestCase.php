@@ -65,24 +65,24 @@ abstract class TestCase extends Orchestra
 
         $app['config']->set('cache.default', 'array');
         $app['config']->set('queue.default', 'sync');
-        $app['config']->set('rag.queue.connection', 'sync');
-        $app['config']->set('rag.queue.queue', 'default');
+        $app['config']->set('filament-ai.queue.connection', 'sync');
+        $app['config']->set('filament-ai.queue.queue', 'default');
 
-        $app['config']->set('rag.embeddings.driver', 'fake');
-        $app['config']->set('rag.embeddings.dimensions', 64);
-        $app['config']->set('rag.embeddings.model', 'fake-embedding');
-        $app['config']->set('rag.llm.driver', 'fake');
-        $app['config']->set('rag.settings.enabled', false);
-        $app['config']->set('rag.mcp.enabled', false);
-        $app['config']->set('rag.filament.enabled', false);
-        $app['config']->set('rag.vector.driver', 'memory');
+        $app['config']->set('filament-ai.embeddings.driver', 'fake');
+        $app['config']->set('filament-ai.embeddings.dimensions', 64);
+        $app['config']->set('filament-ai.embeddings.model', 'fake-embedding');
+        $app['config']->set('filament-ai.llm.driver', 'fake');
+        $app['config']->set('filament-ai.settings.enabled', false);
+        $app['config']->set('filament-ai.mcp.enabled', false);
+        $app['config']->set('filament-ai.filament.enabled', false);
+        $app['config']->set('filament-ai.vector.driver', 'memory');
 
         // FakeEmbeddingProvider is deterministic but not semantic, so the score
         // floor tuned for a real model would reject everything. Tests that care
         // about thresholds set their own.
-        $app['config']->set('rag.retrieval.min_score', 0.0);
+        $app['config']->set('filament-ai.retrieval.min_score', 0.0);
 
-        $app['config']->set('rag.sources', [TestBookSource::class]);
+        $app['config']->set('filament-ai.sources', [TestBookSource::class]);
 
         // SQLite has no vector type, so the vector column migration delegates
         // to a store that keeps vectors in a plain JSON column instead.

@@ -46,8 +46,8 @@ class PrepareDocumentJob implements ShouldQueue
         public readonly int $runId,
         public readonly string $externalId,
     ) {
-        $this->tries = (int) config('rag.queue.tries', 5);
-        $this->timeout = (int) config('rag.queue.timeout', 300);
+        $this->tries = (int) config('filament-ai.queue.tries', 5);
+        $this->timeout = (int) config('filament-ai.queue.timeout', 300);
 
         $this->configureRagQueue();
     }
@@ -126,6 +126,6 @@ class PrepareDocumentJob implements ShouldQueue
      */
     public function tags(): array
     {
-        return ['rag', 'rag:chunk', 'rag:run:'.$this->runId];
+        return ['filament-ai', 'ai:chunk', 'ai:run:'.$this->runId];
     }
 }

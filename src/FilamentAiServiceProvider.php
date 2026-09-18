@@ -28,7 +28,7 @@ use Murkrow\FilamentAi\Contracts\PromptRenderer;
 use Murkrow\FilamentAi\Contracts\Retriever;
 use Murkrow\FilamentAi\Contracts\VectorStore;
 use Murkrow\FilamentAi\Embeddings\EmbeddingManager;
-use Murkrow\FilamentAi\Http\Middleware\AuthorizeRagChat;
+use Murkrow\FilamentAi\Http\Middleware\AuthorizeChat;
 use Murkrow\FilamentAi\Embeddings\EmbeddingRateLimiter;
 use Murkrow\FilamentAi\Llm\LanguageModelManager;
 use Murkrow\FilamentAi\Mcp\KnowledgeServer;
@@ -67,7 +67,7 @@ class FilamentAiServiceProvider extends ServiceProvider
      * Laravel's own mergeConfigFrom only merges the top level, so a published
      * config file has to repeat every nested default or lose it. Merging deep
      * -- with list arrays replaced wholesale, never concatenated -- lets the
-     * application's config/rag.php carry only what it actually overrides.
+     * application's config/filament-ai.php carry only what it actually overrides.
      */
     private function mergeRagConfig(): void
     {
@@ -76,19 +76,19 @@ class FilamentAiServiceProvider extends ServiceProvider
         }
 
         /** @var array<string, mixed> $defaults */
-        $defaults = require __DIR__.'/../config/rag.php';
+        $defaults = require __DIR__.'/../config/filament-ai.php';
 
         /** @var array<string, mixed> $host */
-        $host = (array) $this->app['config']->get('rag', []);
+        $host = (array) $this->app['config']->get('filament-ai', []);
 
-        $this->app['config']->set('rag', Arr::mergeConfig($defaults, $host));
+        $this->app['config']->set('filament-ai', Arr::mergeConfig($defaults, $host));
     }
 
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'rag');
-        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'rag');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'filament-ai');
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'filament-ai');
 
         $this->registerPublishing();
 
@@ -176,7 +176,7 @@ class FilamentAiServiceProvider extends ServiceProvider
      *
      * These routes are the transport for both surfaces -- the standalone page
      * and the panel page, which render the same component -- so they are
-     * registered whenever either is switched on. `rag.chat.enabled` governs
+     * registered whenever either is switched on. `filament-ai.chat.enabled` governs
      * only the standalone page itself, inside routes/chat.php.
      *
      * Registered here rather than in register() because the container outlives
@@ -186,10 +186,10 @@ class FilamentAiServiceProvider extends ServiceProvider
      */
     private function registerChat(): void
     {
-        $standalone = (bool) config('rag.chat.enabled', true);
-        $inPanel = (bool) config('rag.agent.enabled', true) && (bool) config('rag.agent.chat.enabled', true);
+        $standalone = (bool) config('filament-ai.chat.enabled', true);
+        $inPanel = (bool) config('filament-ai.agent.enabled', true) && (bool) config('filament-ai.agent.chat.enabled', true);
 
-        if (! config('rag.enabled', true) || (! $standalone && ! $inPanel)) {
+        if (! config('filament-ai.enabled', true) || (! $standalone && ! $inPanel)) {
             return;
         }
 
@@ -199,15 +199,15 @@ class FilamentAiServiceProvider extends ServiceProvider
             return;
         }
 
-        $path = trim((string) config('rag.chat.path', 'rag/chat'), '/');
+        $path = trim((string) config('filament-ai.chat.path', 'ai/chat'), '/');
 
         $group = [
             'prefix' => $path,
-            'as' => 'rag.chat.',
-            'middleware' => [...(array) config('rag.chat.middleware', ['web']), AuthorizeRagChat::class],
+            'as' => 'filament-ai.chat.',
+            'middleware' => [...(array) config('filament-ai.chat.middleware', ['web']), AuthorizeChat::class],
         ];
 
-        if (($domain = config('rag.chat.domain')) !== null && $domain !== '') {
+        if (($domain = config('filament-ai.chat.domain')) !== null && $domain !== '') {
             $group['domain'] = (string) $domain;
         }
 
@@ -282,7 +282,7 @@ class FilamentAiServiceProvider extends ServiceProvider
         $this->app->singleton(Retriever::class, DefaultRetriever::class);
         $this->app->singleton(Answerer::class, DefaultAnswerer::class);
 
-        $this->app->singleton(RagManager::class);
+        $this->app->singleton(FilamentAiManager::class);
     }
 
     private function registerPublishing(): void
@@ -292,37 +292,37 @@ class FilamentAiServiceProvider extends ServiceProvider
         }
 
         $this->publishes([
-            __DIR__.'/../config/rag.php' => config_path('rag.php'),
-        ], 'rag-config');
+            __DIR__.'/../config/filament-ai.php' => config_path('filament-ai.php'),
+        ], 'filament-ai-config');
 
         $this->publishes([
-            __DIR__.'/../resources/views' => resource_path('views/vendor/rag'),
-        ], 'rag-views');
+            __DIR__.'/../resources/views' => resource_path('views/vendor/filament-ai'),
+        ], 'filament-ai-views');
 
         $this->publishes([
-            __DIR__.'/../resources/lang' => lang_path('vendor/rag'),
-        ], 'rag-lang');
+            __DIR__.'/../resources/lang' => lang_path('vendor/filament-ai'),
+        ], 'filament-ai-lang');
 
         $this->publishes([
             __DIR__.'/../database/migrations' => database_path('migrations'),
-        ], 'rag-migrations');
+        ], 'filament-ai-migrations');
 
         $this->publishes([
             __DIR__.'/../routes/ai.php' => base_path('routes/ai.php'),
-        ], 'rag-ai-routes');
+        ], 'filament-ai-routes');
 
         $this->publishes([
-            __DIR__.'/../routes/chat.php' => base_path('routes/rag-chat.php'),
-        ], 'rag-chat-routes');
+            __DIR__.'/../routes/chat.php' => base_path('routes/fai-chat.php'),
+        ], 'filament-ai-chat-routes');
 
         // Optional: the chat serves these from the package by default.
         $this->publishes([
-            __DIR__.'/../resources/dist' => public_path('vendor/rag'),
-        ], 'rag-chat-assets');
+            __DIR__.'/../resources/dist' => public_path('vendor/filament-ai'),
+        ], 'filament-ai-chat-assets');
 
         $this->publishes([
-            __DIR__.'/../stubs' => base_path('stubs/rag'),
-        ], 'rag-stubs');
+            __DIR__.'/../stubs' => base_path('stubs/filament-ai'),
+        ], 'filament-ai-stubs');
     }
 
     /**
@@ -333,7 +333,7 @@ class FilamentAiServiceProvider extends ServiceProvider
      */
     private function registerMcpServer(): void
     {
-        if (! config('rag.enabled', true) || ! config('rag.mcp.enabled', true)) {
+        if (! config('filament-ai.enabled', true) || ! config('filament-ai.mcp.enabled', true)) {
             return;
         }
 
@@ -341,16 +341,16 @@ class FilamentAiServiceProvider extends ServiceProvider
             return;
         }
 
-        if (config('rag.mcp.web.enabled', true)) {
+        if (config('filament-ai.mcp.web.enabled', true)) {
             \Laravel\Mcp\Facades\Mcp::web(
-                (string) config('rag.mcp.web.path', 'mcp/knowledge'),
+                (string) config('filament-ai.mcp.web.path', 'mcp/knowledge'),
                 KnowledgeServer::class,
-            )->middleware((array) config('rag.mcp.web.middleware', []));
+            )->middleware((array) config('filament-ai.mcp.web.middleware', []));
         }
 
-        if (config('rag.mcp.local.enabled', true)) {
+        if (config('filament-ai.mcp.local.enabled', true)) {
             \Laravel\Mcp\Facades\Mcp::local(
-                (string) config('rag.mcp.local.handle', 'knowledge'),
+                (string) config('filament-ai.mcp.local.handle', 'knowledge'),
                 KnowledgeServer::class,
             );
         }

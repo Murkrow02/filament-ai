@@ -13,7 +13,7 @@ use Murkrow\FilamentAi\Support\Text;
 
 class SearchCommand extends Command
 {
-    protected $signature = 'rag:search
+    protected $signature = 'ai:search
                             {query* : The search query}
                             {--source=* : Restrict to one or more sources}
                             {--document=* : Restrict to specific document identifiers}

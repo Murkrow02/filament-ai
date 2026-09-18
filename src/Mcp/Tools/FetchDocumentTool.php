@@ -24,17 +24,17 @@ class FetchDocumentTool extends Tool
 {
     public function name(): string
     {
-        return (string) config('rag.mcp.tools.fetch.name', 'fetch_document');
+        return (string) config('filament-ai.mcp.tools.fetch.name', 'fetch_document');
     }
 
     public function description(): string
     {
-        return (string) __('rag::rag.mcp.fetch_description');
+        return (string) __('filament-ai::messages.mcp.fetch_description');
     }
 
     public function shouldRegister(): bool
     {
-        return (bool) config('rag.mcp.tools.fetch.enabled', true);
+        return (bool) config('filament-ai.mcp.tools.fetch.enabled', true);
     }
 
     /**

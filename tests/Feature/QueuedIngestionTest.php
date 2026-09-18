@@ -8,7 +8,7 @@ use Murkrow\FilamentAi\Enums\IngestionMode;
 use Murkrow\FilamentAi\Enums\RunItemStatus;
 use Murkrow\FilamentAi\Enums\RunStatus;
 use Murkrow\FilamentAi\Events\IngestionRunStarted;
-use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Ingestion\StartIngestionRun;
 use Murkrow\FilamentAi\Jobs\EmbedChunkGroupJob;
 use Murkrow\FilamentAi\Jobs\PrepareDocumentJob;
@@ -32,8 +32,8 @@ beforeEach(function (): void {
         'queue' => 'default',
         'retry_after' => 90,
     ]);
-    config()->set('rag.queue.connection', 'database');
-    config()->set('rag.queue.queue', 'rag');
+    config()->set('filament-ai.queue.connection', 'database');
+    config()->set('filament-ai.queue.queue', 'rag');
 
     $this->createQueueTables();
 });
@@ -43,7 +43,7 @@ beforeEach(function (): void {
  */
 function runQueued(array $filters = [], ?IngestionMode $mode = null, array $overrides = []): IngestionRun
 {
-    $run = Rag::ingest('books', $filters, $mode ?? IngestionMode::Incremental, $overrides);
+    $run = FilamentAi::ingest('books', $filters, $mode ?? IngestionMode::Incremental, $overrides);
 
     test()->drainQueue();
 
@@ -101,12 +101,12 @@ it('freezes the parameters it was launched with', function (): void {
     $run = runQueued(overrides: ['target_tokens' => 128]);
 
     expect($run->chunking_params['target_tokens'])->toBe(128)
-        ->and($run->embedding_model)->toBe(config('rag.embeddings.model'))
-        ->and($run->embedding_dimensions)->toBe((int) config('rag.embeddings.dimensions'))
+        ->and($run->embedding_model)->toBe(config('filament-ai.embeddings.model'))
+        ->and($run->embedding_dimensions)->toBe((int) config('filament-ai.embeddings.dimensions'))
         ->and($run->vector_driver)->toBe('memory');
 
     // A later config change must not retroactively alter the run's record.
-    config()->set('rag.chunking.target_tokens', 999);
+    config()->set('filament-ai.chunking.target_tokens', 999);
 
     expect($run->refresh()->chunking_params['target_tokens'])->toBe(128);
 });
@@ -119,7 +119,7 @@ it('queues the two phases as separate batches', function (): void {
     $run = app(StartIngestionRun::class)(app(SourceRegistry::class)->get('books'));
 
     Bus::assertBatched(function ($batch) use ($run): bool {
-        return $batch->name === "rag:chunk:{$run->uuid}"
+        return $batch->name === "ai:chunk:{$run->uuid}"
             && $batch->jobs->every(fn ($job): bool => $job instanceof PrepareDocumentJob);
     });
 
@@ -139,7 +139,7 @@ it('announces that a run started', function (): void {
 
     Event::fake([IngestionRunStarted::class]);
 
-    Rag::ingest('books');
+    FilamentAi::ingest('books');
 
     Event::assertDispatched(IngestionRunStarted::class);
 });
@@ -183,7 +183,7 @@ it('re-embeds without re-chunking in embeddings-only mode', function (): void {
 it('accounts tokens and cost as it goes', function (): void {
     seedQueuedLibrary(books: 1, pages: 2);
 
-    config()->set('rag.embeddings.pricing.fake-embedding', 1.0);
+    config()->set('filament-ai.embeddings.pricing.fake-embedding', 1.0);
 
     $run = runQueued();
 

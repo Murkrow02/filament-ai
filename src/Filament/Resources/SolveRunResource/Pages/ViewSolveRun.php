@@ -30,7 +30,7 @@ class ViewSolveRun extends ViewRecord
     public function getPollingInterval(): ?string
     {
         return $this->getRecord()->status->isRunning()
-            ? (string) config('rag.filament.poll_interval', '5s')
+            ? (string) config('filament-ai.filament.poll_interval', '5s')
             : null;
     }
 

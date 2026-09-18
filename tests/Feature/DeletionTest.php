@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Jobs\PruneOrphanChunksJob;
 use Murkrow\FilamentAi\Models\Chunk;
 use Murkrow\FilamentAi\Models\Document;
@@ -17,7 +17,7 @@ function seedIndexedBook(string $title = 'Cronaca'): TestBook
         'content' => str_repeat('Il consiglio delibero in merito alla questione sollevata. ', 12),
     ]);
 
-    Rag::ingestSync('books', ['ids' => [$book->getKey()]]);
+    FilamentAi::ingestSync('books', ['ids' => [$book->getKey()]]);
 
     return $book;
 }
@@ -29,7 +29,7 @@ it('forgets one document and its chunks', function (): void {
     $documentId = Document::query()->where('external_id', (string) $book->getKey())->value('id');
     $survivorId = Document::query()->where('external_id', (string) $other->getKey())->value('id');
 
-    expect(Rag::forget('books', $book->getKey()))->toBeTrue();
+    expect(FilamentAi::forget('books', $book->getKey()))->toBeTrue();
 
     expect(Document::query()->whereKey($documentId)->exists())->toBeFalse()
         ->and(Chunk::query()->where('document_id', $documentId)->count())->toBe(0);
@@ -42,8 +42,8 @@ it('forgets one document and its chunks', function (): void {
 it('reports when nothing was indexed under that external id', function (): void {
     seedIndexedBook();
 
-    expect(Rag::forget('books', 9999))->toBeFalse()
-        ->and(Rag::forget('titles', 1))->toBeFalse()
+    expect(FilamentAi::forget('books', 9999))->toBeFalse()
+        ->and(FilamentAi::forget('titles', 1))->toBeFalse()
         ->and(Document::query()->count())->toBe(1);
 });
 
@@ -55,7 +55,7 @@ it('prunes documents whose host record is gone', function (): void {
     // is the safety net for.
     TestBook::query()->whereKey($book->getKey())->delete();
 
-    (new PruneOrphanChunksJob('books'))->handle(Rag::sources());
+    (new PruneOrphanChunksJob('books'))->handle(FilamentAi::sources());
 
     expect(Document::query()->pluck('external_id')->all())
         ->toBe([(string) $survivor->getKey()]);

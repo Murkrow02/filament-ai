@@ -21,7 +21,7 @@ class DefaultStrategy implements SolveStrategy
 {
     public function label(): string
     {
-        return (string) __('rag::rag.solving.default_strategy');
+        return (string) __('filament-ai::messages.solving.default_strategy');
     }
 
     public function phases(): ?int

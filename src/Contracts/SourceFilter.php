@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
  * One declarative narrowing of a knowledge source's document query.
  *
  * A filter is the single definition behind three surfaces: the Eloquent
- * constraint applied during ingestion, the `rag:ingest --filter=name:value`
+ * constraint applied during ingestion, the `ai:ingest --filter=name:value`
  * option, and the Filament ingestion form field. The package core knows only
  * this interface; mapping a filter to a form control happens in the Filament
  * layer, so nothing here depends on Filament.

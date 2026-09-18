@@ -13,8 +13,8 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Murkrow\FilamentAi\Enums\DocumentStatus;
 use Murkrow\FilamentAi\Enums\IngestionMode;
-use Murkrow\FilamentAi\Facades\Rag;
-use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Facades\FilamentAi;
+use Murkrow\FilamentAi\Filament\Concerns\HasAiNavigation;
 use Murkrow\FilamentAi\Filament\Resources\DocumentResource\Pages\ListDocuments;
 use Murkrow\FilamentAi\Filament\Resources\DocumentResource\Pages\ViewDocument;
 use Murkrow\FilamentAi\Models\Document;
@@ -30,7 +30,7 @@ use Throwable;
  */
 class DocumentResource extends Resource
 {
-    use HasRagNavigation;
+    use HasAiNavigation;
 
     protected static ?string $model = Document::class;
 
@@ -44,7 +44,7 @@ class DocumentResource extends Resource
 
     public static function getSlug(?\Filament\Panel $panel = null): string
     {
-        return static::ragSlug('documents');
+        return static::aiSlug('documents');
     }
 
     public static function canCreate(): bool
@@ -54,7 +54,7 @@ class DocumentResource extends Resource
 
     public static function canAccess(): bool
     {
-        return static::canAccessRag();
+        return static::canAccessAi();
     }
 
     public static function table(Table $table): Table
@@ -126,7 +126,7 @@ class DocumentResource extends Resource
                     ->modalDescription('Re-reads this document from its source and embeds anything that changed. Unchanged text keeps its existing vectors.')
                     ->action(static function (Document $record): void {
                         try {
-                            Rag::ingest(
+                            FilamentAi::ingest(
                                 $record->source_key,
                                 ['ids' => $record->external_id],
                                 IngestionMode::Full,

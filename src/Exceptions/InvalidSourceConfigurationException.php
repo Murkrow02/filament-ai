@@ -6,7 +6,7 @@ namespace Murkrow\FilamentAi\Exceptions;
 
 use Murkrow\FilamentAi\Contracts\KnowledgeSource;
 
-class InvalidSourceConfigurationException extends RagException
+class InvalidSourceConfigurationException extends FilamentAiException
 {
     public static function notAModel(string $source, string $class): self
     {

@@ -32,7 +32,7 @@ beforeEach(function (): void {
 it('streams an agent answer and keeps the conversation', function (): void {
     scriptAgent(['There are no books yet.']);
 
-    $response = $this->post('/rag/chat/ask', ['question' => 'How many books are there?']);
+    $response = $this->post('/ai/chat/ask', ['question' => 'How many books are there?']);
 
     $response->assertOk();
     expect($response->headers->get('Content-Type'))->toStartWith('text/event-stream');
@@ -52,7 +52,7 @@ it('asks for approval before a write and applies it once approved', function ():
         'I added the book.',
     ]);
 
-    $events = eventsOf($this->post('/rag/chat/ask', [
+    $events = eventsOf($this->post('/ai/chat/ask', [
         'question' => 'Add a book called Statuti del comune',
     ]));
 
@@ -69,7 +69,7 @@ it('asks for approval before a write and applies it once approved', function ():
         ->and($done['pending'][0]['arguments'])->toBe(['title' => 'Statuti del comune'])
         ->and(TestBook::query()->count())->toBe(0);
 
-    $resumed = eventsOf($this->post("/rag/chat/c/{$done['conversation']}/decisions", [
+    $resumed = eventsOf($this->post("/ai/chat/c/{$done['conversation']}/decisions", [
         'decisions' => ['call_1' => true],
     ]));
 
@@ -86,11 +86,11 @@ it('discards a write the user rejects', function (): void {
         'Understood, I will not add it.',
     ]);
 
-    $done = lastEvent(eventsOf($this->post('/rag/chat/ask', [
+    $done = lastEvent(eventsOf($this->post('/ai/chat/ask', [
         'question' => 'Add a book called Statuti del comune',
     ])), 'done');
 
-    $after = lastEvent(eventsOf($this->post("/rag/chat/c/{$done['conversation']}/decisions", [
+    $after = lastEvent(eventsOf($this->post("/ai/chat/c/{$done['conversation']}/decisions", [
         'decisions' => ['call_1' => false],
     ])), 'done');
 
@@ -101,11 +101,11 @@ it('discards a write the user rejects', function (): void {
 it('refuses a new question while a change awaits a decision', function (): void {
     scriptAgent([new ToolCall('call_1', 'test_books_create', ['title' => 'Statuti del comune'])]);
 
-    $done = lastEvent(eventsOf($this->post('/rag/chat/ask', [
+    $done = lastEvent(eventsOf($this->post('/ai/chat/ask', [
         'question' => 'Add a book called Statuti del comune',
     ])), 'done');
 
-    $this->postJson('/rag/chat/ask', [
+    $this->postJson('/ai/chat/ask', [
         'question' => 'Never mind',
         'conversation' => $done['conversation'],
     ])
@@ -116,12 +116,12 @@ it('refuses a new question while a change awaits a decision', function (): void 
 it('will not resume on a decision for a call that is not waiting', function (): void {
     scriptAgent([new ToolCall('call_1', 'test_books_create', ['title' => 'Statuti del comune'])]);
 
-    $done = lastEvent(eventsOf($this->post('/rag/chat/ask', [
+    $done = lastEvent(eventsOf($this->post('/ai/chat/ask', [
         'question' => 'Add a book called Statuti del comune',
     ])), 'done');
 
     // Answering something else leaves the real call undecided: nothing runs.
-    $this->postJson("/rag/chat/c/{$done['conversation']}/decisions", ['decisions' => ['call_forged' => true]])
+    $this->postJson("/ai/chat/c/{$done['conversation']}/decisions", ['decisions' => ['call_forged' => true]])
         ->assertStatus(409);
 
     expect(TestBook::query()->count())->toBe(0);
@@ -135,18 +135,18 @@ it('keeps other people out of an agent conversation', function (): void {
         'title' => 'Someone else',
     ]);
 
-    $this->getJson("/rag/chat/c/{$foreign->id}/messages")->assertNotFound();
-    $this->postJson("/rag/chat/c/{$foreign->id}/decisions", ['decisions' => ['call_1' => true]])->assertNotFound();
+    $this->getJson("/ai/chat/c/{$foreign->id}/messages")->assertNotFound();
+    $this->postJson("/ai/chat/c/{$foreign->id}/decisions", ['decisions' => ['call_1' => true]])->assertNotFound();
 });
 
 it('reads an agent conversation back, pause included', function (): void {
     scriptAgent([new ToolCall('call_1', 'test_books_create', ['title' => 'Statuti del comune'])]);
 
-    $done = lastEvent(eventsOf($this->post('/rag/chat/ask', [
+    $done = lastEvent(eventsOf($this->post('/ai/chat/ask', [
         'question' => 'Add a book called Statuti del comune',
     ])), 'done');
 
-    $this->getJson("/rag/chat/c/{$done['conversation']}/messages")
+    $this->getJson("/ai/chat/c/{$done['conversation']}/messages")
         ->assertOk()
         ->assertJsonPath('messages.0.role', 'user')
         ->assertJsonPath('pending.0.id', 'call_1');
@@ -157,7 +157,7 @@ it('says so instead of failing when laravel/ai is not installed', function (): v
 
     scriptAgent(['This must not be called.']);
 
-    $this->postJson('/rag/chat/ask', ['question' => 'How many books are there?'])
+    $this->postJson('/ai/chat/ask', ['question' => 'How many books are there?'])
         ->assertStatus(409)
-        ->assertJsonPath('message', __('rag::rag.assistant.not_installed'));
+        ->assertJsonPath('message', __('filament-ai::messages.assistant.not_installed'));
 });

@@ -77,9 +77,9 @@ function lastEvent(array $events, string $name): array
  */
 function payloadFrom(string $html): array
 {
-    expect($html)->toContain('id="rag-chat-payload"');
+    expect($html)->toContain('id="fai-chat-payload"');
 
-    preg_match('/<script type="application\/json" id="rag-chat-payload">(.*?)<\/script>/s', $html, $matches);
+    preg_match('/<script type="application\/json" id="fai-chat-payload">(.*?)<\/script>/s', $html, $matches);
 
     return json_decode(html_entity_decode($matches[1], ENT_QUOTES), true);
 }

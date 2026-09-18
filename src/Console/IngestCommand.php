@@ -16,7 +16,7 @@ use Symfony\Component\Console\Helper\ProgressBar;
 
 class IngestCommand extends Command
 {
-    protected $signature = 'rag:ingest
+    protected $signature = 'ai:ingest
                             {source : The knowledge source key}
                             {--filter=* : Repeatable name:value filter, e.g. --filter=id_range:1-50}
                             {--mode=incremental : full, incremental or embeddings_only}
@@ -36,7 +36,7 @@ class IngestCommand extends Command
         $key = (string) $this->argument('source');
 
         if (! $sources->has($key)) {
-            $this->components->error("Unknown source [{$key}]. Run `php artisan rag:sources` to see what is configured.");
+            $this->components->error("Unknown source [{$key}]. Run `php artisan ai:sources` to see what is configured.");
 
             return self::FAILURE;
         }
@@ -85,8 +85,8 @@ class IngestCommand extends Command
 
             $this->components->info("Queued run {$run->uuid} ({$run->documents_total} documents).");
             $this->components->bulletList([
-                'Worker: php artisan queue:work '.config('rag.queue.connection').' --queue='.config('rag.queue.queue'),
-                'Progress: php artisan rag:status --run='.$run->uuid,
+                'Worker: php artisan queue:work '.config('filament-ai.queue.connection').' --queue='.config('filament-ai.queue.queue'),
+                'Progress: php artisan ai:status --run='.$run->uuid,
             ]);
 
             return self::SUCCESS;

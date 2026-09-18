@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Murkrow\FilamentAi\Data\AnswerResult;
-use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Models\Concerns\UsesAiConnection;
 
 /**
  * One chat thread on the standalone chat page.
@@ -31,11 +31,11 @@ use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
  */
 class Conversation extends Model
 {
-    use UsesRagConnection;
+    use UsesAiConnection;
 
     protected $guarded = [];
 
-    protected function ragTableKey(): string
+    protected function aiTableKey(): string
     {
         return 'conversations';
     }

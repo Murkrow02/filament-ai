@@ -10,12 +10,12 @@ use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Murkrow\FilamentAi\Enums\IngestionMode;
 use Murkrow\FilamentAi\Enums\RunStatus;
-use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Filament\Pages\IngestKnowledge;
-use Murkrow\FilamentAi\Filament\Pages\RagDashboard;
-use Murkrow\FilamentAi\Filament\Pages\RagPlayground;
-use Murkrow\FilamentAi\Filament\Pages\RagSettings;
-use Murkrow\FilamentAi\Filament\RagPlugin;
+use Murkrow\FilamentAi\Filament\Pages\KnowledgeDashboard;
+use Murkrow\FilamentAi\Filament\Pages\KnowledgePlayground;
+use Murkrow\FilamentAi\Filament\Pages\KnowledgeSettings;
+use Murkrow\FilamentAi\Filament\FilamentAiPlugin;
 use Murkrow\FilamentAi\Filament\Resources\DocumentResource;
 use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource;
 use Murkrow\FilamentAi\Filament\Resources\QueryResource;
@@ -39,7 +39,7 @@ function seedForPanel(): TestBook
         'content' => 'Il grano venne razionato per tutto inverno. I mercanti protestarono davanti al palazzo comunale.',
     ]);
 
-    Rag::ingestSync('books');
+    FilamentAi::ingestSync('books');
 
     return $book;
 }
@@ -47,46 +47,46 @@ function seedForPanel(): TestBook
 it('registers its pages, resources and widgets with the host panel', function (): void {
     $panel = Filament::getPanel('testing');
 
-    expect($panel->getPages())->toContain(RagDashboard::class, IngestKnowledge::class, RagPlayground::class, RagSettings::class)
+    expect($panel->getPages())->toContain(KnowledgeDashboard::class, IngestKnowledge::class, KnowledgePlayground::class, KnowledgeSettings::class)
         ->and($panel->getResources())->toContain(IngestionRunResource::class, DocumentResource::class, QueryResource::class)
         ->and($panel->getWidgets())->toContain(KnowledgeStatsOverview::class);
 });
 
 it('registers nothing when the panel integration is switched off', function (): void {
-    config()->set('rag.filament.enabled', false);
+    config()->set('filament-ai.filament.enabled', false);
 
     $panel = Panel::make()->id('disabled');
-    RagPlugin::make()->register($panel);
+    FilamentAiPlugin::make()->register($panel);
 
     expect($panel->getPages())->toBeEmpty()
         ->and($panel->getResources())->toBeEmpty();
 });
 
 it('honours the per-page config switches', function (): void {
-    config()->set('rag.filament.pages.playground', false);
-    config()->set('rag.filament.resources.queries', false);
+    config()->set('filament-ai.filament.pages.playground', false);
+    config()->set('filament-ai.filament.resources.queries', false);
 
     $panel = Panel::make()->id('switched');
-    RagPlugin::make()->register($panel);
+    FilamentAiPlugin::make()->register($panel);
 
-    expect($panel->getPages())->not->toContain(RagPlayground::class)
+    expect($panel->getPages())->not->toContain(KnowledgePlayground::class)
         ->and($panel->getResources())->not->toContain(QueryResource::class)
-        ->and($panel->getPages())->toContain(RagDashboard::class);
+        ->and($panel->getPages())->toContain(KnowledgeDashboard::class);
 });
 
 it('puts everything under the configured navigation group and slug prefix', function (): void {
-    config()->set('rag.filament.navigation_group', 'Gestione');
+    config()->set('filament-ai.filament.navigation_group', 'Gestione');
 
-    expect(RagDashboard::getNavigationGroup())->toBe('Gestione')
+    expect(KnowledgeDashboard::getNavigationGroup())->toBe('Gestione')
         ->and(IngestionRunResource::getNavigationGroup())->toBe('Gestione')
-        ->and(RagDashboard::getSlug())->toStartWith('rag/')
-        ->and(IngestionRunResource::getSlug())->toBe('rag/ingestion-runs');
+        ->and(KnowledgeDashboard::getSlug())->toStartWith('ai/')
+        ->and(IngestionRunResource::getSlug())->toBe('ai/ingestion-runs');
 });
 
 it('renders the dashboard as static blade with no livewire polling', function (): void {
     seedForPanel();
 
-    $html = Livewire::test(RagDashboard::class)
+    $html = Livewire::test(KnowledgeDashboard::class)
         ->assertOk()
         ->assertSee('Knowledge base')
         ->html();
@@ -135,7 +135,7 @@ it('starts a run from the ingestion form', function (): void {
 it('answers a question from the playground and shows the passages', function (): void {
     seedForPanel();
 
-    Livewire::test(RagPlayground::class)
+    Livewire::test(KnowledgePlayground::class)
         ->assertOk()
         ->fillForm(['question' => 'chi convoco il consiglio?', 'answer_mode' => true])
         ->call('run')
@@ -146,9 +146,9 @@ it('answers a question from the playground and shows the passages', function ():
 it('hides the model dropdown when no models are configured', function (): void {
     seedForPanel();
 
-    config()->set('rag.llm.available_models', []);
+    config()->set('filament-ai.llm.available_models', []);
 
-    Livewire::test(RagPlayground::class)
+    Livewire::test(KnowledgePlayground::class)
         ->assertOk()
         ->assertFormFieldIsHidden('model');
 });
@@ -156,12 +156,12 @@ it('hides the model dropdown when no models are configured', function (): void {
 it('lets the playground override the model per query', function (): void {
     seedForPanel();
 
-    config()->set('rag.llm.available_models', [
+    config()->set('filament-ai.llm.available_models', [
         'fake-a' => 'Fake A',
         'fake-b' => 'Fake B',
     ]);
 
-    $component = Livewire::test(RagPlayground::class)
+    $component = Livewire::test(KnowledgePlayground::class)
         ->assertOk()
         ->assertFormFieldIsVisible('model')
         ->fillForm(['question' => 'chi convoco il consiglio?', 'answer_mode' => true, 'model' => 'fake-b'])
@@ -174,7 +174,7 @@ it('lets the playground override the model per query', function (): void {
 it('retrieves without calling the model when answering is off', function (): void {
     seedForPanel();
 
-    $component = Livewire::test(RagPlayground::class)
+    $component = Livewire::test(KnowledgePlayground::class)
         ->fillForm(['question' => 'mura e porte', 'answer_mode' => false])
         ->call('run')
         ->assertHasNoErrors();
@@ -184,9 +184,9 @@ it('retrieves without calling the model when answering is off', function (): voi
 });
 
 it('saves and reverts runtime settings', function (): void {
-    config()->set('rag.settings.enabled', true);
+    config()->set('filament-ai.settings.enabled', true);
 
-    Livewire::test(RagSettings::class)
+    Livewire::test(KnowledgeSettings::class)
         ->assertOk()
         ->fillForm(['retrieval__top_k' => 5])
         ->call('save')
@@ -194,14 +194,14 @@ it('saves and reverts runtime settings', function (): void {
 
     expect(app(SettingsRepository::class)->get('retrieval.top_k'))->toBe(5);
 
-    Livewire::test(RagSettings::class)->call('resetToDefaults')->assertHasNoErrors();
+    Livewire::test(KnowledgeSettings::class)->call('resetToDefaults')->assertHasNoErrors();
 
     expect(app(SettingsRepository::class)->get('retrieval.top_k'))->toBeNull();
 });
 
 it('lists ingestion runs with their progress', function (): void {
     seedForPanel();
-    $run = Rag::ingestSync('books');
+    $run = FilamentAi::ingestSync('books');
 
     Livewire::test(IngestionRunResource\Pages\ListIngestionRuns::class)
         ->assertOk()
@@ -210,7 +210,7 @@ it('lists ingestion runs with their progress', function (): void {
 
 it('shows a single run', function (): void {
     seedForPanel();
-    $run = Rag::ingestSync('books');
+    $run = FilamentAi::ingestSync('books');
 
     Livewire::test(IngestionRunResource\Pages\ViewIngestionRun::class, ['record' => $run->uuid])
         ->assertOk()
@@ -254,7 +254,7 @@ it('browses indexed documents and their chunks', function (): void {
 it('lists answered questions', function (): void {
     seedForPanel();
 
-    Rag::ask('chi convoco il consiglio?');
+    FilamentAi::ask('chi convoco il consiglio?');
 
     Livewire::test(QueryResource\Pages\ListQueries::class)
         ->assertOk()
@@ -292,7 +292,7 @@ it('polls the runs table while a run is in flight', function (): void {
 });
 
 it('never polls when the interval is disabled', function (): void {
-    config()->set('rag.filament.poll_interval', null);
+    config()->set('filament-ai.filament.poll_interval', null);
 
     IngestionRun::query()->create([
         'uuid' => (string) Str::uuid(),
@@ -310,10 +310,10 @@ it('never polls when the interval is disabled', function (): void {
 it('renders the chunk-card component from the package view namespace', function (): void {
     // Regression: this resolved only because the test case used to put the
     // package's view directory on the application's view paths, which no real
-    // host does. <x-rag::chunk-card /> must resolve as rag::components.chunk-card.
-    expect(view()->exists('rag::components.chunk-card'))->toBeTrue();
+    // host does. <x-filament-ai::chunk-card /> must resolve as filament-ai::components.chunk-card.
+    expect(view()->exists('filament-ai::components.chunk-card'))->toBeTrue();
 
-    $html = Blade::render('<x-rag::chunk-card :passage="$p" />', ['p' => [
+    $html = Blade::render('<x-filament-ai::chunk-card :passage="$p" />', ['p' => [
         'marker' => 1,
         'label' => 'A book - Page 7',
         'score' => 0.82,

@@ -7,7 +7,7 @@ use Murkrow\FilamentAi\Contracts\LanguageModel;
 use Murkrow\FilamentAi\Data\AnswerOptions;
 use Murkrow\FilamentAi\Data\RetrievalOptions;
 use Murkrow\FilamentAi\Enums\QueryChannel;
-use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Llm\FakeLanguageModel;
 use Murkrow\FilamentAi\Models\QueryLog;
 use Murkrow\FilamentAi\Models\QueryCitation;
@@ -22,7 +22,7 @@ function seedCorpus(): void
         'content' => 'Il podesta Guido Novello convoco il consiglio generale nel mese di marzo. La delibera fu approvata a maggioranza.',
     ]);
 
-    Rag::ingestSync('books');
+    FilamentAi::ingestSync('books');
 }
 
 it('answers from the corpus and records the citations it used', function (): void {

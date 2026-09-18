@@ -10,10 +10,10 @@ declare(strict_types=1);
 | Registered automatically by the service provider, so there is nothing to
 | publish for the chat to work. Publish this file with
 |
-|     php artisan vendor:publish --tag=rag-chat-routes
+|     php artisan vendor:publish --tag=filament-ai-chat-routes
 |
 | only when you want the registration in your own routes file -- to wrap it
-| in different middleware, for instance. If you do, set RAG_CHAT_ENABLED=false
+| in different middleware, for instance. If you do, set FILAMENT_AI_CHAT_ENABLED=false
 | so it is not registered twice, and register the routes with the same names:
 | the page builds its own URLs from them.
 |
@@ -27,7 +27,7 @@ use Murkrow\FilamentAi\Http\Controllers\AssetController;
 use Murkrow\FilamentAi\Http\Controllers\AssistantController;
 use Murkrow\FilamentAi\Http\Controllers\ChatController;
 
-// The standalone page. Both check rag.chat.enabled when the request arrives,
+// The standalone page. Both check filament-ai.chat.enabled when the request arrives,
 // not here: an application that flips the setting at runtime has already had
 // its routes bound.
 Route::get('/', [ChatController::class, 'index'])->name('index');
@@ -48,6 +48,6 @@ Route::post('c/{conversation}/decisions', [AssistantController::class, 'decide']
 
 $ask = Route::post('ask', [AssistantController::class, 'ask'])->name('ask');
 
-if (($throttle = config('rag.chat.throttle')) !== null && $throttle !== '') {
+if (($throttle = config('filament-ai.chat.throttle')) !== null && $throttle !== '') {
     $ask->middleware('throttle:'.$throttle);
 }

@@ -85,23 +85,23 @@ function finishedSolver(SolveStatus $status, string $answer): object
 it('offers the toggle only where solving is switched on', function (): void {
     $html = Livewire::test(AssistantChat::class)->html();
 
-    expect($html)->toContain('id="rag-solve"');
+    expect($html)->toContain('id="fai-solve"');
 
-    config()->set('rag.agent.solving.enabled', false);
+    config()->set('filament-ai.agent.solving.enabled', false);
 
-    expect(Livewire::test(AssistantChat::class)->html())->not->toContain('id="rag-solve"');
+    expect(Livewire::test(AssistantChat::class)->html())->not->toContain('id="fai-solve"');
 });
 
 it('hides the toggle from a user who may not use it', function (): void {
-    config()->set('rag.chat.abilities.solve', false);
+    config()->set('filament-ai.chat.abilities.solve', false);
 
-    expect(Livewire::test(AssistantChat::class)->html())->not->toContain('id="rag-solve"');
+    expect(Livewire::test(AssistantChat::class)->html())->not->toContain('id="fai-solve"');
 });
 
 it('starts a run instead of a turn and streams its outcome', function (): void {
     app()->instance(Solver::class, $solver = finishedSolver(SolveStatus::Solved, 'Roma'));
 
-    $response = $this->post('/rag/chat/ask', [
+    $response = $this->post('/ai/chat/ask', [
         'question' => 'Trova la citta nascosta nell indizio',
         'mode' => 'agent',
         'solve' => true,
@@ -129,7 +129,7 @@ it('starts a run instead of a turn and streams its outcome', function (): void {
 it('tells the user when nothing held up', function (): void {
     app()->instance(Solver::class, finishedSolver(SolveStatus::Exhausted, 'Roma'));
 
-    $body = $this->post('/rag/chat/ask', [
+    $body = $this->post('/ai/chat/ask', [
         'question' => 'Trova la citta nascosta nell indizio',
         'mode' => 'agent',
         'solve' => true,
@@ -141,12 +141,12 @@ it('tells the user when nothing held up', function (): void {
 });
 
 it('answers once when solving is off, whatever the page sent', function (): void {
-    config()->set('rag.agent.solving.enabled', false);
+    config()->set('filament-ai.agent.solving.enabled', false);
     app()->instance(Solver::class, $solver = finishedSolver(SolveStatus::Solved, 'Roma'));
 
     Ai::textProvider()->useTextGateway(new FakeTextGateway(['Una risposta sola.']));
 
-    $body = $this->post('/rag/chat/ask', [
+    $body = $this->post('/ai/chat/ask', [
         'question' => 'Trova la citta nascosta nell indizio',
         'mode' => 'agent',
         'solve' => true,

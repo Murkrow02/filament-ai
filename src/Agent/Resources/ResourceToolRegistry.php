@@ -32,7 +32,7 @@ final class ResourceToolRegistry
      */
     public function blueprints(?Panel $panel = null): array
     {
-        if (! config('rag.agent.resources.enabled', true)) {
+        if (! config('filament-ai.agent.resources.enabled', true)) {
             return [];
         }
 
@@ -52,7 +52,7 @@ final class ResourceToolRegistry
 
             $tools = ResourcePolicies::apply(
                 $resource::agentTools(
-                    (new AgentTools($resource))->limit((int) config('rag.agent.resources.max_records', 25)),
+                    (new AgentTools($resource))->limit((int) config('filament-ai.agent.resources.max_records', 25)),
                 ),
                 $resource,
             );
@@ -103,7 +103,7 @@ final class ResourceToolRegistry
             }
 
             $tools = $resource::agentTools(
-                (new AgentTools($resource))->limit((int) config('rag.agent.resources.max_records', 25)),
+                (new AgentTools($resource))->limit((int) config('filament-ai.agent.resources.max_records', 25)),
             );
 
             $declared[] = [

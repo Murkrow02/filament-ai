@@ -32,7 +32,7 @@ return new class extends Migration
         });
 
         // Build the ANN index after the column exists. On an empty table this
-        // is instant; `rag:vector:reindex` rebuilds it after a bulk load.
+        // is instant; `ai:vector:reindex` rebuilds it after a bulk load.
         $store->installIndexes($dimensions);
     }
 

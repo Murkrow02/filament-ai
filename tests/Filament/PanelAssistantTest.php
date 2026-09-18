@@ -13,7 +13,7 @@ it('works without a subclass: knowledge plus every opted-in resource', function 
 });
 
 it('drops the knowledge tools when no source is allowed', function (): void {
-    config()->set('rag.agent.knowledge.sources', []);
+    config()->set('filament-ai.agent.knowledge.sources', []);
 
     $names = array_map(fn ($tool): string => $tool->name(), [...(new PanelAssistant)->tools()]);
 
@@ -32,7 +32,7 @@ it('narrows down to the tools a solving phase asked for', function (): void {
 });
 
 it('lets a phase cap the tool round trips of one turn', function (): void {
-    config()->set('rag.agent.max_steps', 12);
+    config()->set('filament-ai.agent.max_steps', 12);
 
     expect((new PanelAssistant)->maxSteps())->toBe(12)
         ->and((new PanelAssistant)->withMaxSteps(3)->maxSteps())->toBe(3)

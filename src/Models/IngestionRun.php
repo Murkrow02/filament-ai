@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Bus;
 use Murkrow\FilamentAi\Enums\IngestionMode;
 use Murkrow\FilamentAi\Enums\RunStatus;
-use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Models\Concerns\UsesAiConnection;
 
 /**
  * One ingestion job, from planning to completion.
@@ -52,11 +52,11 @@ use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
  */
 class IngestionRun extends Model
 {
-    use UsesRagConnection;
+    use UsesAiConnection;
 
     protected $guarded = [];
 
-    protected function ragTableKey(): string
+    protected function aiTableKey(): string
     {
         return 'runs';
     }

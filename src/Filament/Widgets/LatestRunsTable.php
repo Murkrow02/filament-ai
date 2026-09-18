@@ -28,7 +28,7 @@ class LatestRunsTable extends TableWidget
             ->heading('Recent ingestion runs')
             ->query(fn (): Builder => IngestionRun::query()->latest('id')->limit(5))
             // Only while there is something to watch; see the note in
-            // HasRagNavigation::ragPollIntervalWhileRunning().
+            // HasAiNavigation::aiPollIntervalWhileRunning().
             ->poll(fn (): ?string => self::pollInterval())
             ->paginated(false)
             ->columns([
@@ -62,7 +62,7 @@ class LatestRunsTable extends TableWidget
 
     private static function pollInterval(): ?string
     {
-        $interval = config('rag.filament.poll_interval', '5s');
+        $interval = config('filament-ai.filament.poll_interval', '5s');
 
         if ($interval === null || $interval === '') {
             return null;
@@ -73,6 +73,6 @@ class LatestRunsTable extends TableWidget
 
     public static function canView(): bool
     {
-        return (bool) config('rag.filament.pages.dashboard', true);
+        return (bool) config('filament-ai.filament.pages.dashboard', true);
     }
 }

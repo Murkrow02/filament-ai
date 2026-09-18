@@ -22,7 +22,7 @@ function agentToolNames(): array
 }
 
 it('takes abilities away from a resource', function (): void {
-    config()->set('rag.agent.resources.overrides', [
+    config()->set('filament-ai.agent.resources.overrides', [
         TestBookResource::class => ['abilities' => [AgentTools::LIST]],
     ]);
 
@@ -32,7 +32,7 @@ it('takes abilities away from a resource', function (): void {
 it('never widens what the resource declared', function (): void {
     // The resource itself does not offer deletion, so asking for it here
     // changes nothing: the code, not the panel, decides what is offerable.
-    config()->set('rag.agent.resources.overrides', [
+    config()->set('filament-ai.agent.resources.overrides', [
         TestBookResource::class => ['abilities' => AgentTools::ABILITIES],
     ]);
 
@@ -40,7 +40,7 @@ it('never widens what the resource declared', function (): void {
 });
 
 it('can silence a resource entirely', function (): void {
-    config()->set('rag.agent.resources.overrides', [
+    config()->set('filament-ai.agent.resources.overrides', [
         TestBookResource::class => ['abilities' => []],
     ]);
 
@@ -48,7 +48,7 @@ it('can silence a resource entirely', function (): void {
 });
 
 it('can let a write run without asking the user', function (): void {
-    config()->set('rag.agent.resources.overrides', [
+    config()->set('filament-ai.agent.resources.overrides', [
         TestBookResource::class => ['unapproved' => [AgentTools::CREATE]],
     ]);
 
@@ -63,7 +63,7 @@ it('can let a write run without asking the user', function (): void {
 });
 
 it('ignores an attempt to take approval off a deletion', function (): void {
-    config()->set('rag.agent.resources.overrides', [
+    config()->set('filament-ai.agent.resources.overrides', [
         TestBookResource::class => ['unapproved' => [AgentTools::DELETE]],
     ]);
 
@@ -76,7 +76,7 @@ it('ignores an attempt to take approval off a deletion', function (): void {
 });
 
 it('caps records per resource', function (): void {
-    config()->set('rag.agent.resources.overrides', [
+    config()->set('filament-ai.agent.resources.overrides', [
         TestBookResource::class => ['max_records' => 3],
     ]);
 
@@ -86,7 +86,7 @@ it('caps records per resource', function (): void {
 });
 
 it('lists every opted-in resource, including the ones it switched off', function (): void {
-    config()->set('rag.agent.resources.overrides', [
+    config()->set('filament-ai.agent.resources.overrides', [
         TestBookResource::class => ['abilities' => []],
     ]);
 
@@ -98,7 +98,7 @@ it('lists every opted-in resource, including the ones it switched off', function
 });
 
 it('stores the policies through the settings repository', function (): void {
-    config()->set('rag.settings.enabled', true);
+    config()->set('filament-ai.settings.enabled', true);
 
     $settings = app(SettingsRepository::class);
     $settings->set('agent.resources.overrides', [

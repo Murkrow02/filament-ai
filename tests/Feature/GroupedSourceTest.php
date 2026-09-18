@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Murkrow\FilamentAi\Data\DocumentDraft;
 use Murkrow\FilamentAi\Enums\IngestionMode;
-use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Models\Chunk;
 use Murkrow\FilamentAi\Models\Document;
 use Murkrow\FilamentAi\Sources\SourceRegistry;
@@ -12,7 +12,7 @@ use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 use Murkrow\FilamentAi\Tests\Fixtures\TestTitleIndexSource;
 
 beforeEach(function (): void {
-    config()->set('rag.sources', [TestTitleIndexSource::class]);
+    config()->set('filament-ai.sources', [TestTitleIndexSource::class]);
     app(SourceRegistry::class)->flush();
 
     foreach (['Amalfi', 'Atrani', 'Amalfi Costiera', 'Benevento', 'Capri'] as $title) {
@@ -58,7 +58,7 @@ it('finds one document by its group value and nothing by an absent one', functio
 });
 
 it('ingests every group into chunks that pack several rows', function (): void {
-    Rag::ingestSync('titles', mode: IngestionMode::Full);
+    FilamentAi::ingestSync('titles', mode: IngestionMode::Full);
 
     expect(Document::query()->where('source_key', 'titles')->count())->toBe(3);
 

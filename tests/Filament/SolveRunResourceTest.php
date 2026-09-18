@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Murkrow\FilamentAi\Enums\SolveAttemptStatus;
 use Murkrow\FilamentAi\Enums\SolveStatus;
-use Murkrow\FilamentAi\Filament\RagPlugin;
+use Murkrow\FilamentAi\Filament\FilamentAiPlugin;
 use Murkrow\FilamentAi\Filament\Resources\SolveRunResource;
 use Murkrow\FilamentAi\Models\SolveAttempt;
 use Murkrow\FilamentAi\Models\SolveRun;
@@ -53,18 +53,18 @@ function solveRunWithAttempts(SolveStatus $status = SolveStatus::Exhausted): Sol
 }
 
 it('is on the panel only while solving is switched on', function (): void {
-    config()->set('rag.agent.solving.enabled', false);
+    config()->set('filament-ai.agent.solving.enabled', false);
     // The import of Filament\Panel matters here: with the Filament facade
     // imported instead, "Filament\Panel" resolves under the facade's own
     // namespace and the class is not found.
     $panel = Panel::make()->id('off');
-    RagPlugin::make()->register($panel);
+    FilamentAiPlugin::make()->register($panel);
 
     expect($panel->getResources())->not->toContain(SolveRunResource::class);
 
-    config()->set('rag.agent.solving.enabled', true);
+    config()->set('filament-ai.agent.solving.enabled', true);
     $panel = Panel::make()->id('on');
-    RagPlugin::make()->register($panel);
+    FilamentAiPlugin::make()->register($panel);
 
     expect($panel->getResources())->toContain(SolveRunResource::class);
 });

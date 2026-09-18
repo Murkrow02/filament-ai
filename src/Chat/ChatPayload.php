@@ -36,7 +36,7 @@ final class ChatPayload
         $conversation = $this->turn->ownedConversation($options['conversation'] ?? null, $user);
 
         // Being allowed to pick a model means nothing when none are on offer.
-        if (empty(config('rag.llm.available_models', []))) {
+        if (empty(config('filament-ai.llm.available_models', []))) {
             $allowed['model'] = false;
         }
 
@@ -48,11 +48,11 @@ final class ChatPayload
             'endpoints' => $this->endpoints(),
             'csrf' => csrf_token(),
             'brand' => [
-                'name' => config('rag.chat.brand.name') ?: config('app.name'),
-                'logo' => config('rag.chat.brand.logo'),
-                'accent' => (string) config('rag.chat.brand.accent', '#2f6f4f'),
+                'name' => config('filament-ai.chat.brand.name') ?: config('app.name'),
+                'logo' => config('filament-ai.chat.brand.logo'),
+                'accent' => (string) config('filament-ai.chat.brand.accent', '#2f6f4f'),
             ],
-            'models' => $allowed['model'] ? (array) config('rag.llm.available_models', []) : [],
+            'models' => $allowed['model'] ? (array) config('filament-ai.llm.available_models', []) : [],
             'currentModel' => $allowed['model'] ? $this->currentModel() : null,
             'suggestions' => $this->suggestions(),
             'conversations' => $allowed['history'] ? $this->conversations($user) : [],
@@ -84,7 +84,7 @@ final class ChatPayload
     {
         return array_map(static fn (array $thread): array => [
             'uuid' => $thread['id'],
-            'title' => $thread['title'] !== '' ? $thread['title'] : (string) __('rag::rag.chat.untitled'),
+            'title' => $thread['title'] !== '' ? $thread['title'] : (string) __('filament-ai::messages.chat.untitled'),
             'last_message_at' => $thread['updated_at'],
         ], $this->turn->threads($user));
     }
@@ -98,7 +98,7 @@ final class ChatPayload
      */
     private function solving(array $allowed): ?array
     {
-        if (! $allowed['solve'] || ! config('rag.agent.solving.enabled', false)) {
+        if (! $allowed['solve'] || ! config('filament-ai.agent.solving.enabled', false)) {
             return null;
         }
 
@@ -115,7 +115,7 @@ final class ChatPayload
 
     private function currentModel(): ?string
     {
-        $model = config('rag.agent.model') ?? config('rag.llm.model');
+        $model = config('filament-ai.agent.model') ?? config('filament-ai.llm.model');
 
         return blank($model) ? null : (string) $model;
     }
@@ -133,14 +133,14 @@ final class ChatPayload
             // The standalone page can be switched off while the panel's chat
             // keeps using the rest of these, so the page must cope with having
             // nowhere to navigate to.
-            'index' => $this->routeOrNull('rag.chat.index'),
+            'index' => $this->routeOrNull('filament-ai.chat.index'),
             // ":uuid" is substituted in the browser; route() would percent-encode a placeholder.
-            'show' => $this->routeOrNull('rag.chat.show', ['conversation' => '__UUID__']),
-            'messages' => route('rag.chat.messages', ['conversation' => '__UUID__'], false),
-            'update' => route('rag.chat.update', ['conversation' => '__UUID__'], false),
-            'destroy' => route('rag.chat.destroy', ['conversation' => '__UUID__'], false),
-            'decide' => route('rag.chat.decide', ['conversation' => '__UUID__'], false),
-            'ask' => route('rag.chat.ask', [], false),
+            'show' => $this->routeOrNull('filament-ai.chat.show', ['conversation' => '__UUID__']),
+            'messages' => route('filament-ai.chat.messages', ['conversation' => '__UUID__'], false),
+            'update' => route('filament-ai.chat.update', ['conversation' => '__UUID__'], false),
+            'destroy' => route('filament-ai.chat.destroy', ['conversation' => '__UUID__'], false),
+            'decide' => route('filament-ai.chat.decide', ['conversation' => '__UUID__'], false),
+            'ask' => route('filament-ai.chat.ask', [], false),
         ];
     }
 
@@ -157,13 +157,13 @@ final class ChatPayload
      */
     private function suggestions(): array
     {
-        $configured = (array) config('rag.chat.suggestions', []);
+        $configured = (array) config('filament-ai.chat.suggestions', []);
 
         if ($configured !== []) {
             return array_values(array_map(strval(...), $configured));
         }
 
-        $default = __('rag::rag.chat.suggestions');
+        $default = __('filament-ai::messages.chat.suggestions');
 
         return is_array($default) ? array_values(array_map(strval(...), $default)) : [];
     }

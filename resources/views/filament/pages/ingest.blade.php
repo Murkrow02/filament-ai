@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    @include('rag::partials.styles')
+    @include('filament-ai::partials.styles')
 
     <form wire:submit="start">
         {{ $this->form }}
@@ -21,18 +21,18 @@
                     'Tokens' => '~' . number_format((int) $estimate['tokens']),
                 ] as $label => $value)
                     <div>
-                        <dt style="font-size:.875rem;color:var(--rag-muted);">{{ $label }}</dt>
+                        <dt style="font-size:.875rem;color:var(--fai-muted);">{{ $label }}</dt>
                         <dd style="font-size:1.125rem;font-weight:600;font-variant-numeric:tabular-nums;">{{ $value }}</dd>
                     </div>
                 @endforeach
             </dl>
 
-            <p style="margin-top:1rem;font-size:.875rem;color:var(--rag-muted);">
+            <p style="margin-top:1rem;font-size:.875rem;color:var(--fai-muted);">
                 Estimated embedding cost:
-                <span style="font-weight:600;color:var(--rag-strong);">
+                <span style="font-weight:600;color:var(--fai-strong);">
                     {{ \Murkrow\FilamentAi\Ingestion\CostCalculator::format((int) $estimate['cost_micros'], 4) }}
                 </span>
-                using {{ config('rag.embeddings.model') }}.
+                using {{ config('filament-ai.embeddings.model') }}.
             </p>
         </x-filament::section>
     @endif
@@ -40,11 +40,11 @@
     <x-filament::section collapsible collapsed>
         <x-slot name="heading">Before a large run</x-slot>
 
-        <ul style="list-style:disc;padding-inline-start:1.25rem;font-size:.875rem;color:var(--rag-muted);">
+        <ul style="list-style:disc;padding-inline-start:1.25rem;font-size:.875rem;color:var(--fai-muted);">
             <li>
                 A worker must be consuming the
-                <code>{{ config('rag.queue.queue') }}</code> queue on the
-                <code>{{ config('rag.queue.connection') }}</code> connection, otherwise the
+                <code>{{ config('filament-ai.queue.queue') }}</code> queue on the
+                <code>{{ config('filament-ai.queue.connection') }}</code> connection, otherwise the
                 run sits at zero forever.
             </li>
             <li>
@@ -53,7 +53,7 @@
             </li>
             <li>
                 Build the vector index after a bulk load rather than before:
-                <code>php artisan rag:vector:reindex</code>.
+                <code>php artisan ai:vector:reindex</code>.
             </li>
         </ul>
     </x-filament::section>

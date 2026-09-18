@@ -30,7 +30,7 @@ final class Solver
 
     public function solve(string $goal, SolveOptions $options = new SolveOptions, int|string|null $createdBy = null): SolveRun
     {
-        if (! config('rag.agent.solving.enabled', false)) {
+        if (! config('filament-ai.agent.solving.enabled', false)) {
             throw SolvingDisabledException::make();
         }
 
@@ -95,7 +95,7 @@ final class Solver
         $runId = $run->id;
 
         $batch = Bus::batch($jobs)
-            ->name("rag:solve:{$run->uuid}:wave-{$wave}")
+            ->name("ai:solve:{$run->uuid}:wave-{$wave}")
             ->onConnection(self::solvingConnection())
             ->onQueue(self::solvingQueue())
             // One attempt blowing up must not cancel its siblings: a wave of
@@ -119,7 +119,7 @@ final class Solver
      */
     private function temperatureFor(int $position, int $count, float $spread): float
     {
-        $base = config('rag.llm.temperature');
+        $base = config('filament-ai.llm.temperature');
         $base = $base === null || $base === '' ? 0.2 : (float) $base;
 
         if ($count < 2 || $spread <= 0.0) {

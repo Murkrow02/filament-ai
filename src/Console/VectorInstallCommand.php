@@ -11,7 +11,7 @@ use Throwable;
 
 class VectorInstallCommand extends Command
 {
-    protected $signature = 'rag:vector:install';
+    protected $signature = 'ai:vector:install';
 
     protected $description = 'Create the pgvector extension and verify the connection can host it';
 

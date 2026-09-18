@@ -20,8 +20,8 @@ it('answers from the defaults when nothing is configured', function (): void {
 });
 
 it('takes a plain boolean from config', function (): void {
-    config()->set('rag.chat.abilities.solve', false);
-    config()->set('rag.chat.abilities.settings', false);
+    config()->set('filament-ai.chat.abilities.solve', false);
+    config()->set('filament-ai.chat.abilities.settings', false);
 
     expect(ChatAbilities::allows('solve'))->toBeFalse()
         ->and(ChatAbilities::allows('settings'))->toBeFalse()
@@ -29,7 +29,7 @@ it('takes a plain boolean from config', function (): void {
 });
 
 it('resolves an ability from a permission name', function (): void {
-    config()->set('rag.chat.abilities.cost', 'see ai costs');
+    config()->set('filament-ai.chat.abilities.cost', 'see ai costs');
 
     // A user model with no can() opinion of its own comes back denied rather
     // than exploding -- which is what a host without that permission wants.
@@ -45,14 +45,14 @@ it('resolves an ability from a permission name', function (): void {
 });
 
 it('resolves an ability from a callable', function (): void {
-    config()->set('rag.chat.abilities.model', fn ($user): bool => $user !== null);
+    config()->set('filament-ai.chat.abilities.model', fn ($user): bool => $user !== null);
 
     expect(ChatAbilities::resolve('model', new Illuminate\Foundation\Auth\User))->toBeTrue()
         ->and(ChatAbilities::resolve('model', null))->toBeFalse();
 });
 
 it('lets a host Gate definition win over config', function (): void {
-    config()->set('rag.chat.abilities.cost', true);
+    config()->set('filament-ai.chat.abilities.cost', true);
 
     Gate::define(ChatAbilities::ability('cost'), fn (): bool => false);
     ChatAbilities::register();
@@ -61,7 +61,7 @@ it('lets a host Gate definition win over config', function (): void {
 });
 
 it('resolves every ability at once for the page', function (): void {
-    config()->set('rag.chat.abilities.solve', false);
+    config()->set('filament-ai.chat.abilities.solve', false);
 
     $allowed = ChatAbilities::allowed();
 

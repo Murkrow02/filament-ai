@@ -63,7 +63,7 @@ final readonly class ChunkingOptions
     public static function fromConfig(array $overrides = []): self
     {
         /** @var array<string, mixed> $global */
-        $global = (array) config('rag.chunking', []);
+        $global = (array) config('filament-ai.chunking', []);
 
         return self::fromArray(Arr::mergeConfig($global, $overrides));
     }

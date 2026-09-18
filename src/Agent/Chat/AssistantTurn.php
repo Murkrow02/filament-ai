@@ -58,7 +58,7 @@ final class AssistantTurn
     public function assistant(?Authenticatable $user, ?string $conversationId, ?string $resourceSlug = null, ?string $recordKey = null): PanelAssistant
     {
         /** @var PanelAssistant $assistant */
-        $assistant = app((string) config('rag.agent.assistant', PanelAssistant::class));
+        $assistant = app((string) config('filament-ai.agent.assistant', PanelAssistant::class));
 
         $assistant = $conversationId === null
             ? $assistant->forUser($user)
@@ -153,7 +153,7 @@ final class AssistantTurn
             return [];
         }
 
-        return $this->transcript->recent($user, (int) config('rag.agent.chat.history', 20));
+        return $this->transcript->recent($user, (int) config('filament-ai.agent.chat.history', 20));
     }
 
     /**
@@ -182,7 +182,7 @@ final class AssistantTurn
 
             $decisions[$id] = filter_var($raw[$id], FILTER_VALIDATE_BOOLEAN)
                 ? Decision::approve()
-                : Decision::reject((string) __('rag::rag.assistant.rejected_reason'));
+                : Decision::reject((string) __('filament-ai::messages.assistant.rejected_reason'));
         }
 
         return Decisions::from($decisions);
@@ -216,7 +216,7 @@ final class AssistantTurn
         return [
             'resource' => $resourceSlug,
             'record' => (string) $record->getKey(),
-            'label' => (string) __('rag::rag.assistant.context', [
+            'label' => (string) __('filament-ai::messages.assistant.context', [
                 'label' => $resource::getModelLabel(),
                 'title' => RecordPresenter::titleFor($resource, $record) ?? $record->getKey(),
             ]),

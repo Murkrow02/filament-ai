@@ -1,4 +1,4 @@
-@include('rag::partials.styles')
+@include('filament-ai::partials.styles')
 
 @props(['passage'])
 
@@ -12,8 +12,8 @@
     $used = (bool) ($passage['used'] ?? false);
 @endphp
 
-<div id="rag-passage-{{ $passage['marker'] }}"
-     style="scroll-margin-top:6rem;border:1px solid var(--rag-line);border-radius:.5rem;padding:1rem;">
+<div id="fai-passage-{{ $passage['marker'] }}"
+     style="scroll-margin-top:6rem;border:1px solid var(--fai-line);border-radius:.5rem;padding:1rem;">
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;">
         <x-filament::badge :color="$used ? 'success' : 'gray'">
             [#{{ $passage['marker'] }}]{{ $used ? ' cited' : '' }}
@@ -28,12 +28,12 @@
             </x-filament::link>
         @endif
 
-        <span style="margin-inline-start:auto;font-size:.75rem;font-variant-numeric:tabular-nums;color:var(--rag-muted);">
+        <span style="margin-inline-start:auto;font-size:.75rem;font-variant-numeric:tabular-nums;color:var(--fai-muted);">
             {{ number_format($score, 3) }}
         </span>
     </div>
 
-    <div style="margin-top:.5rem;height:.25rem;border-radius:.25rem;background:var(--rag-line);">
+    <div style="margin-top:.5rem;height:.25rem;border-radius:.25rem;background:var(--fai-line);">
         <div style="height:.25rem;border-radius:.25rem;background:var(--{{ $tone }}-500);width:{{ $width }}%"></div>
     </div>
 

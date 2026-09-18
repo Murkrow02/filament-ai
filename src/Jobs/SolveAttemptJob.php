@@ -124,6 +124,6 @@ final class SolveAttemptJob implements ShouldQueue
      */
     public function tags(): array
     {
-        return ['rag', 'rag:solve', 'rag:solve:attempt:'.$this->attemptId];
+        return ['filament-ai', 'ai:solve', 'ai:solve:attempt:'.$this->attemptId];
     }
 }

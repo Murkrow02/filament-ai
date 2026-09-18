@@ -14,11 +14,11 @@ skips itself when none is reachable; to run it, start one and point the suite at
 it:
 
 ```bash
-docker run -d --name rag-test-pg \
+docker run -d --name fai-test-pg \
   -e POSTGRES_USER=rag -e POSTGRES_PASSWORD=rag -e POSTGRES_DB=rag_test \
   -p 55432:5432 pgvector/pgvector:pg17
 
-RAG_TEST_PG_HOST=127.0.0.1 RAG_TEST_PG_PORT=55432 vendor/bin/pest --testsuite=Pgvector
+FILAMENT_AI_TEST_PG_HOST=127.0.0.1 FILAMENT_AI_TEST_PG_PORT=55432 vendor/bin/pest --testsuite=Pgvector
 ```
 
 ## Pull requests

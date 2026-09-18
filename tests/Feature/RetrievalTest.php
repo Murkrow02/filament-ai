@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Murkrow\FilamentAi\Contracts\Retriever;
 use Murkrow\FilamentAi\Data\RetrievalOptions;
 use Murkrow\FilamentAi\Data\ScoredChunk;
-use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Models\Document;
 use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
@@ -27,7 +27,7 @@ function seedLibrary(): array
         'content' => 'La rotazione delle colture era regolata dagli statuti. I contadini pagavano un decimo del raccolto.',
     ]);
 
-    Rag::ingestSync('books');
+    FilamentAi::ingestSync('books');
 
     return [$first, $second];
 }

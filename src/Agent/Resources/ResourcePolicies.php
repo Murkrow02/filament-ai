@@ -21,7 +21,7 @@ final class ResourcePolicies
      */
     public static function all(): array
     {
-        $overrides = config('rag.agent.resources.overrides', []);
+        $overrides = config('filament-ai.agent.resources.overrides', []);
 
         return is_array($overrides) ? $overrides : [];
     }

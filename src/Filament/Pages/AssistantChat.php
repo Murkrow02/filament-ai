@@ -19,7 +19,7 @@ use UnitEnum;
  * The assistant inside the panel.
  *
  * Deliberately thin: the chat itself is the package's own component, the same
- * one the standalone page at /rag/chat renders, and it talks to the HTTP
+ * one the standalone page at /ai/chat renders, and it talks to the HTTP
  * endpoints directly. This page only decides where it sits in the panel, who
  * may reach it, and which record the user came from.
  *
@@ -31,7 +31,7 @@ class AssistantChat extends Page
 {
     protected static string|null|BackedEnum $navigationIcon = 'heroicon-o-sparkles';
 
-    protected string $view = 'rag::filament.pages.assistant';
+    protected string $view = 'filament-ai::filament.pages.assistant';
 
     /** An agent conversation id. */
     #[Url(as: 'conversation')]
@@ -46,29 +46,29 @@ class AssistantChat extends Page
 
     public static function getSlug(?Panel $panel = null): string
     {
-        return trim((string) config('rag.agent.chat.slug', 'assistant'), '/');
+        return trim((string) config('filament-ai.agent.chat.slug', 'assistant'), '/');
     }
 
     public static function getNavigationLabel(): string
     {
-        return (string) __('rag::rag.assistant.navigation');
+        return (string) __('filament-ai::messages.assistant.navigation');
     }
 
     public function getTitle(): string
     {
-        return '';//(string) __('rag::rag.assistant.title');
+        return '';//(string) __('filament-ai::messages.assistant.title');
     }
 
     public static function getNavigationGroup(): string|UnitEnum|null
     {
-        $group = config('rag.agent.chat.navigation_group');
+        $group = config('filament-ai.agent.chat.navigation_group');
 
         return $group === null || $group === '' ? null : (string) $group;
     }
 
     public static function getNavigationSort(): ?int
     {
-        return (int) config('rag.agent.chat.navigation_sort', -1);
+        return (int) config('filament-ai.agent.chat.navigation_sort', -1);
     }
 
     public static function canAccess(): bool
@@ -93,7 +93,7 @@ class AssistantChat extends Page
             return '';
         }
 
-        return view('rag::filament.assistant-button', ['url' => $url])->render();
+        return view('filament-ai::filament.assistant-button', ['url' => $url])->render();
     }
 
     public function mount(): void

@@ -5,24 +5,24 @@
     server drops it again for a user who may not set it; see
     AskRequest::prepareForValidation().
 --}}
-<div class="rag-modal" id="rag-settings" role="dialog" aria-modal="true"
-     aria-labelledby="rag-settings-title" hidden>
-    <h2 id="rag-settings-title">{{ __('rag::rag.chat.settings') }}</h2>
-    <p class="rag-modal__sub">{{ __('rag::rag.chat.settings_sub') }}</p>
+<div class="fai-modal" id="fai-settings" role="dialog" aria-modal="true"
+     aria-labelledby="fai-settings-title" hidden>
+    <h2 id="fai-settings-title">{{ __('filament-ai::messages.chat.settings') }}</h2>
+    <p class="fai-modal__sub">{{ __('filament-ai::messages.chat.settings_sub') }}</p>
 
-    <div class="rag-field">
-        <label class="rag-field__label" for="rag-set-model">{{ __('rag::rag.chat.model') }}</label>
-        <select id="rag-set-model">
+    <div class="fai-field">
+        <label class="fai-field__label" for="fai-set-model">{{ __('filament-ai::messages.chat.model') }}</label>
+        <select id="fai-set-model">
             @foreach ($payload['models'] as $id => $label)
                 <option value="{{ $id }}">{{ $label }}</option>
             @endforeach
         </select>
-        <span class="rag-field__help">{{ __('rag::rag.chat.model_help') }}</span>
+        <span class="fai-field__help">{{ __('filament-ai::messages.chat.model_help') }}</span>
     </div>
 
-    <div class="rag-modal__foot">
-        <button type="button" class="rag-btn" id="rag-settings-reset">{{ __('rag::rag.chat.reset') }}</button>
-        <button type="button" class="rag-btn" id="rag-settings-cancel">{{ __('rag::rag.chat.cancel') }}</button>
-        <button type="button" class="rag-btn rag-btn--primary" id="rag-settings-save">{{ __('rag::rag.chat.save') }}</button>
+    <div class="fai-modal__foot">
+        <button type="button" class="fai-btn" id="fai-settings-reset">{{ __('filament-ai::messages.chat.reset') }}</button>
+        <button type="button" class="fai-btn" id="fai-settings-cancel">{{ __('filament-ai::messages.chat.cancel') }}</button>
+        <button type="button" class="fai-btn fai-btn--primary" id="fai-settings-save">{{ __('filament-ai::messages.chat.save') }}</button>
     </div>
 </div>

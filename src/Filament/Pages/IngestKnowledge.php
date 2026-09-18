@@ -15,7 +15,7 @@ use Filament\Schemas\Components\Text;
 use Filament\Schemas\Schema;
 use Livewire\Attributes\Url;
 use Murkrow\FilamentAi\Enums\IngestionMode;
-use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Concerns\HasAiNavigation;
 use Murkrow\FilamentAi\Filament\Forms\SourceFilterSchema;
 use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource;
 use Murkrow\FilamentAi\Ingestion\CostCalculator;
@@ -34,13 +34,13 @@ use Throwable;
  */
 class IngestKnowledge extends Page
 {
-    use HasRagNavigation;
+    use HasAiNavigation;
 
     protected static string|null|\BackedEnum $navigationIcon = 'heroicon-o-arrow-down-tray';
 
     protected static ?string $title = 'Ingest knowledge';
 
-    protected string $view = 'rag::filament.pages.ingest';
+    protected string $view = 'filament-ai::filament.pages.ingest';
 
     /**
      * @var array<string, mixed>
@@ -62,12 +62,12 @@ class IngestKnowledge extends Page
 
     public static function getSlug(?\Filament\Panel $panel = null): string
     {
-        return static::ragSlug('ingest');
+        return static::aiSlug('ingest');
     }
 
     public function mount(): void
     {
-        abort_unless(static::canAccessRag(), 403);
+        abort_unless(static::canAccessAi(), 403);
 
         $sources = app(SourceRegistry::class)->keys();
 
@@ -75,8 +75,8 @@ class IngestKnowledge extends Page
             'source' => $this->source ?? ($sources[0] ?? null),
             'mode' => IngestionMode::Incremental->value,
             'sync' => false,
-            'target_tokens' => (int) config('rag.chunking.target_tokens', 512),
-            'overlap_tokens' => (int) config('rag.chunking.overlap_tokens', 80),
+            'target_tokens' => (int) config('filament-ai.chunking.target_tokens', 512),
+            'overlap_tokens' => (int) config('filament-ai.chunking.overlap_tokens', 80),
         ]);
     }
 
@@ -185,7 +185,7 @@ class IngestKnowledge extends Page
 
     public function start(): void
     {
-        abort_unless(static::canAccessRag(), 403);
+        abort_unless(static::canAccessAi(), 403);
 
         $state = $this->form->getState();
         $sourceKey = (string) ($state['source'] ?? '');
@@ -227,7 +227,7 @@ class IngestKnowledge extends Page
 
         Notification::make()
             ->title('Ingestion queued')
-            ->body("{$run->documents_total} documents. Make sure a worker is consuming the '".config('rag.queue.queue')."' queue.")
+            ->body("{$run->documents_total} documents. Make sure a worker is consuming the '".config('filament-ai.queue.queue')."' queue.")
             ->success()
             ->send();
 

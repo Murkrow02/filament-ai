@@ -6,7 +6,7 @@ namespace Murkrow\FilamentAi\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Models\Concerns\UsesAiConnection;
 
 /**
  * A chunk that was placed in the prompt for a given query. `used` records
@@ -27,13 +27,13 @@ use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
  */
 class QueryCitation extends Model
 {
-    use UsesRagConnection;
+    use UsesAiConnection;
 
     public $timestamps = false;
 
     protected $guarded = [];
 
-    protected function ragTableKey(): string
+    protected function aiTableKey(): string
     {
         return 'citations';
     }

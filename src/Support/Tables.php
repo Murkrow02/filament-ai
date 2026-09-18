@@ -15,8 +15,8 @@ final class Tables
 {
     public static function name(string $key): string
     {
-        $prefix = (string) config('rag.database.prefix', 'rag_');
-        $table = (string) config("rag.database.tables.{$key}", $key);
+        $prefix = (string) config('filament-ai.database.prefix', 'rag_');
+        $table = (string) config("filament-ai.database.tables.{$key}", $key);
 
         return $prefix.$table;
     }
@@ -73,7 +73,7 @@ final class Tables
 
     public static function connection(): ?string
     {
-        $connection = config('rag.database.connection');
+        $connection = config('filament-ai.database.connection');
 
         return $connection === null ? null : (string) $connection;
     }

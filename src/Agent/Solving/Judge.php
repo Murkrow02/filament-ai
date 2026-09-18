@@ -72,18 +72,18 @@ final class Judge implements Agent, HasStructuredOutput
 
     public function provider(): ?string
     {
-        $provider = config('rag.agent.solving.judge.provider')
-            ?? config('rag.agent.provider')
-            ?? config('rag.llm.provider');
+        $provider = config('filament-ai.agent.solving.judge.provider')
+            ?? config('filament-ai.agent.provider')
+            ?? config('filament-ai.llm.provider');
 
         return blank($provider) ? null : (string) $provider;
     }
 
     public function model(): ?string
     {
-        $model = config('rag.agent.solving.judge.model')
-            ?? config('rag.agent.model')
-            ?? config('rag.llm.model');
+        $model = config('filament-ai.agent.solving.judge.model')
+            ?? config('filament-ai.agent.model')
+            ?? config('filament-ai.llm.model');
 
         return blank($model) ? null : (string) $model;
     }

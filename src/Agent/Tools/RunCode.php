@@ -73,7 +73,7 @@ final class RunCode implements Tool
             return 'Error: the "code" argument is required.';
         }
 
-        $maxCode = (int) config('rag.agent.sandbox.max_code_characters', 20000);
+        $maxCode = (int) config('filament-ai.agent.sandbox.max_code_characters', 20000);
 
         if (mb_strlen($code) > $maxCode) {
             return "Error: the program is longer than {$maxCode} characters. Send something smaller.";
@@ -84,14 +84,14 @@ final class RunCode implements Tool
 
         $this->record($language, $code, $result);
 
-        return $result->toToolOutput((int) config('rag.agent.sandbox.max_output', 4000));
+        return $result->toToolOutput((int) config('filament-ai.agent.sandbox.max_output', 4000));
     }
 
     public static function enabled(): bool
     {
-        return (bool) config('rag.enabled', true)
-            && (bool) config('rag.agent.enabled', true)
-            && (bool) config('rag.agent.sandbox.enabled', false);
+        return (bool) config('filament-ai.enabled', true)
+            && (bool) config('filament-ai.agent.enabled', true)
+            && (bool) config('filament-ai.agent.sandbox.enabled', false);
     }
 
     /**
@@ -109,12 +109,12 @@ final class RunCode implements Tool
      */
     private static function languagesFromConfig(): array
     {
-        return array_values(array_keys((array) config('rag.agent.sandbox.languages', ['python' => '*'])));
+        return array_values(array_keys((array) config('filament-ai.agent.sandbox.languages', ['python' => '*'])));
     }
 
     private function record(string $language, string $code, SandboxResult $result): void
     {
-        $channel = config('rag.agent.sandbox.log_channel');
+        $channel = config('filament-ai.agent.sandbox.log_channel');
 
         $logger = $channel === null || $channel === '' ? Log::getFacadeRoot() : Log::channel((string) $channel);
 

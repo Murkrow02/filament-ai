@@ -29,7 +29,7 @@ class ViewIngestionRun extends ViewRecord
         $record = $this->getRecord();
 
         return $record->status->isRunning()
-            ? (string) config('rag.filament.poll_interval', '5s')
+            ? (string) config('filament-ai.filament.poll_interval', '5s')
             : null;
     }
 

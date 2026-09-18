@@ -12,7 +12,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Artisan;
 use Murkrow\FilamentAi\Enums\RunStatus;
-use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Concerns\HasAiNavigation;
 use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource\Pages\ListIngestionRuns;
 use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource\Pages\ViewIngestionRun;
 use Murkrow\FilamentAi\Ingestion\CostCalculator;
@@ -27,7 +27,7 @@ use Murkrow\FilamentAi\Models\IngestionRun;
  */
 class IngestionRunResource extends Resource
 {
-    use HasRagNavigation;
+    use HasAiNavigation;
 
     protected static ?string $model = IngestionRun::class;
 
@@ -39,7 +39,7 @@ class IngestionRunResource extends Resource
 
     public static function getSlug(?\Filament\Panel $panel = null): string
     {
-        return static::ragSlug('ingestion-runs');
+        return static::aiSlug('ingestion-runs');
     }
 
     public static function canCreate(): bool
@@ -49,14 +49,14 @@ class IngestionRunResource extends Resource
 
     public static function canAccess(): bool
     {
-        return static::canAccessRag();
+        return static::canAccessAi();
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->defaultSort('id', 'desc')
-            ->poll(fn (): ?string => static::ragPollIntervalWhileRunning())
+            ->poll(fn (): ?string => static::aiPollIntervalWhileRunning())
             ->columns([
                 TextColumn::make('uuid')
                     ->label('Run')

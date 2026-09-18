@@ -9,17 +9,17 @@
 @once
     <style>
         :root {
-            --rag-muted: var(--gray-500);
-            --rag-line: var(--gray-200);
-            --rag-track: var(--gray-100);
-            --rag-strong: var(--gray-950);
+            --fai-muted: var(--gray-500);
+            --fai-line: var(--gray-200);
+            --fai-track: var(--gray-100);
+            --fai-strong: var(--gray-950);
         }
 
         .dark {
-            --rag-muted: var(--gray-400);
-            --rag-line: var(--gray-700);
-            --rag-track: var(--gray-800);
-            --rag-strong: #fff;
+            --fai-muted: var(--gray-400);
+            --fai-line: var(--gray-700);
+            --fai-track: var(--gray-800);
+            --fai-strong: #fff;
         }
     </style>
 @endonce

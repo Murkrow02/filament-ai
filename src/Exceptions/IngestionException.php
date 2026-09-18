@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Exceptions;
 
-class IngestionException extends RagException
+class IngestionException extends FilamentAiException
 {
     public static function documentNotFound(string $source, string $externalId): self
     {

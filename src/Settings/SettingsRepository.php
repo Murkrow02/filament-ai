@@ -40,8 +40,8 @@ final class SettingsRepository
             return $this->cache = [];
         }
 
-        $ttl = (int) config('rag.settings.cache_ttl', 300);
-        $key = (string) config('rag.settings.cache_key', 'rag.settings');
+        $ttl = (int) config('filament-ai.settings.cache_ttl', 300);
+        $key = (string) config('filament-ai.settings.cache_key', 'filament-ai.settings');
 
         /** @var array<string, mixed> $values */
         $values = Cache::remember($key, $ttl, static function (): array {
@@ -103,7 +103,7 @@ final class SettingsRepository
     {
         $this->cache = null;
 
-        Cache::forget((string) config('rag.settings.cache_key', 'rag.settings'));
+        Cache::forget((string) config('filament-ai.settings.cache_key', 'filament-ai.settings'));
     }
 
     /**
@@ -127,13 +127,13 @@ final class SettingsRepository
      */
     public function apply(): void
     {
-        if (! config('rag.settings.enabled', true)) {
+        if (! config('filament-ai.settings.enabled', true)) {
             return;
         }
 
         foreach ($this->all() as $key => $value) {
             if ($this->isOverridable($key)) {
-                config()->set("rag.{$key}", $value);
+                config()->set("filament-ai.{$key}", $value);
             }
         }
     }
@@ -146,7 +146,7 @@ final class SettingsRepository
     public function schema(): array
     {
         /** @var array<string, array<string, mixed>> $schema */
-        $schema = (array) config('rag.settings.overridable', []);
+        $schema = (array) config('filament-ai.settings.overridable', []);
 
         return $schema;
     }
@@ -156,7 +156,7 @@ final class SettingsRepository
      */
     public function effective(string $key): mixed
     {
-        return $this->all()[$key] ?? config("rag.{$key}");
+        return $this->all()[$key] ?? config("filament-ai.{$key}");
     }
 
     /**

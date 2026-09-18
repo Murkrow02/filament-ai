@@ -15,8 +15,8 @@ use Murkrow\FilamentAi\Agent\PanelAssistant;
  */
 
 it('answers through the configured provider and model', function (): void {
-    config()->set('rag.llm.provider', 'anthropic');
-    config()->set('rag.llm.model', 'claude-haiku-4-5');
+    config()->set('filament-ai.llm.provider', 'anthropic');
+    config()->set('filament-ai.llm.model', 'claude-haiku-4-5');
 
     Ai::textProvider('anthropic')->useTextGateway(new FakeTextGateway(['Ci sono tre attività aperte.']));
 
@@ -28,10 +28,10 @@ it('answers through the configured provider and model', function (): void {
 });
 
 it('lets the agent section override the retrieval model', function (): void {
-    config()->set('rag.llm.provider', 'openai');
-    config()->set('rag.llm.model', 'gpt-4o-mini');
-    config()->set('rag.agent.provider', 'anthropic');
-    config()->set('rag.agent.model', 'claude-sonnet-5');
+    config()->set('filament-ai.llm.provider', 'openai');
+    config()->set('filament-ai.llm.model', 'gpt-4o-mini');
+    config()->set('filament-ai.agent.provider', 'anthropic');
+    config()->set('filament-ai.agent.model', 'claude-sonnet-5');
 
     Ai::textProvider('anthropic')->useTextGateway(new FakeTextGateway(['Fatto.']));
 
@@ -42,10 +42,10 @@ it('lets the agent section override the retrieval model', function (): void {
 });
 
 it('leaves laravel/ai in charge when nothing is configured', function (): void {
-    config()->set('rag.llm.provider', null);
-    config()->set('rag.llm.model', null);
-    config()->set('rag.agent.provider', null);
-    config()->set('rag.agent.model', null);
+    config()->set('filament-ai.llm.provider', null);
+    config()->set('filament-ai.llm.model', null);
+    config()->set('filament-ai.agent.provider', null);
+    config()->set('filament-ai.agent.model', null);
 
     $assistant = new PanelAssistant;
 

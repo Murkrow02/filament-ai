@@ -25,17 +25,17 @@ class SearchKnowledgeTool extends Tool
 {
     public function name(): string
     {
-        return (string) config('rag.mcp.tools.search.name', 'search_knowledge');
+        return (string) config('filament-ai.mcp.tools.search.name', 'search_knowledge');
     }
 
     public function description(): string
     {
-        return (string) __('rag::rag.mcp.search_description');
+        return (string) __('filament-ai::messages.mcp.search_description');
     }
 
     public function shouldRegister(): bool
     {
-        return (bool) config('rag.mcp.tools.search.enabled', true);
+        return (bool) config('filament-ai.mcp.tools.search.enabled', true);
     }
 
     /**

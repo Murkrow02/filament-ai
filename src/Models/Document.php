@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Murkrow\FilamentAi\Database\Factories\DocumentFactory;
 use Murkrow\FilamentAi\Enums\DocumentStatus;
-use Murkrow\FilamentAi\Models\Concerns\UsesRagConnection;
+use Murkrow\FilamentAi\Models\Concerns\UsesAiConnection;
 
 /**
  * A host-application record mirrored into the knowledge base.
@@ -38,11 +38,11 @@ class Document extends Model
     /** @use HasFactory<DocumentFactory> */
     use HasFactory;
 
-    use UsesRagConnection;
+    use UsesAiConnection;
 
     protected $guarded = [];
 
-    protected function ragTableKey(): string
+    protected function aiTableKey(): string
     {
         return 'documents';
     }

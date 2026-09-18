@@ -76,10 +76,10 @@ final class StartIngestionRun
                 ->all();
 
             $batch = Bus::batch($jobs)
-                ->name("rag:chunk:{$run->uuid}")
-                ->onConnection((string) config('rag.queue.connection'))
-                ->onQueue((string) config('rag.queue.queue', 'rag'))
-                ->allowFailures((bool) config('rag.queue.allow_failures', true))
+                ->name("ai:chunk:{$run->uuid}")
+                ->onConnection((string) config('filament-ai.queue.connection'))
+                ->onQueue((string) config('filament-ai.queue.queue', 'rag'))
+                ->allowFailures((bool) config('filament-ai.queue.allow_failures', true))
                 ->finally(static fn () => FinalizeIngestionRunJob::dispatch($runId))
                 ->dispatch();
 

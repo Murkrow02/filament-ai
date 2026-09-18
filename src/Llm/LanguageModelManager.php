@@ -15,7 +15,7 @@ final class LanguageModelManager extends Manager
 {
     public function getDefaultDriver(): string
     {
-        return (string) $this->config->get('rag.llm.driver', 'laravel-ai');
+        return (string) $this->config->get('filament-ai.llm.driver', 'laravel-ai');
     }
 
     public function createLaravelAiDriver(): LanguageModel

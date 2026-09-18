@@ -13,7 +13,7 @@ use Murkrow\FilamentAi\Models\Document;
 
 class VectorReindexCommand extends Command
 {
-    protected $signature = 'rag:vector:reindex
+    protected $signature = 'ai:vector:reindex
                             {--force : Skip the confirmation prompt}';
 
     protected $description = 'Rebuild the approximate-nearest-neighbour index, resizing the vector column first when the configured dimensions changed';
@@ -85,7 +85,7 @@ class VectorReindexCommand extends Command
 
         if ($resize) {
             $this->components->warn(
-                'Search returns nothing until the corpus is re-embedded: php artisan rag:ingest <source> --mode=embeddings_only'
+                'Search returns nothing until the corpus is re-embedded: php artisan ai:ingest <source> --mode=embeddings_only'
             );
 
             return self::SUCCESS;

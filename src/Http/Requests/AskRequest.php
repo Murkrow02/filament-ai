@@ -49,7 +49,7 @@ class AskRequest extends FormRequest
     protected function failedAuthorization(): never
     {
         throw new HttpResponseException(response()->json([
-            'message' => __('rag::rag.chat.forbidden'),
+            'message' => __('filament-ai::messages.chat.forbidden'),
         ], 403));
     }
 
@@ -115,7 +115,7 @@ class AskRequest extends FormRequest
      */
     public function solves(): bool
     {
-        return (bool) $this->validated('solve', false) && (bool) config('rag.agent.solving.enabled', false);
+        return (bool) $this->validated('solve', false) && (bool) config('filament-ai.agent.solving.enabled', false);
     }
 
     public function conversationId(): ?string
@@ -151,12 +151,12 @@ class AskRequest extends FormRequest
      */
     private function modelKeys(): array
     {
-        $keys = array_keys((array) config('rag.llm.available_models', []));
+        $keys = array_keys((array) config('filament-ai.llm.available_models', []));
 
         // The model the application is actually configured to use is always
         // acceptable, whether or not it was listed as a choice. Without this,
         // an app that offers no alternatives rejects its own default.
-        foreach ([config('rag.agent.model'), config('rag.llm.model')] as $default) {
+        foreach ([config('filament-ai.agent.model'), config('filament-ai.llm.model')] as $default) {
             if (filled($default) && ! in_array((string) $default, $keys, true)) {
                 $keys[] = (string) $default;
             }

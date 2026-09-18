@@ -84,7 +84,7 @@ it('applies a boolean filter from its default, without being asked', function ()
 });
 
 it('rejects a configured entry that is not a knowledge source', function (): void {
-    config()->set('rag.sources', [\stdClass::class]);
+    config()->set('filament-ai.sources', [\stdClass::class]);
     app(SourceRegistry::class)->flush();
 
     expect(fn () => app(SourceRegistry::class)->keys())
@@ -92,7 +92,7 @@ it('rejects a configured entry that is not a knowledge source', function (): voi
 });
 
 it('registers a closure-built source at runtime', function (): void {
-    \Murkrow\FilamentAi\Facades\Rag::source('handbook')
+    \Murkrow\FilamentAi\Facades\FilamentAi::source('handbook')
         ->setLabel('Handbook')
         ->loadDocumentsUsing(fn (): \Illuminate\Support\LazyCollection => \Illuminate\Support\LazyCollection::make([
             new DocumentDraft(sourceKey: 'handbook', externalId: '1', title: 'Chapter one'),

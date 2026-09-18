@@ -13,7 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Concerns\HasAiNavigation;
 use Murkrow\FilamentAi\Settings\SettingsRepository;
 
 /**
@@ -24,15 +24,15 @@ use Murkrow\FilamentAi\Settings\SettingsRepository;
  * because changing either invalidates every stored vector -- so they are absent
  * from the form and stay a deployment concern.
  */
-class RagSettings extends Page
+class KnowledgeSettings extends Page
 {
-    use HasRagNavigation;
+    use HasAiNavigation;
 
     protected static string|null|\BackedEnum $navigationIcon = 'heroicon-o-adjustments-horizontal';
 
     protected static ?string $title = 'Knowledge settings';
 
-    protected string $view = 'rag::filament.pages.settings';
+    protected string $view = 'filament-ai::filament.pages.settings';
 
     /**
      * @var array<string, mixed>
@@ -41,17 +41,17 @@ class RagSettings extends Page
 
     public static function getSlug(?\Filament\Panel $panel = null): string
     {
-        return static::ragSlug('settings');
+        return static::aiSlug('settings');
     }
 
     public static function getNavigationSort(): ?int
     {
-        return (int) config('rag.filament.navigation_sort', 90) + 3;
+        return (int) config('filament-ai.filament.navigation_sort', 90) + 3;
     }
 
     public function mount(SettingsRepository $settings): void
     {
-        abort_unless(static::canAccessRag(), 403);
+        abort_unless(static::canAccessAi(), 403);
 
         // Dots are Livewire state-path separators, so keys are flattened.
         $values = [];
@@ -104,7 +104,7 @@ class RagSettings extends Page
 
     public function save(SettingsRepository $settings): void
     {
-        abort_unless(static::canAccessRag(), 403);
+        abort_unless(static::canAccessAi(), 403);
 
         $state = $this->form->getState();
         $values = [];
@@ -128,7 +128,7 @@ class RagSettings extends Page
 
     public function resetToDefaults(SettingsRepository $settings): void
     {
-        abort_unless(static::canAccessRag(), 403);
+        abort_unless(static::canAccessAi(), 403);
 
         foreach (array_keys($settings->schema()) as $key) {
             if ($this->owns($key)) {
@@ -138,7 +138,7 @@ class RagSettings extends Page
 
         $this->mount($settings);
 
-        Notification::make()->title('Reverted to the values in config/rag.php')->success()->send();
+        Notification::make()->title('Reverted to the values in config/filament-ai.php')->success()->send();
     }
 
     /**

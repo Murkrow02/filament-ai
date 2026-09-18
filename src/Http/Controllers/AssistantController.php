@@ -60,7 +60,7 @@ class AssistantController
         }
 
         if (! $this->turn->available()) {
-            return response()->json(['message' => __('rag::rag.assistant.not_installed')], 409);
+            return response()->json(['message' => __('filament-ai::messages.assistant.not_installed')], 409);
         }
 
         $conversation = $this->turn->ownedConversation($request->conversationId(), $request->user());
@@ -70,7 +70,7 @@ class AssistantController
         // the pause where nobody can answer it.
         if ($this->turn->pending($conversation) !== []) {
             return response()->json([
-                'message' => __('rag::rag.assistant.decide_first'),
+                'message' => __('filament-ai::messages.assistant.decide_first'),
                 'pending' => $this->approvalsFor($conversation),
             ], 409);
         }
@@ -98,7 +98,7 @@ class AssistantController
     public function solve(AskRequest $request): StreamedResponse|JsonResponse
     {
         if (! $this->turn->available() || ! $request->solves()) {
-            return response()->json(['message' => __('rag::rag.chat.forbidden')], 403);
+            return response()->json(['message' => __('filament-ai::messages.chat.forbidden')], 403);
         }
 
         $context = $this->turn->resolvedContext($request->contextResource(), $request->contextRecord());
@@ -132,7 +132,7 @@ class AssistantController
      */
     private function follow(SolveRun $run): void
     {
-        $budget = (int) (($run->budgets['max_seconds'] ?? null) ?: config('rag.agent.solving.max_seconds', 300));
+        $budget = (int) (($run->budgets['max_seconds'] ?? null) ?: config('filament-ai.agent.solving.max_seconds', 300));
         $deadline = time() + $budget + self::SOLVE_GRACE_SECONDS;
         $last = null;
 
@@ -153,7 +153,7 @@ class AssistantController
             }
 
             if (time() > $deadline || connection_aborted()) {
-                $this->send('error', ['message' => __('rag::rag.solving.still_running', ['run' => substr($run->uuid, 0, 8)])]);
+                $this->send('error', ['message' => __('filament-ai::messages.solving.still_running', ['run' => substr($run->uuid, 0, 8)])]);
 
                 return;
             }
@@ -232,7 +232,7 @@ class AssistantController
             // Either nothing is waiting any more -- another tab decided it --
             // or the browser answered only part of the pause.
             return response()->json([
-                'message' => __('rag::rag.assistant.nothing_pending'),
+                'message' => __('filament-ai::messages.assistant.nothing_pending'),
                 'pending' => $this->approvalsFor($owned),
             ], 409);
         }
@@ -358,7 +358,7 @@ class AssistantController
      */
     private function failureMessage(Throwable $exception): string
     {
-        return (string) __('rag::rag.assistant.failed')
+        return (string) __('filament-ai::messages.assistant.failed')
             .(config('app.debug') ? ' ('.$exception->getMessage().')' : '');
     }
 }

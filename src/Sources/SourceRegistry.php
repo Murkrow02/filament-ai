@@ -122,7 +122,7 @@ final class SourceRegistry
      */
     public function exposedKeys(): array
     {
-        $allowed = config('rag.mcp.sources');
+        $allowed = config('filament-ai.mcp.sources');
 
         if ($allowed === null) {
             return $this->keys();
@@ -158,7 +158,7 @@ final class SourceRegistry
 
         $this->loaded = true;
 
-        foreach ((array) config('rag.sources', []) as $entry) {
+        foreach ((array) config('filament-ai.sources', []) as $entry) {
             $source = $entry instanceof KnowledgeSource
                 ? $entry
                 : (is_string($entry) && is_a($entry, KnowledgeSource::class, true) ? app($entry) : null);

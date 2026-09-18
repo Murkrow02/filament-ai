@@ -21,7 +21,7 @@ use Throwable;
  */
 class InstallCommand extends Command
 {
-    protected $signature = 'rag:install
+    protected $signature = 'ai:install
                             {--force : Overwrite an existing published config file}
                             {--skip-extension : Do not attempt to create the pgvector extension}';
 
@@ -53,11 +53,11 @@ class InstallCommand extends Command
     private function publishConfig(): void
     {
         $this->callSilently('vendor:publish', array_filter([
-            '--tag' => 'rag-config',
+            '--tag' => 'filament-ai-config',
             '--force' => $this->option('force') ? true : null,
         ]));
 
-        $this->components->twoColumnDetail('config/rag.php', file_exists(config_path('rag.php')) ? '<fg=green>published</>' : '<fg=yellow>not published</>');
+        $this->components->twoColumnDetail('config/filament-ai.php', file_exists(config_path('filament-ai.php')) ? '<fg=green>published</>' : '<fg=yellow>not published</>');
     }
 
     private function checkExtension(VectorStore $store): bool
@@ -109,11 +109,11 @@ class InstallCommand extends Command
 
     private function summary(): void
     {
-        $this->components->twoColumnDetail('embedding model', (string) config('rag.embeddings.model'));
-        $this->components->twoColumnDetail('dimensions', (string) config('rag.embeddings.dimensions'));
-        $this->components->twoColumnDetail('generation model', (string) config('rag.llm.model'));
-        $this->components->twoColumnDetail('queue', config('rag.queue.connection').' / '.config('rag.queue.queue'));
-        $this->components->twoColumnDetail('tables prefix', (string) config('rag.database.prefix'));
+        $this->components->twoColumnDetail('embedding model', (string) config('filament-ai.embeddings.model'));
+        $this->components->twoColumnDetail('dimensions', (string) config('filament-ai.embeddings.dimensions'));
+        $this->components->twoColumnDetail('generation model', (string) config('filament-ai.llm.model'));
+        $this->components->twoColumnDetail('queue', config('filament-ai.queue.connection').' / '.config('filament-ai.queue.queue'));
+        $this->components->twoColumnDetail('tables prefix', (string) config('filament-ai.database.prefix'));
         $this->components->twoColumnDetail('chunks table', Tables::chunks());
 
         $sources = app(SourceRegistry::class)->keys();

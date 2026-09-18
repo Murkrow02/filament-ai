@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Mcp\KnowledgeServer;
 use Murkrow\FilamentAi\Mcp\Prompts\GroundedAnswerPrompt;
 use Murkrow\FilamentAi\Mcp\Resources\DocumentsResource;
@@ -16,9 +16,9 @@ function seedForMcp(): TestBook
     // One chunk per page, so a page-range filter has something to narrow to:
     // with the shipped 512-token target these two short pages land in a single
     // chunk spanning both, and the filter would look broken while being right.
-    config()->set('rag.chunking.target_tokens', 30);
-    config()->set('rag.chunking.overlap_tokens', 0);
-    config()->set('rag.chunking.min_tokens', 0);
+    config()->set('filament-ai.chunking.target_tokens', 30);
+    config()->set('filament-ai.chunking.overlap_tokens', 0);
+    config()->set('filament-ai.chunking.min_tokens', 0);
 
     $book = TestBook::create(['title' => 'Cronaca cittadina', 'author' => 'Anonimo']);
 
@@ -31,7 +31,7 @@ function seedForMcp(): TestBook
         'content' => 'Le mura vennero rinforzate con nuove torri di guardia. I lavori durarono due stagioni intere e costarono assai.',
     ]);
 
-    Rag::ingestSync('books');
+    FilamentAi::ingestSync('books');
 
     return $book;
 }
@@ -73,13 +73,13 @@ it('scopes a search to a page range', function (): void {
 });
 
 it('names the search tool from config so a host can rename it', function (): void {
-    config()->set('rag.mcp.tools.search.name', 'search_books_knowledge');
+    config()->set('filament-ai.mcp.tools.search.name', 'search_books_knowledge');
 
     expect((new SearchKnowledgeTool)->name())->toBe('search_books_knowledge');
 });
 
 it('lets a tool be switched off entirely', function (): void {
-    config()->set('rag.mcp.tools.answer.enabled', false);
+    config()->set('filament-ai.mcp.tools.answer.enabled', false);
 
     expect((new AnswerQuestionTool)->shouldRegister())->toBeFalse()
         ->and((new SearchKnowledgeTool)->shouldRegister())->toBeTrue();
@@ -125,7 +125,7 @@ it('lists the indexed documents so a client can discover identifiers', function 
 });
 
 it('offers a grounded-answer prompt naming the configured tools', function (): void {
-    config()->set('rag.mcp.tools.search.name', 'search_books_knowledge');
+    config()->set('filament-ai.mcp.tools.search.name', 'search_books_knowledge');
 
     KnowledgeServer::prompt(GroundedAnswerPrompt::class, ['question' => 'chi era il podesta?'])
         ->assertOk()
@@ -136,7 +136,7 @@ it('offers a grounded-answer prompt naming the configured tools', function (): v
 it('hides sources that config does not expose to mcp', function (): void {
     seedForMcp();
 
-    config()->set('rag.mcp.sources', ['something-else']);
+    config()->set('filament-ai.mcp.sources', ['something-else']);
 
     KnowledgeServer::tool(SearchKnowledgeTool::class, ['query' => 'consiglio'])
         ->assertOk()

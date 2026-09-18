@@ -19,7 +19,7 @@ use Murkrow\FilamentAi\Contracts\Retriever;
 use Murkrow\FilamentAi\Data\AnswerOptions;
 use Murkrow\FilamentAi\Data\RetrievalOptions;
 use Murkrow\FilamentAi\Enums\QueryChannel;
-use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Concerns\HasAiNavigation;
 use Murkrow\FilamentAi\Sources\SourceRegistry;
 use Throwable;
 
@@ -31,15 +31,15 @@ use Throwable;
  * at what actually went into the prompt -- with its score, its rank and the
  * page it came from.
  */
-class RagPlayground extends Page
+class KnowledgePlayground extends Page
 {
-    use HasRagNavigation;
+    use HasAiNavigation;
 
     protected static string|null|\BackedEnum $navigationIcon = 'heroicon-o-beaker';
 
     protected static ?string $title = 'Playground';
 
-    protected string $view = 'rag::filament.pages.playground';
+    protected string $view = 'filament-ai::filament.pages.playground';
 
     /**
      * @var array<string, mixed>
@@ -66,24 +66,24 @@ class RagPlayground extends Page
 
     public static function getSlug(?\Filament\Panel $panel = null): string
     {
-        return static::ragSlug('playground');
+        return static::aiSlug('playground');
     }
 
     public static function getNavigationSort(): ?int
     {
-        return (int) config('rag.filament.navigation_sort', 90) + 2;
+        return (int) config('filament-ai.filament.navigation_sort', 90) + 2;
     }
 
     public function mount(): void
     {
-        abort_unless(static::canAccessRag(), 403);
+        abort_unless(static::canAccessAi(), 403);
 
         $this->form->fill([
             'question' => '',
             'answer_mode' => true,
-            'model' => (string) config('rag.llm.model'),
-            'top_k' => (int) config('rag.retrieval.top_k', 8),
-            'min_score' => (float) config('rag.retrieval.min_score', 0.25),
+            'model' => (string) config('filament-ai.llm.model'),
+            'top_k' => (int) config('filament-ai.retrieval.top_k', 8),
+            'min_score' => (float) config('filament-ai.retrieval.min_score', 0.25),
         ]);
     }
 
@@ -105,9 +105,9 @@ class RagPlayground extends Page
                             Select::make('model')
                                 ->label('Model')
                                 ->native(false)
-                                ->options(fn (): array => (array) config('rag.llm.available_models', []))
-                                ->visible(fn (): bool => (array) config('rag.llm.available_models', []) !== [])
-                                ->hintIcon(Heroicon::QuestionMarkCircle, tooltip: 'Override the generation model for this query only. Options come from config(\'rag.llm.available_models\'); the panel default is config(\'rag.llm.model\').'),
+                                ->options(fn (): array => (array) config('filament-ai.llm.available_models', []))
+                                ->visible(fn (): bool => (array) config('filament-ai.llm.available_models', []) !== [])
+                                ->hintIcon(Heroicon::QuestionMarkCircle, tooltip: 'Override the generation model for this query only. Options come from config(\'filament-ai.llm.available_models\'); the panel default is config(\'filament-ai.llm.model\').'),
 
                             Select::make('sources')
                                 ->label('Sources')
@@ -142,7 +142,7 @@ class RagPlayground extends Page
 
     public function run(): void
     {
-        abort_unless(static::canAccessRag(), 403);
+        abort_unless(static::canAccessAi(), 403);
 
         $state = $this->form->getState();
         $question = trim((string) ($state['question'] ?? ''));

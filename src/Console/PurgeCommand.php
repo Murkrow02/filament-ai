@@ -11,7 +11,7 @@ use Murkrow\FilamentAi\Models\Document;
 
 class PurgeCommand extends Command
 {
-    protected $signature = 'rag:purge
+    protected $signature = 'ai:purge
                             {source? : Limit the purge to one knowledge source}
                             {--embeddings-only : Keep the chunks, drop only their vectors}
                             {--force : Skip the confirmation prompt}';
@@ -58,7 +58,7 @@ class PurgeCommand extends Command
                 ->when($source !== null, fn ($q) => $q->where('source_key', $source))
                 ->update(['embedded_chunk_count' => 0, 'status' => 'chunked']);
 
-            $this->components->info("Dropped vectors for {$chunks} chunks. Re-embed with `rag:ingest --mode=embeddings_only`.");
+            $this->components->info("Dropped vectors for {$chunks} chunks. Re-embed with `ai:ingest --mode=embeddings_only`.");
 
             return self::SUCCESS;
         }

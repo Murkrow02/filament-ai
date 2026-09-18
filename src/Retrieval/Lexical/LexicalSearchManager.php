@@ -15,7 +15,7 @@ final class LexicalSearchManager extends Manager
 {
     public function getDefaultDriver(): string
     {
-        $driver = $this->config->get('rag.retrieval.hybrid.driver');
+        $driver = $this->config->get('filament-ai.retrieval.hybrid.driver');
 
         return $driver === null || $driver === '' ? 'null' : (string) $driver;
     }

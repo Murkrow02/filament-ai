@@ -1,11 +1,11 @@
-<div class="rag-empty" id="rag-empty" @if ($hasMessages) hidden @endif>
-    <h1>{{ __('rag::rag.chat.empty_title') }}</h1>
-    <p>{{ __('rag::rag.chat.empty_body') }}</p>
+<div class="fai-empty" id="fai-empty" @if ($hasMessages) hidden @endif>
+    <h1>{{ __('filament-ai::messages.chat.empty_title') }}</h1>
+    <p>{{ __('filament-ai::messages.chat.empty_body') }}</p>
 
     @if ($payload['suggestions'])
-        <div class="rag-suggestions">
+        <div class="fai-suggestions">
             @foreach ($payload['suggestions'] as $suggestion)
-                <button type="button" class="rag-suggestion" data-prompt="{{ $suggestion }}">
+                <button type="button" class="fai-suggestion" data-prompt="{{ $suggestion }}">
                     {{ $suggestion }}
                 </button>
             @endforeach

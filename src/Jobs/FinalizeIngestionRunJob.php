@@ -60,6 +60,6 @@ class FinalizeIngestionRunJob implements ShouldQueue
      */
     public function tags(): array
     {
-        return ['rag', 'rag:finalize', 'rag:run:'.$this->runId];
+        return ['filament-ai', 'ai:finalize', 'ai:run:'.$this->runId];
     }
 }

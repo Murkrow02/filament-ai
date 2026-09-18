@@ -72,7 +72,7 @@
                 "Murkrow\\FilamentAi\\FilamentAiServiceProvider"
             ],
             "aliases": {
-                "Rag": "Murkrow\\FilamentAi\\Facades\\Rag"
+                "FilamentAi": "Murkrow\\FilamentAi\\Facades\\FilamentAi"
             }
         }
     },

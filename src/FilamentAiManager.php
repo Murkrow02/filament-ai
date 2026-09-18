@@ -31,7 +31,7 @@ use Murkrow\FilamentAi\Sources\SourceRegistry;
  * services, and this exists so application code has one obvious entry point
  * instead of five container bindings to remember.
  */
-final class RagManager
+final class FilamentAiManager
 {
     public function __construct(
         private readonly SourceRegistry $sources,

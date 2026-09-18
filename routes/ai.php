@@ -10,11 +10,11 @@ declare(strict_types=1);
 | The package registers its MCP server automatically from the service
 | provider, so this file is optional. Publish it with
 |
-|     php artisan vendor:publish --tag=rag-ai-routes
+|     php artisan vendor:publish --tag=filament-ai-ai-routes
 |
 | only when you want the registration in your own routes file -- for example
 | to add middleware or mount it under a different path. If you do, set
-| RAG_MCP_WEB_ENABLED=false and RAG_MCP_LOCAL_ENABLED=false so the server is
+| FILAMENT_AI_MCP_WEB_ENABLED=false and FILAMENT_AI_MCP_LOCAL_ENABLED=false so the server is
 | not registered twice.
 |
 */

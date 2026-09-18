@@ -26,7 +26,7 @@ abstract class PostgresTestCase extends TestCase
         if (! self::postgresAvailable()) {
             $this->markTestSkipped(
                 'No PostgreSQL with pgvector reachable at '.self::dsn().'. '
-                .'Set RAG_TEST_PG_HOST / RAG_TEST_PG_PORT to point at one.'
+                .'Set FILAMENT_AI_TEST_PG_HOST / FILAMENT_AI_TEST_PG_PORT to point at one.'
             );
         }
 
@@ -42,9 +42,9 @@ abstract class PostgresTestCase extends TestCase
             'driver' => 'pgsql',
             'host' => self::host(),
             'port' => self::port(),
-            'database' => env('RAG_TEST_PG_DATABASE', 'rag_test'),
-            'username' => env('RAG_TEST_PG_USERNAME', 'rag'),
-            'password' => env('RAG_TEST_PG_PASSWORD', 'rag'),
+            'database' => env('FILAMENT_AI_TEST_PG_DATABASE', 'rag_test'),
+            'username' => env('FILAMENT_AI_TEST_PG_USERNAME', 'rag'),
+            'password' => env('FILAMENT_AI_TEST_PG_PASSWORD', 'rag'),
             'charset' => 'utf8',
             'prefix' => '',
             'search_path' => 'public',
@@ -52,7 +52,7 @@ abstract class PostgresTestCase extends TestCase
         ]);
 
         // The real driver, against the real extension.
-        $app['config']->set('rag.vector.driver', 'pgvector');
+        $app['config']->set('filament-ai.vector.driver', 'pgvector');
         $app->forgetInstance(\Murkrow\FilamentAi\Contracts\VectorStore::class);
         $app->singleton(
             \Murkrow\FilamentAi\Contracts\VectorStore::class,
@@ -88,12 +88,12 @@ abstract class PostgresTestCase extends TestCase
 
     protected static function host(): string
     {
-        return (string) env('RAG_TEST_PG_HOST', 'rag-test-pg');
+        return (string) env('FILAMENT_AI_TEST_PG_HOST', 'fai-test-pg');
     }
 
     protected static function port(): int
     {
-        return (int) env('RAG_TEST_PG_PORT', 5432);
+        return (int) env('FILAMENT_AI_TEST_PG_PORT', 5432);
     }
 
     protected static function dsn(): string
@@ -105,9 +105,9 @@ abstract class PostgresTestCase extends TestCase
     {
         try {
             $pdo = new PDO(
-                sprintf('pgsql:host=%s;port=%d;dbname=%s', self::host(), self::port(), env('RAG_TEST_PG_DATABASE', 'rag_test')),
-                (string) env('RAG_TEST_PG_USERNAME', 'rag'),
-                (string) env('RAG_TEST_PG_PASSWORD', 'rag'),
+                sprintf('pgsql:host=%s;port=%d;dbname=%s', self::host(), self::port(), env('FILAMENT_AI_TEST_PG_DATABASE', 'rag_test')),
+                (string) env('FILAMENT_AI_TEST_PG_USERNAME', 'rag'),
+                (string) env('FILAMENT_AI_TEST_PG_PASSWORD', 'rag'),
                 [PDO::ATTR_TIMEOUT => 2, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
             );
 

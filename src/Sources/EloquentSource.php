@@ -46,7 +46,7 @@ abstract class EloquentSource implements KnowledgeSource
     private ?FilterSet $filterSet = null;
 
     /**
-     * Identifier used by `rag:ingest`, the Filament form and `source_key` on
+     * Identifier used by `ai:ingest`, the Filament form and `source_key` on
      * every stored document. Changing it orphans the rows already indexed.
      */
     abstract public function key(): string;

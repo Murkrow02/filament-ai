@@ -42,8 +42,8 @@ class GroundedAnswerPrompt extends Prompt
     public function handle(Request $request): Response
     {
         $question = (string) $request->get('question', '');
-        $searchTool = (string) config('rag.mcp.tools.search.name', 'search_knowledge');
-        $fetchTool = (string) config('rag.mcp.tools.fetch.name', 'fetch_document');
+        $searchTool = (string) config('filament-ai.mcp.tools.search.name', 'search_knowledge');
+        $fetchTool = (string) config('filament-ai.mcp.tools.fetch.name', 'fetch_document');
 
         return Response::text(<<<TEXT
             Answer the following question using only this knowledge base.

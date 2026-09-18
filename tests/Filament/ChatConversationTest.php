@@ -26,7 +26,7 @@ function startedThread(): string
 {
     scriptAgent(['Ci sono tre libri.']);
 
-    $response = test()->post('/rag/chat/ask', ['question' => 'Quanti libri ci sono?']);
+    $response = test()->post('/ai/chat/ask', ['question' => 'Quanti libri ci sono?']);
     $response->assertOk();
     $response->streamedContent();
 
@@ -36,7 +36,7 @@ function startedThread(): string
 it('reopens a thread with its turns', function (): void {
     $conversation = startedThread();
 
-    $this->getJson('/rag/chat/c/'.$conversation.'/messages')
+    $this->getJson('/ai/chat/c/'.$conversation.'/messages')
         ->assertOk()
         ->assertJsonPath('uuid', $conversation)
         ->assertJsonPath('messages.0.role', 'user')
@@ -47,11 +47,11 @@ it('reopens a thread with its turns', function (): void {
 it('renames and deletes a thread', function (): void {
     $conversation = startedThread();
 
-    $this->patchJson('/rag/chat/c/'.$conversation, ['title' => 'I libri'])
+    $this->patchJson('/ai/chat/c/'.$conversation, ['title' => 'I libri'])
         ->assertOk()
         ->assertJsonPath('title', 'I libri');
 
-    $this->deleteJson('/rag/chat/c/'.$conversation)->assertOk();
+    $this->deleteJson('/ai/chat/c/'.$conversation)->assertOk();
 
     // The messages go with it: an orphaned transcript would keep the answers
     // alive after the user deleted the thread they belonged to.
@@ -62,10 +62,10 @@ it('renames and deletes a thread', function (): void {
 it('refuses to rename or delete without the delete ability', function (): void {
     $conversation = startedThread();
 
-    config()->set('rag.chat.abilities.delete', false);
+    config()->set('filament-ai.chat.abilities.delete', false);
 
-    $this->patchJson('/rag/chat/c/'.$conversation, ['title' => 'Nope'])->assertForbidden();
-    $this->deleteJson('/rag/chat/c/'.$conversation)->assertForbidden();
+    $this->patchJson('/ai/chat/c/'.$conversation, ['title' => 'Nope'])->assertForbidden();
+    $this->deleteJson('/ai/chat/c/'.$conversation)->assertForbidden();
 
     expect(Conversation::query()->count())->toBe(1);
 });
@@ -78,9 +78,9 @@ it('will not touch a thread that belongs to somebody else', function (): void {
         'title' => 'Someone else',
     ]);
 
-    $this->getJson('/rag/chat/c/'.$foreign->id.'/messages')->assertNotFound();
-    $this->patchJson('/rag/chat/c/'.$foreign->id, ['title' => 'Mine now'])->assertNotFound();
-    $this->deleteJson('/rag/chat/c/'.$foreign->id)->assertNotFound();
+    $this->getJson('/ai/chat/c/'.$foreign->id.'/messages')->assertNotFound();
+    $this->patchJson('/ai/chat/c/'.$foreign->id, ['title' => 'Mine now'])->assertNotFound();
+    $this->deleteJson('/ai/chat/c/'.$foreign->id)->assertNotFound();
 
     expect(Conversation::query()->whereKey($foreign->id)->value('title'))->toBe('Someone else');
 });
@@ -88,7 +88,7 @@ it('will not touch a thread that belongs to somebody else', function (): void {
 it('lists the threads the signed-in user owns', function (): void {
     $conversation = startedThread();
 
-    $payload = payloadFrom($this->get('/rag/chat')->getContent());
+    $payload = payloadFrom($this->get('/ai/chat')->getContent());
 
     expect($payload['conversations'])->toHaveCount(1)
         ->and($payload['conversations'][0]['uuid'])->toBe($conversation);

@@ -3,6 +3,6 @@
     :href="$url"
     icon="heroicon-o-sparkles"
     color="gray"
-    :label="__('rag::rag.assistant.ask_about_page')"
-    :tooltip="__('rag::rag.assistant.ask_about_page')"
+    :label="__('filament-ai::messages.assistant.ask_about_page')"
+    :tooltip="__('filament-ai::messages.assistant.ask_about_page')"
 />

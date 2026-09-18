@@ -114,6 +114,6 @@ abstract class AbstractVectorStore implements VectorStore
 
     public function dimensions(): int
     {
-        return (int) config('rag.embeddings.dimensions', 1536);
+        return (int) config('filament-ai.embeddings.dimensions', 1536);
     }
 }

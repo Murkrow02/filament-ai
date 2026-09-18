@@ -15,7 +15,7 @@ final class VectorStoreManager extends Manager
 {
     public function getDefaultDriver(): string
     {
-        return (string) $this->config->get('rag.vector.driver', 'pgvector');
+        return (string) $this->config->get('filament-ai.vector.driver', 'pgvector');
     }
 
     public function createPgvectorDriver(): VectorStore

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Murkrow\FilamentAi\Facades;
 
 use Illuminate\Support\Facades\Facade;
-use Murkrow\FilamentAi\RagManager;
+use Murkrow\FilamentAi\FilamentAiManager;
 
 /**
  * @method static \Illuminate\Support\Collection<int, \Murkrow\FilamentAi\Data\ScoredChunk> search(string $question, \Murkrow\FilamentAi\Data\RetrievalOptions $options = new \Murkrow\FilamentAi\Data\RetrievalOptions)
@@ -20,12 +20,12 @@ use Murkrow\FilamentAi\RagManager;
  * @method static void register(\Murkrow\FilamentAi\Contracts\KnowledgeSource $source)
  * @method static \Murkrow\FilamentAi\Sources\SourceRegistry sources()
  *
- * @see RagManager
+ * @see FilamentAiManager
  */
-final class Rag extends Facade
+final class FilamentAi extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return RagManager::class;
+        return FilamentAiManager::class;
     }
 }

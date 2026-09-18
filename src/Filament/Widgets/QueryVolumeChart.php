@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Murkrow\FilamentAi\Filament\Widgets;
 
 use Filament\Widgets\ChartWidget;
-use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Concerns\HasAiNavigation;
 use Murkrow\FilamentAi\Models\QueryLog;
 
 /**
@@ -16,7 +16,7 @@ use Murkrow\FilamentAi\Models\QueryLog;
  */
 class QueryVolumeChart extends ChartWidget
 {
-    use HasRagNavigation;
+    use HasAiNavigation;
 
     protected ?string $heading = 'Questions per day';
 
@@ -24,7 +24,7 @@ class QueryVolumeChart extends ChartWidget
 
     protected function getPollingInterval(): ?string
     {
-        return static::ragPollIntervalWhileRunning();
+        return static::aiPollIntervalWhileRunning();
     }
 
     protected function getType(): string

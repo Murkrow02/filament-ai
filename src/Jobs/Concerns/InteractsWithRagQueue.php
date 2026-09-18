@@ -14,8 +14,8 @@ trait InteractsWithRagQueue
 {
     public function configureRagQueue(): void
     {
-        $this->onConnection((string) config('rag.queue.connection'));
-        $this->onQueue((string) config('rag.queue.queue', 'rag'));
+        $this->onConnection((string) config('filament-ai.queue.connection'));
+        $this->onQueue((string) config('filament-ai.queue.queue', 'rag'));
     }
 
     public function retryUntil(): ?\DateTimeInterface
@@ -29,7 +29,7 @@ trait InteractsWithRagQueue
     public function backoff(): array
     {
         /** @var array<int, int> $backoff */
-        $backoff = (array) config('rag.queue.backoff', [10, 30, 60, 120, 300]);
+        $backoff = (array) config('filament-ai.queue.backoff', [10, 30, 60, 120, 300]);
 
         return $backoff;
     }

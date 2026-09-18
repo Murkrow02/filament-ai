@@ -5,16 +5,16 @@ declare(strict_types=1);
 use Laravel\Ai\Tools\Request;
 use Murkrow\FilamentAi\Agent\Tools\FetchDocument;
 use Murkrow\FilamentAi\Agent\Tools\SearchKnowledge;
-use Murkrow\FilamentAi\Facades\Rag;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Knowledge\KnowledgeSearch;
 use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 function seedForAgentKnowledge(): TestBook
 {
     // One chunk per page, so position filters have something to narrow to.
-    config()->set('rag.chunking.target_tokens', 30);
-    config()->set('rag.chunking.overlap_tokens', 0);
-    config()->set('rag.chunking.min_tokens', 0);
+    config()->set('filament-ai.chunking.target_tokens', 30);
+    config()->set('filament-ai.chunking.overlap_tokens', 0);
+    config()->set('filament-ai.chunking.min_tokens', 0);
 
     $book = TestBook::create(['title' => 'Cronaca cittadina']);
 
@@ -27,7 +27,7 @@ function seedForAgentKnowledge(): TestBook
         'content' => 'Le mura vennero rinforzate con nuove torri di guardia. I lavori durarono due stagioni intere.',
     ]);
 
-    Rag::ingestSync('books');
+    FilamentAi::ingestSync('books');
 
     return $book;
 }

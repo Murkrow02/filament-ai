@@ -18,7 +18,7 @@ class ListIngestionRuns extends ListRecords
      */
     protected function getHeaderActions(): array
     {
-        if (! config('rag.filament.pages.ingest', true)) {
+        if (! config('filament-ai.filament.pages.ingest', true)) {
             return [];
         }
 

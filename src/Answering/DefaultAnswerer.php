@@ -123,7 +123,7 @@ final class DefaultAnswerer implements Answerer
      */
     private function citationsFor(RetrievalResult $retrieval): Collection
     {
-        $budget = (int) config('rag.answering.max_context_tokens', 6000);
+        $budget = (int) config('filament-ai.answering.max_context_tokens', 6000);
         $used = 0;
         $marker = 1;
 
@@ -168,12 +168,12 @@ final class DefaultAnswerer implements Answerer
      */
     private function prompt(string $question, Collection $citations, AnswerOptions $options): array
     {
-        $language = $options->language ?? (string) config('rag.answering.language', 'en');
+        $language = $options->language ?? (string) config('filament-ai.answering.language', 'en');
 
         $system = $options->systemPrompt ?? $this->prompts->system(
             $language,
             $this->refusalMessage(),
-            (bool) config('rag.answering.require_citations', true),
+            (bool) config('filament-ai.answering.require_citations', true),
         );
 
         $user = $this->prompts->user(
@@ -258,7 +258,7 @@ final class DefaultAnswerer implements Answerer
             return true;
         }
 
-        if (! config('rag.answering.require_citations', true)) {
+        if (! config('filament-ai.answering.require_citations', true)) {
             return false;
         }
 
@@ -280,7 +280,7 @@ final class DefaultAnswerer implements Answerer
      */
     private function retryIfUnmarked(array $result, string $system, string $user, AnswerOptions $options): array
     {
-        if (! config('rag.answering.require_citations', true)) {
+        if (! config('filament-ai.answering.require_citations', true)) {
             return $result;
         }
 
@@ -307,16 +307,16 @@ final class DefaultAnswerer implements Answerer
 
     private function refusalMessage(): string
     {
-        $configured = config('rag.answering.refusal_message');
+        $configured = config('filament-ai.answering.refusal_message');
 
         return $configured === null || $configured === ''
-            ? (string) __('rag::rag.refusal')
+            ? (string) __('filament-ai::messages.refusal')
             : (string) $configured;
     }
 
     private function log(AnswerResult $result, AnswerOptions $options): void
     {
-        if (! $options->log || ! config('rag.retrieval.log_queries', true)) {
+        if (! $options->log || ! config('filament-ai.retrieval.log_queries', true)) {
             return;
         }
 
@@ -325,7 +325,7 @@ final class DefaultAnswerer implements Answerer
             'source_keys' => $options->retrieval->sourceKeys,
             'question' => $result->question,
             'question_hash' => hash('sha256', mb_strtolower(trim($result->question))),
-            'embedding_model' => (string) config('rag.embeddings.model'),
+            'embedding_model' => (string) config('filament-ai.embeddings.model'),
             'llm_model' => $result->model,
             'filters' => $options->retrieval->toArray(),
             'top_k' => $result->citations->count(),

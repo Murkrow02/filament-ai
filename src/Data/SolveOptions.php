@@ -37,7 +37,7 @@ final readonly class SolveOptions
 
     public function attemptsPerWave(): int
     {
-        return max(1, $this->attemptsPerWave ?? (int) config('rag.agent.solving.attempts_per_wave', 4));
+        return max(1, $this->attemptsPerWave ?? (int) config('filament-ai.agent.solving.attempts_per_wave', 4));
     }
 
     public function maxWaves(): int
@@ -47,27 +47,27 @@ final readonly class SolveOptions
         // A method with three named steps is not improved by a fourth wave of
         // the last one, so the strategy wins over the configured ceiling --
         // but an explicit maxWaves from the caller still wins over both.
-        return max(1, $this->maxWaves ?? $phases ?? (int) config('rag.agent.solving.max_waves', 3));
+        return max(1, $this->maxWaves ?? $phases ?? (int) config('filament-ai.agent.solving.max_waves', 3));
     }
 
     public function maxTokens(): ?int
     {
-        return $this->positive($this->maxTokens ?? config('rag.agent.solving.max_tokens'));
+        return $this->positive($this->maxTokens ?? config('filament-ai.agent.solving.max_tokens'));
     }
 
     public function maxCostMicros(): ?int
     {
-        return $this->positive($this->maxCostMicros ?? config('rag.agent.solving.max_cost_micros'));
+        return $this->positive($this->maxCostMicros ?? config('filament-ai.agent.solving.max_cost_micros'));
     }
 
     public function maxSeconds(): ?int
     {
-        return $this->positive($this->maxSeconds ?? config('rag.agent.solving.max_seconds'));
+        return $this->positive($this->maxSeconds ?? config('filament-ai.agent.solving.max_seconds'));
     }
 
     public function assistant(): string
     {
-        return $this->assistant ?? (string) config('rag.agent.assistant', \Murkrow\FilamentAi\Agent\PanelAssistant::class);
+        return $this->assistant ?? (string) config('filament-ai.agent.assistant', \Murkrow\FilamentAi\Agent\PanelAssistant::class);
     }
 
     /**
@@ -87,7 +87,7 @@ final readonly class SolveOptions
      */
     public function temperatureSpread(): float
     {
-        return max(0.0, $this->temperatureSpread ?? (float) config('rag.agent.solving.temperature_spread', 0.4));
+        return max(0.0, $this->temperatureSpread ?? (float) config('filament-ai.agent.solving.temperature_spread', 0.4));
     }
 
     /**

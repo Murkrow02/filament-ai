@@ -16,7 +16,7 @@ use Murkrow\FilamentAi\Support\Tables;
 
 class StatusCommand extends Command
 {
-    protected $signature = 'rag:status
+    protected $signature = 'ai:status
                             {--run= : Show a single run by uuid}
                             {--watch : Refresh every two seconds}';
 
@@ -47,8 +47,8 @@ class StatusCommand extends Command
 
     private function showOverview(SourceRegistry $sources): void
     {
-        $model = (string) config('rag.embeddings.model');
-        $dimensions = (int) config('rag.embeddings.dimensions');
+        $model = (string) config('filament-ai.embeddings.model');
+        $dimensions = (int) config('filament-ai.embeddings.dimensions');
 
         $documents = Document::query()->count();
         $chunks = Chunk::query()->count();
@@ -79,7 +79,7 @@ class StatusCommand extends Command
         if ($mismatched > 0) {
             $this->components->twoColumnDetail(
                 'stale vectors',
-                '<fg=red>'.number_format($mismatched).' from another model - run rag:ingest --mode=embeddings_only</>',
+                '<fg=red>'.number_format($mismatched).' from another model - run ai:ingest --mode=embeddings_only</>',
             );
         }
 
@@ -128,7 +128,7 @@ class StatusCommand extends Command
 
         $this->components->twoColumnDetail('total spend to date', CostCalculator::format($totalCost, 4));
         $this->components->twoColumnDetail('queries logged', number_format(QueryLog::query()->count()));
-        $this->components->twoColumnDetail('vector driver', (string) config('rag.vector.driver'));
+        $this->components->twoColumnDetail('vector driver', (string) config('filament-ai.vector.driver'));
         $this->components->twoColumnDetail('embedding model', $model.' <fg=gray>('.$dimensions.'d)</>');
 
         $this->warnAboutIndex();
@@ -180,7 +180,7 @@ class StatusCommand extends Command
      */
     private function warnAboutIndex(): void
     {
-        if (config('rag.vector.driver') !== 'pgvector') {
+        if (config('filament-ai.vector.driver') !== 'pgvector') {
             return;
         }
 
@@ -205,7 +205,7 @@ class StatusCommand extends Command
                 $this->newLine();
                 $this->components->warn(
                     'No ANN index on the embedding column: every search is a sequential scan. '
-                    .'Run `php artisan rag:vector:reindex`.'
+                    .'Run `php artisan ai:vector:reindex`.'
                 );
             }
         } catch (\Throwable) {

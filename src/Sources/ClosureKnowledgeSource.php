@@ -18,7 +18,7 @@ use Murkrow\FilamentAi\Models\Document;
  * Escape hatch for knowledge that is not an Eloquent relation: an API, a
  * filesystem tree, a view, a union of several tables.
  *
- *     Rag::source('handbook')
+ *     FilamentAi::source('handbook')
  *         ->setLabel('Handbook')
  *         ->loadDocumentsUsing(fn (array $filters) => LazyCollection::make(...))
  *         ->loadSegmentsUsing(fn (string $id) => yield new Segment(1, '...'))

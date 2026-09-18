@@ -25,10 +25,10 @@ beforeEach(function (): void {
 });
 
 it('serves the page to a signed-in user', function (): void {
-    $this->get('/rag/chat')
+    $this->get('/ai/chat')
         ->assertOk()
-        ->assertSee('rag-chat-payload', escape: false)
-        ->assertSee('rag-chat.js', escape: false);
+        ->assertSee('fai-chat-payload', escape: false)
+        ->assertSee('filament-ai-chat.js', escape: false);
 });
 
 it('reports the page as missing once it is switched off', function (): void {
@@ -36,63 +36,63 @@ it('reports the page as missing once it is switched off', function (): void {
     // request arrives, so an application that flips the setting at runtime --
     // from the settings page, say -- sees it take effect at once. 404 rather
     // than 403: a disabled feature is not a permission problem.
-    config()->set('rag.chat.enabled', false);
+    config()->set('filament-ai.chat.enabled', false);
 
-    $this->get('/rag/chat')->assertNotFound();
+    $this->get('/ai/chat')->assertNotFound();
 });
 
 it('keeps the endpoints up for the panel chat when only the page is off', function (): void {
-    config()->set('rag.chat.enabled', false);
-    config()->set('rag.agent.chat.enabled', true);
+    config()->set('filament-ai.chat.enabled', false);
+    config()->set('filament-ai.agent.chat.enabled', true);
 
     // Not a 404: the panel's chat talks to this, and a missing thread is the
     // only reason it may answer one.
-    $this->getJson('/rag/chat/c/'.Str::uuid7().'/messages')->assertNotFound();
-    $this->postJson('/rag/chat/ask', ['question' => 'Quanti libri ci sono?'])->assertOk();
+    $this->getJson('/ai/chat/c/'.Str::uuid7().'/messages')->assertNotFound();
+    $this->postJson('/ai/chat/ask', ['question' => 'Quanti libri ci sono?'])->assertOk();
 });
 
 it('reports every route as missing when both chats are off', function (): void {
-    config()->set('rag.chat.enabled', false);
-    config()->set('rag.agent.chat.enabled', false);
+    config()->set('filament-ai.chat.enabled', false);
+    config()->set('filament-ai.agent.chat.enabled', false);
 
-    $this->get('/rag/chat')->assertNotFound();
-    $this->postJson('/rag/chat/ask', ['question' => 'Quanti libri ci sono?'])->assertNotFound();
+    $this->get('/ai/chat')->assertNotFound();
+    $this->postJson('/ai/chat/ask', ['question' => 'Quanti libri ci sono?'])->assertNotFound();
 });
 
 it('refuses every route when the view ability is denied', function (): void {
-    config()->set('rag.chat.abilities.view', false);
+    config()->set('filament-ai.chat.abilities.view', false);
 
-    $this->get('/rag/chat')->assertForbidden();
-    $this->postJson('/rag/chat/ask', ['question' => 'Quanti libri ci sono?'])->assertForbidden();
+    $this->get('/ai/chat')->assertForbidden();
+    $this->postJson('/ai/chat/ask', ['question' => 'Quanti libri ci sono?'])->assertForbidden();
 });
 
 it('hides the settings panel when the ability is denied', function (): void {
-    config()->set('rag.llm.available_models', ['gpt-4o-mini' => 'Small']);
+    config()->set('filament-ai.llm.available_models', ['gpt-4o-mini' => 'Small']);
 
-    expect($this->get('/rag/chat')->getContent())->toContain('id="rag-settings"');
+    expect($this->get('/ai/chat')->getContent())->toContain('id="fai-settings"');
 
-    config()->set('rag.chat.abilities.settings', false);
+    config()->set('filament-ai.chat.abilities.settings', false);
 
-    expect($this->get('/rag/chat')->getContent())->not->toContain('id="rag-settings"');
+    expect($this->get('/ai/chat')->getContent())->not->toContain('id="fai-settings"');
 });
 
 it('hides the model picker when the ability is denied', function (): void {
-    config()->set('rag.llm.available_models', ['gpt-4o-mini' => 'Small']);
-    config()->set('rag.chat.abilities.model', false);
+    config()->set('filament-ai.llm.available_models', ['gpt-4o-mini' => 'Small']);
+    config()->set('filament-ai.chat.abilities.model', false);
 
-    $html = $this->get('/rag/chat')->getContent();
+    $html = $this->get('/ai/chat')->getContent();
 
-    expect($html)->not->toContain('id="rag-set-model"')
+    expect($html)->not->toContain('id="fai-set-model"')
         ->and(payloadFrom($html)['models'])->toBe([]);
 });
 
 it('ignores a model the caller may not choose', function (): void {
-    config()->set('rag.llm.available_models', ['other-model' => 'Other']);
-    config()->set('rag.chat.abilities.model', false);
+    config()->set('filament-ai.llm.available_models', ['other-model' => 'Other']);
+    config()->set('filament-ai.chat.abilities.model', false);
 
     scriptAgent(['Una risposta.']);
 
-    $response = $this->post('/rag/chat/ask', ['question' => 'Quanti libri ci sono?', 'model' => 'other-model']);
+    $response = $this->post('/ai/chat/ask', ['question' => 'Quanti libri ci sono?', 'model' => 'other-model']);
     $response->assertOk();
 
     // A model this user may not choose is dropped before validation, so the
@@ -102,9 +102,9 @@ it('ignores a model the caller may not choose', function (): void {
 });
 
 it('rejects a model that is not on the list', function (): void {
-    config()->set('rag.llm.available_models', ['gpt-4o-mini' => 'Small']);
+    config()->set('filament-ai.llm.available_models', ['gpt-4o-mini' => 'Small']);
 
-    $this->postJson('/rag/chat/ask', ['question' => 'Quanti libri ci sono?', 'model' => 'made-up'])
+    $this->postJson('/ai/chat/ask', ['question' => 'Quanti libri ci sono?', 'model' => 'made-up'])
         ->assertStatus(422);
 });
 

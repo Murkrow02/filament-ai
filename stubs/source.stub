@@ -14,7 +14,7 @@ use Murkrow\FilamentAi\Sources\SegmentMap;
  * Knowledge source: {{ label }}.
  *
  * Register it by adding {{ class }}::class to the `sources` array in
- * config/rag.php, then run `php artisan rag:ingest {{ key }}`.
+ * config/rag.php, then run `php artisan ai:ingest {{ key }}`.
  */
 final class {{ class }} extends EloquentSource
 {
@@ -63,7 +63,7 @@ final class {{ class }} extends EloquentSource
 
     /**
      * Narrow what a run processes. The same declaration drives
-     * `rag:ingest --filter=name:value` and the Filament ingestion form.
+     * `ai:ingest --filter=name:value` and the Filament ingestion form.
      */
     protected function filters(): iterable
     {

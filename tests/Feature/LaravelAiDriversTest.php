@@ -24,8 +24,8 @@ function laravelAiEmbedder(int $dimensions = 8): LaravelAiEmbeddingProvider
 }
 
 it('resolves the laravel-ai drivers by name', function (): void {
-    config()->set('rag.llm.driver', 'laravel-ai');
-    config()->set('rag.embeddings.driver', 'laravel-ai');
+    config()->set('filament-ai.llm.driver', 'laravel-ai');
+    config()->set('filament-ai.embeddings.driver', 'laravel-ai');
 
     expect(app(LanguageModelManager::class)->driver())->toBeInstanceOf(LaravelAiLanguageModel::class)
         ->and(app(EmbeddingManager::class)->driver())->toBeInstanceOf(LaravelAiEmbeddingProvider::class);

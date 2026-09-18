@@ -40,16 +40,16 @@ final class LaravelAiLanguageModel implements LanguageModel
 
     public static function fromConfig(): self
     {
-        $temperature = config('rag.llm.temperature', 0.1);
-        $provider = config('rag.llm.provider');
-        $timeout = config('rag.llm.timeout');
+        $temperature = config('filament-ai.llm.temperature', 0.1);
+        $provider = config('filament-ai.llm.provider');
+        $timeout = config('filament-ai.llm.timeout');
 
         return new self(
             provider: blank($provider) ? null : (string) $provider,
-            model: (string) config('rag.llm.model', 'gpt-4o-mini'),
+            model: (string) config('filament-ai.llm.model', 'gpt-4o-mini'),
             temperature: $temperature === null || $temperature === '' ? null : (float) $temperature,
-            maxTokens: (int) config('rag.llm.max_tokens', 1200),
-            providerOptions: (array) config('rag.llm.provider_options', []),
+            maxTokens: (int) config('filament-ai.llm.max_tokens', 1200),
+            providerOptions: (array) config('filament-ai.llm.provider_options', []),
             timeout: blank($timeout) ? null : (int) $timeout,
         );
     }

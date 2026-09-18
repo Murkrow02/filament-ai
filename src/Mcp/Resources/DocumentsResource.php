@@ -20,12 +20,12 @@ class DocumentsResource extends Resource
 {
     public function name(): string
     {
-        return (string) config('rag.mcp.resources.documents.name', 'documents');
+        return (string) config('filament-ai.mcp.resources.documents.name', 'documents');
     }
 
     public function description(): string
     {
-        return (string) __('rag::rag.mcp.documents_description');
+        return (string) __('filament-ai::messages.mcp.documents_description');
     }
 
     public function uri(): string
@@ -40,7 +40,7 @@ class DocumentsResource extends Resource
 
     public function shouldRegister(): bool
     {
-        return (bool) config('rag.mcp.resources.documents.enabled', true);
+        return (bool) config('filament-ai.mcp.resources.documents.enabled', true);
     }
 
     public function handle(): Response
@@ -56,7 +56,7 @@ class DocumentsResource extends Resource
         $query->whereIn('source_key', $exposed);
 
         $documents = $query
-            ->limit((int) config('rag.mcp.resources.documents.limit', 500))
+            ->limit((int) config('filament-ai.mcp.resources.documents.limit', 500))
             ->get();
 
         $payload = [

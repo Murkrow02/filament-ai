@@ -1,16 +1,16 @@
-<div class="rag-composer">
-    <div class="rag-composer__inner">
-        {{-- What the next question will run with. Populated by rag-chat.js so
+<div class="fai-composer">
+    <div class="fai-composer__inner">
+        {{-- What the next question will run with. Populated by filament-ai-chat.js so
              it stays in step with the settings modal. --}}
-        <div class="rag-pills" id="rag-pills"></div>
+        <div class="fai-pills" id="fai-pills"></div>
 
-        <div class="rag-box">
-            <textarea class="rag-input" id="rag-input" rows="1" autocomplete="off"
-                      placeholder="{{ __('rag::rag.chat.placeholder') }}"
-                      aria-label="{{ __('rag::rag.chat.placeholder') }}"></textarea>
+        <div class="fai-box">
+            <textarea class="fai-input" id="fai-input" rows="1" autocomplete="off"
+                      placeholder="{{ __('filament-ai::messages.chat.placeholder') }}"
+                      aria-label="{{ __('filament-ai::messages.chat.placeholder') }}"></textarea>
 
-            <button type="button" class="rag-send" id="rag-send" aria-label="{{ __('rag::rag.chat.send') }}">
-                @include('rag::chat.partials.icon', ['name' => 'send'])
+            <button type="button" class="fai-send" id="fai-send" aria-label="{{ __('filament-ai::messages.chat.send') }}">
+                @include('filament-ai::chat.partials.icon', ['name' => 'send'])
             </button>
         </div>
 
@@ -18,15 +18,15 @@
             {{-- Only rendered where iterative solving is switched on and this
                  user holds the `solve` ability: it multiplies what a question
                  costs, so it is never simply "on". --}}
-            <label class="rag-toggle" id="rag-solve-row">
-                <input type="checkbox" id="rag-solve">
-                <span class="rag-toggle__label">{{ __('rag::rag.chat.js.iterative') }}</span>
-                <span class="rag-toggle__hint">
-                    {{ __('rag::rag.chat.js.iterativeHint', ['calls' => $payload['solving']['calls']]) }}
+            <label class="fai-toggle" id="fai-solve-row">
+                <input type="checkbox" id="fai-solve">
+                <span class="fai-toggle__label">{{ __('filament-ai::messages.chat.js.iterative') }}</span>
+                <span class="fai-toggle__hint">
+                    {{ __('filament-ai::messages.chat.js.iterativeHint', ['calls' => $payload['solving']['calls']]) }}
                 </span>
             </label>
         @endif
 
-        <p class="rag-hint">{{ __('rag::rag.chat.hint') }}</p>
+        <p class="fai-hint">{{ __('filament-ai::messages.chat.hint') }}</p>
     </div>
 </div>

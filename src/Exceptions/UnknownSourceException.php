@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Exceptions;
 
-class UnknownSourceException extends RagException
+class UnknownSourceException extends FilamentAiException
 {
     /**
      * @param  array<int, string>  $known

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Exceptions;
 
-class VectorDriverUnsupportedException extends RagException
+class VectorDriverUnsupportedException extends FilamentAiException
 {
     public static function driver(string $driver): self
     {

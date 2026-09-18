@@ -12,12 +12,12 @@ use Murkrow\FilamentAi\Support\Tables;
  * Implemented as a trait rather than a base class so a host can still swap in
  * its own model by extending ours.
  */
-trait UsesRagConnection
+trait UsesAiConnection
 {
     /**
      * The config key under rag.database.tables this model maps to.
      */
-    abstract protected function ragTableKey(): string;
+    abstract protected function aiTableKey(): string;
 
     public function getConnectionName(): ?string
     {
@@ -26,6 +26,6 @@ trait UsesRagConnection
 
     public function getTable(): string
     {
-        return $this->table ?? Tables::name($this->ragTableKey());
+        return $this->table ?? Tables::name($this->aiTableKey());
     }
 }

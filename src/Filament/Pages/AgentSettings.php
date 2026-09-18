@@ -20,7 +20,7 @@ use Murkrow\FilamentAi\Agent\Resources\AgentTools;
 use Murkrow\FilamentAi\Agent\Resources\ResourceToolRegistry;
 use Murkrow\FilamentAi\Contracts\CodeSandbox;
 use Murkrow\FilamentAi\Contracts\ListsRuntimes;
-use Murkrow\FilamentAi\Filament\Concerns\HasRagNavigation;
+use Murkrow\FilamentAi\Filament\Concerns\HasAiNavigation;
 use Murkrow\FilamentAi\Settings\SettingsRepository;
 use Murkrow\FilamentAi\Sources\SourceRegistry;
 use UnitEnum;
@@ -37,45 +37,45 @@ use UnitEnum;
  */
 class AgentSettings extends Page
 {
-    use HasRagNavigation;
+    use HasAiNavigation;
 
     protected static string|null|BackedEnum $navigationIcon = 'heroicon-o-shield-check';
 
-    protected string $view = 'rag::filament.pages.agent-settings';
+    protected string $view = 'filament-ai::filament.pages.agent-settings';
 
     /** @var array<string, mixed> */
     public array $data = [];
 
     public static function getSlug(?Panel $panel = null): string
     {
-        return trim((string) config('rag.agent.settings.slug', 'assistant-settings'), '/');
+        return trim((string) config('filament-ai.agent.settings.slug', 'assistant-settings'), '/');
     }
 
     public static function getNavigationLabel(): string
     {
-        return (string) __('rag::rag.assistant_settings.navigation');
+        return (string) __('filament-ai::messages.assistant_settings.navigation');
     }
 
     public function getTitle(): string
     {
-        return (string) __('rag::rag.assistant_settings.title');
+        return (string) __('filament-ai::messages.assistant_settings.title');
     }
 
     public static function getNavigationGroup(): string|UnitEnum|null
     {
-        $group = config('rag.agent.chat.navigation_group');
+        $group = config('filament-ai.agent.chat.navigation_group');
 
         return $group === null || $group === '' ? null : (string) $group;
     }
 
     public static function getNavigationSort(): ?int
     {
-        return (int) config('rag.agent.chat.navigation_sort', -1) + 1;
+        return (int) config('filament-ai.agent.chat.navigation_sort', -1) + 1;
     }
 
     public function mount(SettingsRepository $settings): void
     {
-        abort_unless(static::canAccessRag(), 403);
+        abort_unless(static::canAccessAi(), 403);
 
         $this->form->fill($this->currentState($settings));
     }
@@ -83,50 +83,50 @@ class AgentSettings extends Page
     public function form(Schema $schema): Schema
     {
         $sections = [
-            Section::make(__('rag::rag.assistant_settings.agent'))
-                ->description(__('rag::rag.assistant_settings.agent_help'))
+            Section::make(__('filament-ai::messages.assistant_settings.agent'))
+                ->description(__('filament-ai::messages.assistant_settings.agent_help'))
                 ->columns(2)
                 ->schema([
-                    Toggle::make('agent__enabled')->label(__('rag::rag.assistant_settings.enabled')),
-                    Toggle::make('agent__chat__enabled')->label(__('rag::rag.assistant_settings.chat_enabled')),
+                    Toggle::make('agent__enabled')->label(__('filament-ai::messages.assistant_settings.enabled')),
+                    Toggle::make('agent__chat__enabled')->label(__('filament-ai::messages.assistant_settings.chat_enabled')),
                     TextInput::make('agent__provider')
-                        ->label(__('rag::rag.assistant_settings.provider'))
-                        ->placeholder((string) config('rag.llm.provider'))
-                        ->helperText(__('rag::rag.assistant_settings.provider_help')),
+                        ->label(__('filament-ai::messages.assistant_settings.provider'))
+                        ->placeholder((string) config('filament-ai.llm.provider'))
+                        ->helperText(__('filament-ai::messages.assistant_settings.provider_help')),
                     TextInput::make('agent__model')
-                        ->label(__('rag::rag.assistant_settings.model'))
-                        ->placeholder((string) config('rag.llm.model')),
+                        ->label(__('filament-ai::messages.assistant_settings.model'))
+                        ->placeholder((string) config('filament-ai.llm.model')),
                     TextInput::make('agent__chat__history')
-                        ->label(__('rag::rag.assistant_settings.history'))
+                        ->label(__('filament-ai::messages.assistant_settings.history'))
                         ->numeric()
                         ->minValue(1)
                         ->maxValue(100),
-                    Toggle::make('agent__chat__topbar_button')->label(__('rag::rag.assistant_settings.topbar_button')),
+                    Toggle::make('agent__chat__topbar_button')->label(__('filament-ai::messages.assistant_settings.topbar_button')),
                     TextInput::make('agent__max_steps')
-                        ->label(__('rag::rag.assistant_settings.max_steps'))
+                        ->label(__('filament-ai::messages.assistant_settings.max_steps'))
                         ->numeric()
                         ->minValue(1)
                         ->maxValue(40)
-                        ->helperText(__('rag::rag.assistant_settings.max_steps_help')),
+                        ->helperText(__('filament-ai::messages.assistant_settings.max_steps_help')),
                 ]),
 
-            Section::make(__('rag::rag.assistant_settings.knowledge'))
+            Section::make(__('filament-ai::messages.assistant_settings.knowledge'))
                 ->columns(2)
                 ->schema([
-                    Toggle::make('agent__knowledge__enabled')->label(__('rag::rag.assistant_settings.knowledge_enabled')),
+                    Toggle::make('agent__knowledge__enabled')->label(__('filament-ai::messages.assistant_settings.knowledge_enabled')),
                     Select::make('agent__knowledge__sources')
-                        ->label(__('rag::rag.assistant_settings.sources'))
+                        ->label(__('filament-ai::messages.assistant_settings.sources'))
                         ->multiple()
                         ->options(fn (): array => app(SourceRegistry::class)->options())
-                        ->helperText(__('rag::rag.assistant_settings.sources_help')),
+                        ->helperText(__('filament-ai::messages.assistant_settings.sources_help')),
                 ]),
 
-            Section::make(__('rag::rag.assistant_settings.records'))
+            Section::make(__('filament-ai::messages.assistant_settings.records'))
                 ->columns(2)
                 ->schema([
-                    Toggle::make('agent__resources__enabled')->label(__('rag::rag.assistant_settings.resources_enabled')),
+                    Toggle::make('agent__resources__enabled')->label(__('filament-ai::messages.assistant_settings.resources_enabled')),
                     TextInput::make('agent__resources__max_records')
-                        ->label(__('rag::rag.assistant_settings.max_records'))
+                        ->label(__('filament-ai::messages.assistant_settings.max_records'))
                         ->numeric()
                         ->minValue(1)
                         ->maxValue(200),
@@ -145,7 +145,7 @@ class AgentSettings extends Page
 
     public function save(SettingsRepository $settings): void
     {
-        abort_unless(static::canAccessRag(), 403);
+        abort_unless(static::canAccessAi(), 403);
 
         $state = $this->form->getState();
 
@@ -176,15 +176,15 @@ class AgentSettings extends Page
         ], auth()->id());
 
         Notification::make()
-            ->title(__('rag::rag.assistant_settings.saved'))
-            ->body(__('rag::rag.assistant_settings.saved_body'))
+            ->title(__('filament-ai::messages.assistant_settings.saved'))
+            ->body(__('filament-ai::messages.assistant_settings.saved_body'))
             ->success()
             ->send();
     }
 
     public function resetToDefaults(SettingsRepository $settings): void
     {
-        abort_unless(static::canAccessRag(), 403);
+        abort_unless(static::canAccessAi(), 403);
 
         foreach (array_keys($settings->schema()) as $key) {
             if (str_starts_with($key, 'agent.')) {
@@ -194,18 +194,18 @@ class AgentSettings extends Page
 
         $this->mount($settings);
 
-        Notification::make()->title(__('rag::rag.assistant_settings.reset'))->success()->send();
+        Notification::make()->title(__('filament-ai::messages.assistant_settings.reset'))->success()->send();
     }
 
     protected function getHeaderActions(): array
     {
         return [
             Action::make('save')
-                ->label(__('rag::rag.assistant_settings.save'))
+                ->label(__('filament-ai::messages.assistant_settings.save'))
                 ->icon('heroicon-o-check')
                 ->action('save'),
             Action::make('reset')
-                ->label(__('rag::rag.assistant_settings.reset_action'))
+                ->label(__('filament-ai::messages.assistant_settings.reset_action'))
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('gray')
                 ->requiresConfirmation()
@@ -223,29 +223,29 @@ class AgentSettings extends Page
 
     private function solvingSection(): Section
     {
-        return Section::make(__('rag::rag.assistant_settings.solving'))
-            ->description(__('rag::rag.assistant_settings.solving_help'))
+        return Section::make(__('filament-ai::messages.assistant_settings.solving'))
+            ->description(__('filament-ai::messages.assistant_settings.solving_help'))
             ->columns(2)
             ->schema([
                 Toggle::make('agent__solving__enabled')
-                    ->label(__('rag::rag.assistant_settings.solving_enabled')),
+                    ->label(__('filament-ai::messages.assistant_settings.solving_enabled')),
                 TextInput::make('agent__solving__attempts')
-                    ->label(__('rag::rag.assistant_settings.solving_attempts'))
+                    ->label(__('filament-ai::messages.assistant_settings.solving_attempts'))
                     ->numeric()
                     ->minValue(1)
                     ->maxValue(16)
-                    ->helperText(__('rag::rag.assistant_settings.solving_attempts_help')),
+                    ->helperText(__('filament-ai::messages.assistant_settings.solving_attempts_help')),
                 TextInput::make('agent__solving__waves')
-                    ->label(__('rag::rag.assistant_settings.solving_waves'))
+                    ->label(__('filament-ai::messages.assistant_settings.solving_waves'))
                     ->numeric()
                     ->minValue(1)
                     ->maxValue(10),
                 TextInput::make('agent__solving__max_tokens')
-                    ->label(__('rag::rag.assistant_settings.solving_max_tokens'))
+                    ->label(__('filament-ai::messages.assistant_settings.solving_max_tokens'))
                     ->numeric()
                     ->minValue(1000),
                 TextInput::make('agent__solving__max_seconds')
-                    ->label(__('rag::rag.assistant_settings.solving_max_seconds'))
+                    ->label(__('filament-ai::messages.assistant_settings.solving_max_seconds'))
                     ->numeric()
                     ->minValue(10),
             ]);
@@ -256,8 +256,8 @@ class AgentSettings extends Page
         $runtimes = $this->runtimes();
 
         $description = $runtimes === []
-            ? (string) __('rag::rag.assistant_settings.sandbox_unreachable')
-            : (string) __('rag::rag.assistant_settings.sandbox_installed', [
+            ? (string) __('filament-ai::messages.assistant_settings.sandbox_unreachable')
+            : (string) __('filament-ai::messages.assistant_settings.sandbox_installed', [
                 'runtimes' => implode(', ', array_map(
                     static fn (string $language, string $version): string => "{$language} {$version}",
                     array_keys($runtimes),
@@ -265,32 +265,32 @@ class AgentSettings extends Page
                 )),
             ]);
 
-        return Section::make(__('rag::rag.assistant_settings.sandbox_section'))
-            ->description($description.' '.__('rag::rag.assistant_settings.sandbox_where'))
+        return Section::make(__('filament-ai::messages.assistant_settings.sandbox_section'))
+            ->description($description.' '.__('filament-ai::messages.assistant_settings.sandbox_where'))
             ->columns(2)
             ->schema([
                 Toggle::make('agent__sandbox__enabled')
-                    ->label(__('rag::rag.assistant_settings.sandbox'))
-                    ->helperText(__('rag::rag.assistant_settings.sandbox_help')),
+                    ->label(__('filament-ai::messages.assistant_settings.sandbox'))
+                    ->helperText(__('filament-ai::messages.assistant_settings.sandbox_help')),
                 Select::make('agent__sandbox__languages')
-                    ->label(__('rag::rag.assistant_settings.sandbox_languages'))
+                    ->label(__('filament-ai::messages.assistant_settings.sandbox_languages'))
                     ->multiple()
                     ->options($this->languageOptions())
                     ->disabled($this->languageOptions() === [])
-                    ->helperText(__('rag::rag.assistant_settings.sandbox_languages_help')),
+                    ->helperText(__('filament-ai::messages.assistant_settings.sandbox_languages_help')),
                 TextInput::make('agent__sandbox__timeout')
-                    ->label(__('rag::rag.assistant_settings.sandbox_timeout'))
+                    ->label(__('filament-ai::messages.assistant_settings.sandbox_timeout'))
                     ->numeric()
                     ->minValue(500)
                     ->maxValue(60000)
-                    ->helperText(__('rag::rag.assistant_settings.sandbox_timeout_help')),
+                    ->helperText(__('filament-ai::messages.assistant_settings.sandbox_timeout_help')),
                 TextInput::make('agent__sandbox__max_output')
-                    ->label(__('rag::rag.assistant_settings.sandbox_max_output'))
+                    ->label(__('filament-ai::messages.assistant_settings.sandbox_max_output'))
                     ->numeric()
                     ->minValue(200)
                     ->maxValue(50000),
                 TextInput::make('agent__sandbox__max_code')
-                    ->label(__('rag::rag.assistant_settings.sandbox_max_code'))
+                    ->label(__('filament-ai::messages.assistant_settings.sandbox_max_code'))
                     ->numeric()
                     ->minValue(200)
                     ->maxValue(200000),
@@ -317,7 +317,7 @@ class AgentSettings extends Page
         }
 
         foreach (array_keys($this->configuredLanguages()) as $language) {
-            $options[$language] ??= (string) __('rag::rag.assistant_settings.sandbox_not_installed', ['language' => $language]);
+            $options[$language] ??= (string) __('filament-ai::messages.assistant_settings.sandbox_not_installed', ['language' => $language]);
         }
 
         ksort($options);
@@ -330,7 +330,7 @@ class AgentSettings extends Page
      */
     private function configuredLanguages(): array
     {
-        $languages = config('rag.agent.sandbox.languages', []);
+        $languages = config('filament-ai.agent.sandbox.languages', []);
 
         return is_array($languages) ? $languages : [];
     }
@@ -344,7 +344,7 @@ class AgentSettings extends Page
      */
     private function runtimes(): array
     {
-        return cache()->remember('rag.agent.sandbox.runtimes', 60, static function (): array {
+        return cache()->remember('filament-ai.agent.sandbox.runtimes', 60, static function (): array {
             $sandbox = app(CodeSandbox::class);
 
             return $sandbox instanceof ListsRuntimes ? $sandbox->runtimes() : [];
@@ -396,18 +396,18 @@ class AgentSettings extends Page
             ->columns(3)
             ->schema(array_values(array_filter([
                 CheckboxList::make("resources.{$index}.abilities")
-                    ->label(__('rag::rag.assistant_settings.abilities'))
+                    ->label(__('filament-ai::messages.assistant_settings.abilities'))
                     ->options($this->abilityOptions($declared))
-                    ->helperText(__('rag::rag.assistant_settings.abilities_help')),
+                    ->helperText(__('filament-ai::messages.assistant_settings.abilities_help')),
 
                 $approvable === [] ? null : CheckboxList::make("resources.{$index}.unapproved")
-                    ->label(__('rag::rag.assistant_settings.unapproved'))
+                    ->label(__('filament-ai::messages.assistant_settings.unapproved'))
                     ->options($this->abilityOptions($approvable))
-                    ->helperText(__('rag::rag.assistant_settings.unapproved_help')),
+                    ->helperText(__('filament-ai::messages.assistant_settings.unapproved_help')),
 
                 Grid::make(1)->schema([
                     TextInput::make("resources.{$index}.max_records")
-                        ->label(__('rag::rag.assistant_settings.max_records'))
+                        ->label(__('filament-ai::messages.assistant_settings.max_records'))
                         ->numeric()
                         ->minValue(1)
                         ->maxValue(200),
@@ -424,7 +424,7 @@ class AgentSettings extends Page
         $options = [];
 
         foreach ($abilities as $ability) {
-            $options[$ability] = (string) __("rag::rag.assistant_settings.ability_{$ability}");
+            $options[$ability] = (string) __("filament-ai::messages.assistant_settings.ability_{$ability}");
         }
 
         return $options;
