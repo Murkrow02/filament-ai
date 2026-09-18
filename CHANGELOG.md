@@ -9,6 +9,8 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-09-18
+
 ### Changed
 
 - **Breaking: the package speaks its own name.** `config/rag.php` is now
@@ -129,6 +131,7 @@ inside a Filament panel.
 - The knowledge settings page no longer writes back the agent's settings: it
   rendered no field for them but carried them in its state.
 
-[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v4.0.0...HEAD
+[4.0.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v4.0.0
 [3.0.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v3.0.0
 [2.0.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v2.0.0
