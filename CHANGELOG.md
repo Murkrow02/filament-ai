@@ -9,6 +9,8 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-09-18
+
 ### Added
 
 - **One chat, two modes.** The standalone page and the panel's Assistant page
@@ -106,5 +108,6 @@ inside a Filament panel.
 - The knowledge settings page no longer writes back the agent's settings: it
   rendered no field for them but carried them in its state.
 
-[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v3.0.0
 [2.0.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v2.0.0
