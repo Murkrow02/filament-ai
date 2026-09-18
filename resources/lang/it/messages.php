@@ -7,7 +7,7 @@ return [
 
     'dashboard' => [
         'no_sources' => 'Nessuna fonte configurata',
-        'no_sources_help' => 'Aggiungi almeno una fonte in rag.sources dentro config/rag.php, associando un model Eloquent a un flusso di testo ordinato. Finche non lo fai non c\'e nulla da indicizzare.',
+        'no_sources_help' => 'Aggiungi almeno una fonte in filament-ai.sources dentro config/filament-ai.php, associando un model Eloquent a un flusso di testo ordinato. Finche non lo fai non c\'e nulla da indicizzare.',
 
         'documents' => 'Documenti',
         'chunks_count' => '{1} :count frammento|[2,*] :count frammenti',
@@ -79,7 +79,7 @@ return [
         'title' => 'Impostazioni assistente',
         'navigation' => 'Impostazioni assistente',
         'agent' => 'Assistente',
-        'agent_help' => 'Lascia vuoto un campo per tenere quello che dice config/rag.php.',
+        'agent_help' => 'Lascia vuoto un campo per tenere quello che dice config/filament-ai.php.',
         'enabled' => 'Assistente attivo',
         'chat_enabled' => 'Pagina chat',
         'provider' => 'Provider',
@@ -104,9 +104,9 @@ return [
         'sandbox_timeout_help' => 'La sandbox ha un suo tetto e rifiuta qualsiasi valore superiore.',
         'sandbox_max_output' => 'Caratteri di output conservati',
         'sandbox_max_code' => 'Dimensione massima del programma (caratteri)',
-        'sandbox_unreachable' => 'La sandbox non risponde, quindi non c e nulla da scegliere. Controlla rag.agent.sandbox.url.',
+        'sandbox_unreachable' => 'La sandbox non risponde, quindi non c e nulla da scegliere. Controlla filament-ai.agent.sandbox.url.',
         'sandbox_installed' => 'Installati nella sandbox: :runtimes',
-        'sandbox_where' => 'Dove gira il codice (url e driver) resta in config/rag.php di proposito: un campo che punta l applicazione a un host qualsiasi e una porta d ingresso, non un impostazione.',
+        'sandbox_where' => 'Dove gira il codice (url e driver) resta in config/filament-ai.php di proposito: un campo che punta l applicazione a un host qualsiasi e una porta d ingresso, non un impostazione.',
         'sandbox_help' => 'In una sandbox isolata, senza rete e senza accesso a questa applicazione. Resta spenta se non ne configuri una.',
         'max_steps' => 'Giri di tool per risposta',
         'max_steps_help' => 'Scrivere un programma, eseguirlo, leggere l errore e correggerlo sono quattro. Vuoto tiene il valore predefinito.',
@@ -130,7 +130,7 @@ return [
         'saved' => 'Impostazioni salvate',
         'saved_body' => 'Valgono dalla prossima richiesta.',
         'reset_action' => 'Torna ai valori di config',
-        'reset' => 'Ripristinati i valori di config/rag.php',
+        'reset' => 'Ripristinati i valori di config/filament-ai.php',
         'no_resources' => 'Nessuna risorsa e ancora esposta',
         'no_resources_body' => 'Una risorsa arriva all\'assistente implementando <code>AgentResource</code> e usando <code>InteractsWithAgent</code>. Da qui non si puo esporre una risorsa che non lo ha fatto.',
         'limits' => 'Cosa questa pagina non puo fare, e perche',

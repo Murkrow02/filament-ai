@@ -8,6 +8,7 @@ use Murkrow\FilamentAi\Agent\Resources\AgentTools;
 use Murkrow\FilamentAi\Agent\Resources\ResourceToolRegistry;
 use Murkrow\FilamentAi\Filament\Pages\AgentSettings;
 use Murkrow\FilamentAi\Filament\Pages\KnowledgeSettings;
+use Murkrow\FilamentAi\Models\Setting;
 use Murkrow\FilamentAi\Settings\SettingsRepository;
 use Murkrow\FilamentAi\Tests\Fixtures\Filament\TestBookResource;
 
@@ -157,4 +158,48 @@ it('keeps the agent keys out of the knowledge settings form', function (): void 
 
     expect($html)->not->toContain('agent__resources__overrides')
         ->and($html)->toContain('retrieval__top_k');
+});
+
+it('loads and saves the chat fields it renders', function (): void {
+    // These three were drawn but never read and never written: the toggles
+    // showed off whatever was stored, and switching one on saved nothing.
+    config()->set('filament-ai.agent.chat.enabled', true);
+    config()->set('filament-ai.agent.chat.topbar_button', true);
+    config()->set('filament-ai.agent.chat.history', 20);
+
+    $page = Livewire::test(AgentSettings::class)
+        ->assertSet('data.agent__chat__enabled', true)
+        ->assertSet('data.agent__chat__topbar_button', true)
+        ->assertSet('data.agent__chat__history', 20);
+
+    $page->set('data.agent__chat__enabled', false)
+        ->set('data.agent__chat__topbar_button', false)
+        ->set('data.agent__chat__history', 5)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $settings = app(SettingsRepository::class);
+    $settings->refresh();
+
+    expect(config('filament-ai.agent.chat.enabled'))->toBeFalse()
+        ->and(config('filament-ai.agent.chat.topbar_button'))->toBeFalse()
+        ->and(config('filament-ai.agent.chat.history'))->toBe(5)
+        // And the page shows what it stored when it is opened again.
+        ->and(Livewire::test(AgentSettings::class)->get('data')['agent__chat__enabled'])->toBeFalse();
+});
+
+it('writes every assistant setting it is allowed to write', function (): void {
+    // The page and the whitelist have to agree: a key in the whitelist that
+    // the form never writes is a control that silently does nothing, which is
+    // exactly how the chat toggles behaved.
+    Livewire::test(AgentSettings::class)->call('save')->assertHasNoErrors();
+
+    $stored = Setting::query()->pluck('key')->all();
+
+    $expected = array_values(array_filter(
+        array_keys((array) config('filament-ai.settings.overridable')),
+        static fn (string $key): bool => str_starts_with($key, 'agent.'),
+    ));
+
+    expect(array_values(array_diff($expected, $stored)))->toBe([]);
 });

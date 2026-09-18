@@ -7,7 +7,7 @@ return [
 
     'dashboard' => [
         'no_sources' => 'No knowledge sources configured',
-        'no_sources_help' => 'Add at least one source under rag.sources in config/rag.php, mapping an Eloquent model to an ordered stream of text. Until then there is nothing to index.',
+        'no_sources_help' => 'Add at least one source under filament-ai.sources in config/filament-ai.php, mapping an Eloquent model to an ordered stream of text. Until then there is nothing to index.',
 
         'documents' => 'Documents',
         'chunks_count' => '{1} :count chunk|[2,*] :count chunks',
@@ -79,7 +79,7 @@ return [
         'title' => 'Assistant settings',
         'navigation' => 'Assistant settings',
         'agent' => 'Assistant',
-        'agent_help' => 'Leave a field empty to keep what config/rag.php says.',
+        'agent_help' => 'Leave a field empty to keep what config/filament-ai.php says.',
         'enabled' => 'Assistant on',
         'chat_enabled' => 'Chat page',
         'provider' => 'Provider',
@@ -104,9 +104,9 @@ return [
         'sandbox_timeout_help' => 'The sandbox has its own ceiling and refuses anything above it.',
         'sandbox_max_output' => 'Output characters kept',
         'sandbox_max_code' => 'Program size limit (characters)',
-        'sandbox_unreachable' => 'The sandbox is not answering, so there is nothing to choose from. Check rag.agent.sandbox.url.',
+        'sandbox_unreachable' => 'The sandbox is not answering, so there is nothing to choose from. Check filament-ai.agent.sandbox.url.',
         'sandbox_installed' => 'Installed in the sandbox: :runtimes',
-        'sandbox_where' => 'Where the code runs (url and driver) stays in config/rag.php on purpose: a form that points the application at any host is a way in, not a setting.',
+        'sandbox_where' => 'Where the code runs (url and driver) stays in config/filament-ai.php on purpose: a form that points the application at any host is a way in, not a setting.',
         'sandbox_help' => 'In an isolated sandbox with no network and no access to this application. Off unless a sandbox is configured.',
         'max_steps' => 'Tool rounds per answer',
         'max_steps_help' => 'Writing a program, running it, reading the error and fixing it is four. Empty keeps the default.',
@@ -130,7 +130,7 @@ return [
         'saved' => 'Settings saved',
         'saved_body' => 'They take effect on the next request.',
         'reset_action' => 'Reset to config defaults',
-        'reset' => 'Reverted to the values in config/rag.php',
+        'reset' => 'Reverted to the values in config/filament-ai.php',
         'no_resources' => 'No resource is exposed yet',
         'no_resources_body' => 'A resource reaches the assistant by implementing <code>AgentResource</code> and using <code>InteractsWithAgent</code>. Nothing here can expose one that has not.',
         'limits' => 'What this page cannot do, and why',

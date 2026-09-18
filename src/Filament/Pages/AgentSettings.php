@@ -151,6 +151,9 @@ class AgentSettings extends Page
 
         $settings->setMany([
             'agent.enabled' => (bool) ($state['agent__enabled'] ?? true),
+            'agent.chat.enabled' => (bool) ($state['agent__chat__enabled'] ?? true),
+            'agent.chat.topbar_button' => (bool) ($state['agent__chat__topbar_button'] ?? true),
+            'agent.chat.history' => (int) ($state['agent__chat__history'] ?? 20),
             'agent.provider' => $this->blankToNull($state['agent__provider'] ?? null),
             'agent.model' => $this->blankToNull($state['agent__model'] ?? null),
             'agent.knowledge.enabled' => (bool) ($state['agent__knowledge__enabled'] ?? true),
@@ -457,6 +460,12 @@ class AgentSettings extends Page
 
         return [
             'agent__enabled' => (bool) $settings->effective('agent.enabled'),
+            // The three chat fields were rendered but never loaded and never
+            // saved: the toggles read as off whatever was stored, and turning
+            // one on changed nothing. They are ordinary settings like the rest.
+            'agent__chat__enabled' => (bool) $settings->effective('agent.chat.enabled'),
+            'agent__chat__topbar_button' => (bool) $settings->effective('agent.chat.topbar_button'),
+            'agent__chat__history' => (int) $settings->effective('agent.chat.history'),
             'agent__provider' => $settings->effective('agent.provider'),
             'agent__model' => $settings->effective('agent.model'),
             'agent__knowledge__enabled' => (bool) $settings->effective('agent.knowledge.enabled'),

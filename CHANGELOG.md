@@ -9,6 +9,17 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [4.0.1] - 2026-09-18
+
+### Fixed
+
+- The assistant settings page drew three controls it never read and never
+  wrote -- the chat page, the topbar button and how much history a
+  conversation replays. The toggles showed off whatever was stored, and
+  switching one on saved nothing. A test now asserts that every assistant key
+  in the whitelist is written when the form is saved.
+- The Italian and English help texts still pointed at `config/rag.php`.
+
 ## [4.0.0] - 2026-09-18
 
 ### Changed
@@ -131,7 +142,8 @@ inside a Filament panel.
 - The knowledge settings page no longer writes back the agent's settings: it
   rendered no field for them but carried them in its state.
 
-[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v4.0.0...HEAD
+[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v4.0.1...HEAD
+[4.0.1]: https://github.com/Murkrow02/filament-ai/releases/tag/v4.0.1
 [4.0.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v4.0.0
 [3.0.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v3.0.0
 [2.0.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v2.0.0
