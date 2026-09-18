@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Laravel\Ai\Tools\Request;
+use Murkrow\FilamentAi\Agent\Chat\CitedPassages;
 use Murkrow\FilamentAi\Agent\Tools\FetchDocument;
 use Murkrow\FilamentAi\Agent\Tools\SearchKnowledge;
 use Murkrow\FilamentAi\Facades\FilamentAi;
@@ -86,4 +87,42 @@ it('does not read a document from a source it may not see', function (): void {
 
     expect((new FetchDocument([]))->handle(new Request(['document_id' => (string) $book->id])))
         ->toStartWith('Error: No indexed document');
+});
+
+it('records the passages it returned, numbered across a whole turn', function (): void {
+    seedForAgentKnowledge();
+
+    $cited = app(CitedPassages::class);
+    $cited->collect();
+
+    $tool = new SearchKnowledge(['books']);
+
+    $first = $tool->handle(new Request(['query' => 'chi convoco il consiglio', 'limit' => 1]));
+    $second = $tool->handle(new Request(['query' => 'torri di guardia', 'limit' => 1]));
+
+    // Two searches in one turn must not both call their result "[#1]": the
+    // answer cites one list, not one call.
+    expect($first)->toContain('[#1]')
+        ->and($second)->toContain('[#2]')
+        ->and($second)->not->toContain('[#1]');
+
+    $passages = $cited->all();
+
+    expect($passages)->toHaveCount(2)
+        ->and($passages[0]['marker'])->toBe(1)
+        ->and($passages[1]['marker'])->toBe(2)
+        ->and($passages[0]['label'])->toContain('Cronaca cittadina')
+        ->and($passages[0]['content'])->toContain('consiglio')
+        ->and($passages[0]['document_id'])->not->toBeEmpty();
+});
+
+it('keeps nothing when nobody is collecting', function (): void {
+    seedForAgentKnowledge();
+
+    // MCP clients and the console use the same tool and have no page to
+    // render into; numbering there starts at one per call, as before.
+    $output = (new SearchKnowledge(['books']))->handle(new Request(['query' => 'chi convoco il consiglio']));
+
+    expect($output)->toContain('[#1]')
+        ->and(app(CitedPassages::class)->all())->toBe([]);
 });

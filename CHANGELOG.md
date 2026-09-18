@@ -9,6 +9,28 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [4.0.2] - 2026-09-19
+
+### Fixed
+
+- **The assistant cites its sources again.** The chat stripped every `[#n]`
+  marker out of the answer -- it was gated behind an ability that the single
+  chat no longer has -- so the assistant cited passages nobody could see. The
+  markers are rendered as buttons, and the passages the knowledge tool
+  returned are listed under the answer: title, position, score and a link
+  where the source provides one. Clicking a marker opens the list on that
+  passage.
+- Markers now continue across the tool calls of one turn: two searches both
+  numbering from one made "[#1]" mean two different passages.
+- Reopening a conversation brings its citations back, read out of the tool
+  output laravel/ai stored.
+- The chat's endpoints answer to either door. The panel's assistant is gated
+  by `filament-ai.agent.authorize` and the standalone page by the `view`
+  ability; denying the page used to take the panel's stylesheet and script
+  with it, leaving it unstyled and dead.
+- The composer and the empty state still spoke for the retired knowledge
+  mode ("ask about the documents").
+
 ## [4.0.1] - 2026-09-18
 
 ### Fixed
@@ -142,7 +164,8 @@ inside a Filament panel.
 - The knowledge settings page no longer writes back the agent's settings: it
   rendered no field for them but carried them in its state.
 
-[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v4.0.1...HEAD
+[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v4.0.2...HEAD
+[4.0.2]: https://github.com/Murkrow02/filament-ai/releases/tag/v4.0.2
 [4.0.1]: https://github.com/Murkrow02/filament-ai/releases/tag/v4.0.1
 [4.0.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v4.0.0
 [3.0.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v3.0.0

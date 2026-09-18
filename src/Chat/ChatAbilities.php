@@ -8,6 +8,7 @@ use Illuminate\Contracts\Auth\Access\Gate as GateContract;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Murkrow\FilamentAi\Agent\Chat\AssistantAccess;
 
 /**
  * The chat's authorization vocabulary.
@@ -149,6 +150,23 @@ final class ChatAbilities
         }
 
         return self::DEFAULTS[$name] ?? false;
+    }
+
+    /**
+     * Whether this user may use the chat at all, through either door.
+     *
+     * The standalone page and the panel's assistant render the same component
+     * and talk to the same endpoints, but they are gated differently: the page
+     * by `view`, the panel page by `filament-ai.agent.authorize`. The
+     * transport behind them -- the stylesheet, the script, asking, deciding,
+     * the thread list -- has to answer to both, or closing one door takes the
+     * other's assets with it and the panel renders an unstyled, dead page.
+     */
+    public static function canUseChat(?Authenticatable $user = null): bool
+    {
+        $user ??= Auth::user();
+
+        return self::allows('view', $user) || AssistantAccess::allows($user);
     }
 
     public static function allows(string $name, ?Authenticatable $user = null): bool

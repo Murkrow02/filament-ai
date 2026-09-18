@@ -190,10 +190,10 @@ return [
         'cancel' => 'Cancel',
         'save' => 'Save',
         'send' => 'Send',
-        'placeholder' => 'Ask a question about the documents...',
-        'hint' => 'Answers are drawn from the indexed documents and always cite the passage they come from.',
-        'empty_title' => 'What would you like to know?',
-        'empty_body' => 'Ask in your own words. Full questions work considerably better than keywords.',
+        'placeholder' => 'Ask the assistant, or tell it what to do...',
+        'hint' => 'The assistant reads your documents and records, and proposes changes. Every change waits for your approval.',
+        'empty_title' => 'What can I do for you?',
+        'empty_body' => 'Ask in your own words: about the documents, about your records, or for a change to make.',
         'suggestions' => [],
 
         // Rendered in the browser by filament-ai-chat.js.
@@ -244,8 +244,7 @@ return [
             'solveBest' => 'Best so far: :score/100',
             'solveGaveUp' => 'No answer met the criteria.',
             'solveOpen' => 'See every attempt',
-            'placeholderAgent' => 'Ask the assistant, or tell it what to do...',
-            'hintAgent' => 'The assistant can read and change records. Every change waits for your approval.',
+            'sourcesCount' => 'Sources (:count)',
             'groups' => [
                 'pinned' => 'Pinned',
                 'today' => 'Today',

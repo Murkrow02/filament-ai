@@ -15,6 +15,7 @@ use Laravel\Ai\Streaming\Events\ToolApprovalRequest;
 use Laravel\Ai\Streaming\Events\ToolCall as ToolCallEvent;
 use Laravel\Ai\Streaming\Events\ToolResult as ToolResultEvent;
 use Murkrow\FilamentAi\Agent\Chat\AssistantTurn;
+use Murkrow\FilamentAi\Agent\Chat\CitedPassages;
 use Murkrow\FilamentAi\Agent\PanelAssistant;
 use Murkrow\FilamentAi\Agent\Solving\Solver;
 use Murkrow\FilamentAi\Agent\Solving\Strategies;
@@ -215,7 +216,7 @@ class AssistantController
      */
     public function decide(Request $request, string $conversation): StreamedResponse|JsonResponse
     {
-        abort_unless(ChatAbilities::allows('view', $request->user()) && $this->turn->available(), 403);
+        abort_unless(ChatAbilities::canUseChat($request->user()) && $this->turn->available(), 403);
 
         $owned = $this->turn->ownedConversation($conversation, $request->user());
 
@@ -259,7 +260,12 @@ class AssistantController
         // regenerates it mid-stream leaves the next one with a stale token.
         $request->session()?->save();
 
-        return response()->stream(function () use ($assistant, $prompt, $conversation, $allowed): void {
+        // What the assistant reads while it answers, so the citations in the
+        // answer point at something the reader can open.
+        $cited = app(CitedPassages::class);
+        $cited->collect();
+
+        return response()->stream(function () use ($assistant, $prompt, $conversation, $allowed, $cited): void {
             $this->send('start', ['conversation' => $conversation]);
 
             try {
@@ -270,17 +276,28 @@ class AssistantController
                     $final = $response;
                 });
 
+                $sent = 0;
+
                 foreach ($stream as $event) {
                     $this->relay($event);
+
+                    // Passages appear as the tools return them, so the list
+                    // fills in while the answer is still being written.
+                    if ($cited->count() > $sent) {
+                        $this->send('sources', ['passages' => array_slice($cited->all(), $sent)]);
+                        $sent = $cited->count();
+                    }
                 }
 
                 $conversation = $final?->conversationId ?? $conversation;
 
-                $this->send('done', $this->done($final, $conversation, $allowed));
+                $this->send('done', $this->done($final, $conversation, $allowed) + ['passages' => $cited->all()]);
             } catch (Throwable $exception) {
                 report($exception);
 
                 $this->send('error', ['message' => $this->failureMessage($exception)]);
+            } finally {
+                $cited->stop();
             }
         }, 200, $this->eventStreamHeaders());
     }

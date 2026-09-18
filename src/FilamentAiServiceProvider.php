@@ -237,6 +237,10 @@ class FilamentAiServiceProvider extends ServiceProvider
 
     private function registerManagers(): void
     {
+        // One per request: the passages a turn cited are read back by the
+        // chat that asked for them, and nothing else.
+        $this->app->singleton(\Murkrow\FilamentAi\Agent\Chat\CitedPassages::class);
+
         $this->app->singleton(EmbeddingManager::class);
         $this->app->singleton(LanguageModelManager::class);
         $this->app->singleton(VectorStoreManager::class);

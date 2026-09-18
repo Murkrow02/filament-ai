@@ -59,10 +59,30 @@ it('reports every route as missing when both chats are off', function (): void {
     $this->postJson('/ai/chat/ask', ['question' => 'Quanti libri ci sono?'])->assertNotFound();
 });
 
-it('refuses every route when the view ability is denied', function (): void {
+it('refuses the standalone page when its ability is denied', function (): void {
     config()->set('filament-ai.chat.abilities.view', false);
 
     $this->get('/ai/chat')->assertForbidden();
+});
+
+it('keeps the endpoints open for the panel assistant when the page ability is denied', function (): void {
+    // The two surfaces are gated differently: the page by `view`, the panel by
+    // filament-ai.agent.authorize. Denying the first used to take the second's
+    // stylesheet and script with it, leaving an unstyled, dead page.
+    config()->set('filament-ai.chat.abilities.view', false);
+
+    scriptAgent(['Una risposta.']);
+
+    $this->get('/ai/chat/assets/filament-ai-chat.js')->assertOk();
+    $this->post('/ai/chat/ask', ['question' => 'Quanti libri ci sono?'])->assertOk();
+});
+
+it('refuses every route when neither door is open', function (): void {
+    config()->set('filament-ai.chat.abilities.view', false);
+    config()->set('filament-ai.agent.authorize', fn (): bool => false);
+
+    $this->get('/ai/chat')->assertForbidden();
+    $this->get('/ai/chat/assets/filament-ai-chat.js')->assertForbidden();
     $this->postJson('/ai/chat/ask', ['question' => 'Quanti libri ci sono?'])->assertForbidden();
 });
 

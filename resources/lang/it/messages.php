@@ -190,10 +190,10 @@ return [
         'cancel' => 'Annulla',
         'save' => 'Salva',
         'send' => 'Invia',
-        'placeholder' => 'Fai una domanda sui documenti...',
-        'hint' => 'Le risposte vengono dai documenti indicizzati e citano sempre il passaggio da cui provengono.',
-        'empty_title' => 'Cosa vuoi sapere?',
-        'empty_body' => 'Chiedi con parole tue. Le domande complete funzionano molto meglio delle parole chiave.',
+        'placeholder' => 'Chiedi all assistente, o digli cosa fare...',
+        'hint' => 'L assistente puo leggere i documenti e i record, e proporre modifiche. Ogni modifica aspetta la tua approvazione.',
+        'empty_title' => 'Cosa posso fare per te?',
+        'empty_body' => 'Chiedi con parole tue: una domanda sui documenti, sui record, o una modifica da fare.',
         'suggestions' => [],
 
         // Renderizzate nel browser da filament-ai-chat.js.
@@ -244,8 +244,7 @@ return [
             'solveBest' => 'Migliore finora: :score/100',
             'solveGaveUp' => 'Nessuna risposta ha rispettato i criteri.',
             'solveOpen' => 'Vedi tutti i tentativi',
-            'placeholderAgent' => 'Chiedi all assistente, o digli cosa fare...',
-            'hintAgent' => 'L assistente puo leggere e modificare i record. Ogni modifica aspetta la tua approvazione.',
+            'sourcesCount' => 'Fonti (:count)',
             'groups' => [
                 'pinned' => 'Fissate',
                 'today' => 'Oggi',

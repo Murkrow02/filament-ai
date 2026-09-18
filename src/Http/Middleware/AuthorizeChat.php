@@ -29,7 +29,7 @@ final class AuthorizeChat
                 || (config('filament-ai.agent.enabled', true) && config('filament-ai.agent.chat.enabled', true)),
             404,
         );
-        abort_unless(ChatAbilities::allows('view', $request->user()), 403);
+        abort_unless(ChatAbilities::canUseChat($request->user()), 403);
 
         return $next($request);
     }

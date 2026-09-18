@@ -21,6 +21,9 @@ use Throwable;
  */
 final class ConversationTranscript
 {
+    /** The tools whose output carries citable passages. */
+    private const KNOWLEDGE_TOOLS = ['search_knowledge'];
+
     /**
      * The tables come from laravel/ai's publishable migrations, which a host
      * may not have run yet.
@@ -102,7 +105,7 @@ final class ConversationTranscript
     }
 
     /**
-     * @return list<array{role: string, content: string, tools: list<array{id: string, name: string, status: string}>}>
+     * @return list<array{role: string, content: string, tools: list<array{id: string, name: string, status: string}>, passages?: list<array<string, mixed>>}>
      */
     public function messages(string $conversationId): array
     {
@@ -157,10 +160,70 @@ final class ConversationTranscript
                 continue;
             }
 
-            $messages[] = ['role' => 'assistant', 'content' => (string) $row->content, 'tools' => $tools];
+            $messages[] = [
+                'role' => 'assistant',
+                'content' => (string) $row->content,
+                'tools' => $tools,
+                // A citation the reader cannot open is a decoration. The
+                // passages are not stored as data anywhere, but the text the
+                // knowledge tool returned is -- and this package wrote it, so
+                // it can read it back.
+                'passages' => $this->passagesFrom($row, $results),
+            ];
         }
 
         return $messages;
+    }
+
+    /**
+     * The passages a stored turn cited, recovered from the tool output.
+     *
+     * The format is the one `KnowledgeSearch::renderPassage()` writes:
+     *
+     *     [#3] Cronaca cittadina - p. 7 (score 0.71, document_id 12)
+     *     ...the passage...
+     *
+     * The score can be negative -- cosine similarity runs from -1 to 1, and a
+     * weak match is routinely below zero -- so the sign is part of the
+     * pattern. Anything that does not match is skipped rather than guessed at.
+     *
+     * @param  array<string, array<string, mixed>>  $results
+     * @return list<array<string, mixed>>
+     */
+    private function passagesFrom(ConversationMessage $row, array $results): array
+    {
+        $passages = [];
+
+        foreach ((array) $row->tool_calls as $call) {
+            if (! is_array($call) || ! in_array($call['name'] ?? '', self::KNOWLEDGE_TOOLS, true)) {
+                continue;
+            }
+
+            $output = $results[(string) ($call['id'] ?? '')]['result'] ?? null;
+
+            if (! is_string($output) || $output === '') {
+                continue;
+            }
+
+            $blocks = preg_split('/\n(?=\[#\d+\])/', $output) ?: [];
+
+            foreach ($blocks as $block) {
+                if (preg_match('/^\[#(\d+)\]\s+(.*?)\s+\(score\s+(-?[0-9.]+),\s+document_id\s+(.*?)\)\n?(.*)$/s', trim($block), $matches) !== 1) {
+                    continue;
+                }
+
+                $passages[] = [
+                    'marker' => (int) $matches[1],
+                    'label' => trim($matches[2]),
+                    'document_id' => trim($matches[4]),
+                    'score' => (float) $matches[3],
+                    'content' => trim($matches[5]),
+                    'url' => null,
+                ];
+            }
+        }
+
+        return $passages;
     }
 
     /**

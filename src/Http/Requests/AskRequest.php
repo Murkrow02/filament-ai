@@ -27,7 +27,7 @@ class AskRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return ChatAbilities::allows('view', $this->user());
+        return ChatAbilities::canUseChat($this->user());
     }
 
     /**

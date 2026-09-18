@@ -9,6 +9,7 @@ use Laravel\Ai\Ai;
 use Laravel\Ai\Gateway\FakeTextGateway;
 use Laravel\Ai\Models\Conversation;
 use Laravel\Ai\Responses\Data\ToolCall;
+use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 /*
@@ -160,4 +161,46 @@ it('says so instead of failing when laravel/ai is not installed', function (): v
     $this->postJson('/ai/chat/ask', ['question' => 'How many books are there?'])
         ->assertStatus(409)
         ->assertJsonPath('message', __('filament-ai::messages.assistant.not_installed'));
+});
+
+it('streams the passages a citation points at, and keeps them for a reload', function (): void {
+    config()->set('filament-ai.chunking.target_tokens', 30);
+    config()->set('filament-ai.chunking.overlap_tokens', 0);
+    config()->set('filament-ai.chunking.min_tokens', 0);
+
+    $book = TestBook::create(['title' => 'Cronaca cittadina']);
+    $book->pages()->create([
+        'number' => 7,
+        'content' => 'Il podesta Guido Novello convoco il consiglio generale nel mese di marzo.',
+    ]);
+
+    FilamentAi::ingestSync('books');
+
+    scriptAgent([
+        new ToolCall('call_1', 'search_knowledge', ['query' => 'chi convoco il consiglio']),
+        'Lo convoco il podesta Guido Novello [#1].',
+    ]);
+
+    $events = eventsOf($this->post('/ai/chat/ask', ['question' => 'Chi convoco il consiglio?']));
+
+    $sources = lastEvent($events, 'sources');
+    $done = lastEvent($events, 'done');
+
+    expect($sources['passages'][0]['marker'])->toBe(1)
+        ->and($sources['passages'][0]['label'])->toContain('Cronaca cittadina')
+        ->and($done['passages'])->toHaveCount(count($sources['passages']))
+        // The marker in the answer is the page's link to the passage, so it
+        // must survive into the text the page renders.
+        ->and($done['answer'])->toContain('[#1]');
+
+    // Reopened later, the turn still shows what it cited: the passages are
+    // read back out of the tool output laravel/ai stored.
+    $reopened = $this->getJson('/ai/chat/c/'.$done['conversation'].'/messages')->assertOk()->json();
+
+    $passages = collect($reopened['messages'])->pluck('passages')->filter()->flatten(1)->all();
+
+    expect($passages)->not->toBeEmpty()
+        ->and($passages[0]['marker'])->toBe(1)
+        ->and($passages[0]['label'])->toContain('Cronaca cittadina')
+        ->and($passages[0]['content'])->toContain('consiglio');
 });

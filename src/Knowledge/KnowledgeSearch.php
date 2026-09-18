@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Murkrow\FilamentAi\Knowledge;
 
 use Murkrow\FilamentAi\Contracts\Retriever;
+use Murkrow\FilamentAi\Agent\Chat\CitedPassages;
 use Murkrow\FilamentAi\Data\RetrievalOptions;
 use Murkrow\FilamentAi\Data\ScoredChunk;
 use Murkrow\FilamentAi\Models\Chunk;
@@ -30,6 +31,7 @@ final class KnowledgeSearch
     public function __construct(
         private readonly Retriever $retriever,
         private readonly SourceRegistry $sources,
+        private readonly CitedPassages $cited,
     ) {}
 
     /**
@@ -84,8 +86,24 @@ final class KnowledgeSearch
         $chunks = collect($result->chunks)->values()->all();
         $blocks = [];
 
+        // Markers continue across the calls of one turn, so an answer citing
+        // "[#4]" points at the fourth passage the assistant read, not at the
+        // first result of its second search.
+        $offset = $this->cited->offset();
+
         foreach ($chunks as $index => $chunk) {
-            $blocks[] = $this->renderPassage($index + 1, $chunk);
+            $marker = $offset + $index + 1;
+
+            $blocks[] = $this->renderPassage($marker, $chunk);
+
+            $this->cited->push([
+                'label' => ($chunk->documentTitle ?? $chunk->externalId).' - '
+                    .$this->positionLabel($chunk->sourceKey, $chunk->positionStart, $chunk->positionEnd),
+                'document_id' => (string) $chunk->externalId,
+                'score' => round($chunk->score, 4),
+                'content' => $chunk->content,
+                'url' => $chunk->url,
+            ]);
         }
 
         return new KnowledgeResult(implode("\n\n", $blocks), chunks: $chunks);

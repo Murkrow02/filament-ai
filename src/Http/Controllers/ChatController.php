@@ -73,8 +73,10 @@ class ChatController
     private function page(Request $request, ?string $conversation): View
     {
         // The page, unlike the endpoints behind it, belongs to the standalone
-        // chat alone: switching that off leaves the panel's chat working.
+        // chat alone: switching that off leaves the panel's chat working, and
+        // so does denying its ability.
         abort_unless(config('filament-ai.chat.enabled', true), 404);
+        abort_unless(ChatAbilities::allows('view', $request->user()), 403);
 
         $data = $this->payload->build($request->user(), [
             'conversation' => $conversation,

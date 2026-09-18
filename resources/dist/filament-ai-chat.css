@@ -626,3 +626,44 @@ a.fai-step:hover { color: var(--fai-text); }
 .fai-answer a { color: var(--fai-accent); text-decoration: underline; text-underline-offset: 2px; }
 .fai-thread__mode { display: inline-flex; color: var(--fai-text-faint); margin-right: 4px; }
 .fai-thread__mode svg { width: 13px; height: 13px; }
+
+/* ------------------------------------------------------------- citations */
+
+/* A marker in the answer, and the passage it points at. The assistant is told
+   to cite what it read; this is what makes the citation worth making. */
+.fai-cite {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px; margin: 0 2px;
+  border: 1px solid var(--fai-border-strong); border-radius: 999px;
+  background: var(--fai-bg-sunken); color: var(--fai-text-muted);
+  font: inherit; font-size: 11px; line-height: 1; vertical-align: 1px; cursor: pointer;
+}
+.fai-cite:hover { color: var(--fai-text); border-color: var(--fai-accent); }
+
+.fai-sources { margin-top: 12px; border-top: 1px solid var(--fai-border); padding-top: 8px; }
+.fai-sources summary {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--fai-text-muted); cursor: pointer; list-style: none;
+}
+.fai-sources summary::-webkit-details-marker { display: none; }
+.fai-sources summary:hover { color: var(--fai-text); }
+.fai-source { margin-top: 10px; padding: 8px 10px; border-radius: var(--fai-radius); background: var(--fai-bg-sunken); }
+.fai-source__head { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 12.5px; }
+.fai-source__marker {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; border-radius: 999px;
+  background: var(--fai-accent); color: #fff; font-size: 11px;
+}
+.fai-source__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fai-source__score { color: var(--fai-text-faint); font-family: var(--fai-mono); font-size: 11px; }
+.fai-source__link { display: inline-flex; color: var(--fai-text-muted); }
+.fai-source__text {
+  margin: 6px 0 0; font-size: 12.5px; color: var(--fai-text-muted);
+  max-height: 8.5em; overflow-y: auto; white-space: pre-wrap;
+}
+.fai-source--flash { animation: fai-flash 1.2s ease-out; }
+
+@keyframes fai-flash {
+  from { background: color-mix(in oklab, var(--fai-accent) 22%, transparent); }
+  to { background: var(--fai-bg-sunken); }
+}
