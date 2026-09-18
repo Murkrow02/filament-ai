@@ -6,6 +6,7 @@ namespace Murkrow\FilamentAi;
 
 use Illuminate\Contracts\Foundation\CachesConfiguration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Murkrow\FilamentAi\Answering\BladePromptRenderer;
@@ -110,14 +111,45 @@ class FilamentAiServiceProvider extends ServiceProvider
 
         EmbeddingRateLimiter::register();
 
-        // Database-backed overrides layer onto config, so the rest of the
-        // package keeps reading plain config() and stays trivially testable.
+        $this->applySettings();
+
+        $this->registerMcpServer();
+        $this->registerChat();
+    }
+
+    /**
+     * Database-backed overrides layer onto config, so the rest of the package
+     * keeps reading plain config() and stays trivially testable.
+     *
+     * Applying them once at boot is only right for a process that dies with
+     * the request. Octane and Horizon keep a booted application alive for
+     * thousands of them, and there a setting saved in the panel would not take
+     * effect until the next deploy -- which is exactly how it looked: the form
+     * saved, the page kept behaving as before. So every request, task and job
+     * re-reads them.
+     */
+    private function applySettings(): void
+    {
         $this->app->booted(function (): void {
             $this->app->make(SettingsRepository::class)->apply();
         });
 
-        $this->registerMcpServer();
-        $this->registerChat();
+        $events = array_values(array_filter([
+            \Laravel\Octane\Events\RequestReceived::class,
+            \Laravel\Octane\Events\TaskReceived::class,
+            \Laravel\Octane\Events\TickReceived::class,
+        ], static fn (string $event): bool => class_exists($event)));
+
+        $events[] = \Illuminate\Queue\Events\JobProcessing::class;
+
+        Event::listen($events, static function (object $event): void {
+            // Octane hands the request its own container; writing the config
+            // into that one keeps the change scoped to the request, the way
+            // Octane expects.
+            $container = property_exists($event, 'sandbox') ? $event->sandbox : app();
+
+            $container->make(SettingsRepository::class)->refresh();
+        });
     }
 
     /**

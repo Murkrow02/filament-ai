@@ -57,6 +57,8 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
 
     protected ?int $maxSteps = null;
 
+    protected ?string $model = null;
+
     /** @var list<string>|null */
     protected ?array $onlyTools = null;
 
@@ -207,9 +209,20 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
         return blank($steps) ? null : (int) $steps;
     }
 
+    /**
+     * Answer this one with a given model, where the chat lets a user choose.
+     * Null falls back to what is configured.
+     */
+    public function withModel(?string $model): static
+    {
+        $this->model = blank($model) ? null : $model;
+
+        return $this;
+    }
+
     public function model(): ?string
     {
-        $model = config('rag.agent.model') ?? config('rag.llm.model');
+        $model = $this->model ?? config('rag.agent.model') ?? config('rag.llm.model');
 
         return blank($model) ? null : (string) $model;
     }

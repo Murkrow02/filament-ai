@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Laravel\Ai\Ai;
@@ -11,7 +12,7 @@ use Laravel\Ai\Responses\Data\ToolCall;
 use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 /*
- * The agent mode of the chat, over the wire the page actually uses.
+ * The chat, over the wire the page actually uses.
  *
  * Responses are scripted on the text provider rather than through
  * PanelAssistant::fake(), which skips approval resumption -- the one thing
@@ -28,46 +29,10 @@ beforeEach(function (): void {
     config()->set('ai.conversations.generate_title', false);
 });
 
-/**
- * @param  list<mixed>  $responses
- */
-function scriptAgent(array $responses): void
-{
-    Ai::textProvider()->useTextGateway(new FakeTextGateway($responses));
-}
-
-/**
- * Every server-sent event of a response, in order.
- *
- * @return list<array{event: string, data: array<string, mixed>}>
- */
-function eventsOf(TestResponse $response): array
-{
-    preg_match_all('/event: (\S+)\ndata: (.*)\n/', $response->streamedContent(), $matches, PREG_SET_ORDER);
-
-    return array_map(static fn (array $match): array => [
-        'event' => $match[1],
-        'data' => json_decode($match[2], true),
-    ], $matches);
-}
-
-/**
- * @param  list<array{event: string, data: array<string, mixed>}>  $events
- * @return array<string, mixed>
- */
-function lastEvent(array $events, string $name): array
-{
-    $found = array_values(array_filter($events, static fn (array $event): bool => $event['event'] === $name));
-
-    expect($found)->not->toBeEmpty("no {$name} event was sent");
-
-    return end($found)['data'];
-}
-
 it('streams an agent answer and keeps the conversation', function (): void {
     scriptAgent(['There are no books yet.']);
 
-    $response = $this->post('/rag/chat/ask', ['question' => 'How many books are there?', 'mode' => 'agent']);
+    $response = $this->post('/rag/chat/ask', ['question' => 'How many books are there?']);
 
     $response->assertOk();
     expect($response->headers->get('Content-Type'))->toStartWith('text/event-stream');
@@ -76,7 +41,6 @@ it('streams an agent answer and keeps the conversation', function (): void {
     $done = lastEvent($events, 'done');
 
     expect(array_column($events, 'event'))->toContain('start', 'delta', 'done')
-        ->and($done['mode'])->toBe('agent')
         ->and($done['answer'])->toBe('There are no books yet.')
         ->and($done['pending'])->toBe([])
         ->and($done['conversation'])->toBe(Conversation::query()->sole()->id);
@@ -90,7 +54,6 @@ it('asks for approval before a write and applies it once approved', function ():
 
     $events = eventsOf($this->post('/rag/chat/ask', [
         'question' => 'Add a book called Statuti del comune',
-        'mode' => 'agent',
     ]));
 
     $approval = lastEvent($events, 'approval');
@@ -106,7 +69,7 @@ it('asks for approval before a write and applies it once approved', function ():
         ->and($done['pending'][0]['arguments'])->toBe(['title' => 'Statuti del comune'])
         ->and(TestBook::query()->count())->toBe(0);
 
-    $resumed = eventsOf($this->post("/rag/chat/a/{$done['conversation']}/decisions", [
+    $resumed = eventsOf($this->post("/rag/chat/c/{$done['conversation']}/decisions", [
         'decisions' => ['call_1' => true],
     ]));
 
@@ -125,10 +88,9 @@ it('discards a write the user rejects', function (): void {
 
     $done = lastEvent(eventsOf($this->post('/rag/chat/ask', [
         'question' => 'Add a book called Statuti del comune',
-        'mode' => 'agent',
     ])), 'done');
 
-    $after = lastEvent(eventsOf($this->post("/rag/chat/a/{$done['conversation']}/decisions", [
+    $after = lastEvent(eventsOf($this->post("/rag/chat/c/{$done['conversation']}/decisions", [
         'decisions' => ['call_1' => false],
     ])), 'done');
 
@@ -141,12 +103,10 @@ it('refuses a new question while a change awaits a decision', function (): void 
 
     $done = lastEvent(eventsOf($this->post('/rag/chat/ask', [
         'question' => 'Add a book called Statuti del comune',
-        'mode' => 'agent',
     ])), 'done');
 
     $this->postJson('/rag/chat/ask', [
         'question' => 'Never mind',
-        'mode' => 'agent',
         'conversation' => $done['conversation'],
     ])
         ->assertStatus(409)
@@ -158,11 +118,10 @@ it('will not resume on a decision for a call that is not waiting', function (): 
 
     $done = lastEvent(eventsOf($this->post('/rag/chat/ask', [
         'question' => 'Add a book called Statuti del comune',
-        'mode' => 'agent',
     ])), 'done');
 
     // Answering something else leaves the real call undecided: nothing runs.
-    $this->postJson("/rag/chat/a/{$done['conversation']}/decisions", ['decisions' => ['call_forged' => true]])
+    $this->postJson("/rag/chat/c/{$done['conversation']}/decisions", ['decisions' => ['call_forged' => true]])
         ->assertStatus(409);
 
     expect(TestBook::query()->count())->toBe(0);
@@ -176,8 +135,8 @@ it('keeps other people out of an agent conversation', function (): void {
         'title' => 'Someone else',
     ]);
 
-    $this->getJson("/rag/chat/a/{$foreign->id}/messages")->assertNotFound();
-    $this->postJson("/rag/chat/a/{$foreign->id}/decisions", ['decisions' => ['call_1' => true]])->assertNotFound();
+    $this->getJson("/rag/chat/c/{$foreign->id}/messages")->assertNotFound();
+    $this->postJson("/rag/chat/c/{$foreign->id}/decisions", ['decisions' => ['call_1' => true]])->assertNotFound();
 });
 
 it('reads an agent conversation back, pause included', function (): void {
@@ -185,26 +144,20 @@ it('reads an agent conversation back, pause included', function (): void {
 
     $done = lastEvent(eventsOf($this->post('/rag/chat/ask', [
         'question' => 'Add a book called Statuti del comune',
-        'mode' => 'agent',
     ])), 'done');
 
-    $this->getJson("/rag/chat/a/{$done['conversation']}/messages")
+    $this->getJson("/rag/chat/c/{$done['conversation']}/messages")
         ->assertOk()
-        ->assertJsonPath('mode', 'agent')
         ->assertJsonPath('messages.0.role', 'user')
         ->assertJsonPath('pending.0.id', 'call_1');
 });
 
-it('answers from the knowledge pipeline when the agent is not allowed', function (): void {
-    config()->set('rag.chat.abilities.agent', false);
-    config()->set('rag.answering.stream', false);
+it('says so instead of failing when laravel/ai is not installed', function (): void {
+    Schema::drop('agent_conversation_messages');
 
     scriptAgent(['This must not be called.']);
 
-    // The mode is dropped before validation, so the question goes to the
-    // pipeline: no agent conversation is ever created.
-    $this->postJson('/rag/chat/ask', ['question' => 'How many books are there?', 'mode' => 'agent'])
-        ->assertOk();
-
-    expect(Conversation::query()->count())->toBe(0);
+    $this->postJson('/rag/chat/ask', ['question' => 'How many books are there?'])
+        ->assertStatus(409)
+        ->assertJsonPath('message', __('rag::rag.assistant.not_installed'));
 });

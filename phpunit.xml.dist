@@ -14,9 +14,6 @@
         <testsuite name="Filament">
             <directory>tests/Filament</directory>
         </testsuite>
-        <testsuite name="Web">
-            <directory>tests/Web</directory>
-        </testsuite>
         <testsuite name="Pgvector">
             <directory>tests/Pgvector</directory>
         </testsuite>

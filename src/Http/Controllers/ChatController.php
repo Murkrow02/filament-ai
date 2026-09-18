@@ -6,23 +6,23 @@ namespace Murkrow\FilamentAi\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Murkrow\FilamentAi\Agent\Chat\AssistantTurn;
 use Murkrow\FilamentAi\Chat\ChatAbilities;
 use Murkrow\FilamentAi\Chat\ChatPayload;
-use Murkrow\FilamentAi\Http\Concerns\InteractsWithConversations;
-use Murkrow\FilamentAi\Models\Conversation;
-use Murkrow\FilamentAi\Models\QueryLog;
 
 /**
  * The chat page and everything around a conversation except asking.
+ *
+ * Conversations belong to laravel/ai's store -- the assistant's memory and the
+ * only place an approval pause can resume from -- so renaming and deleting go
+ * through the transcript rather than through a model of this package's own.
  */
 class ChatController
 {
-    use InteractsWithConversations;
-
     public function __construct(
         private readonly ChatPayload $payload,
+        private readonly AssistantTurn $turn,
     ) {}
 
     public function index(Request $request): View
@@ -30,91 +30,57 @@ class ChatController
         return $this->page($request, null);
     }
 
-    public function show(Request $request, Conversation $conversation): View
+    public function show(Request $request, string $conversation): View
     {
-        $this->authorizeConversation($request, $conversation);
-
         return $this->page($request, $conversation);
     }
 
     /**
      * The turns of one conversation, for switching threads without a reload.
      */
-    public function messages(Request $request, Conversation $conversation): JsonResponse
+    public function messages(Request $request, string $conversation): JsonResponse
     {
-        $this->authorizeConversation($request, $conversation);
+        $owned = $this->owned($request, $conversation);
 
-        return response()->json(
-            $this->payload->conversation($conversation, ChatAbilities::allowed($request->user()))
-        );
+        return response()->json($this->payload->conversation($owned));
     }
 
-    public function store(Request $request): JsonResponse
+    public function update(Request $request, string $conversation): JsonResponse
     {
-        abort_unless($this->payload->persists(ChatAbilities::allowed($request->user())), 403);
+        $owned = $this->owned($request, $conversation);
 
-        return response()->json($this->payload->summary($this->newConversation($request)), 201);
-    }
-
-    public function update(Request $request, Conversation $conversation): JsonResponse
-    {
-        $this->authorizeConversation($request, $conversation);
         abort_unless(ChatAbilities::allows('delete', $request->user()), 403);
 
         $data = $request->validate([
-            'title' => ['sometimes', 'nullable', 'string', 'max:200'],
-            'pinned' => ['sometimes', 'boolean'],
+            'title' => ['required', 'string', 'max:200'],
         ]);
 
-        $conversation->fill($data)->save();
-
-        return response()->json($this->payload->summary($conversation));
+        return response()->json([
+            'uuid' => $owned,
+            'title' => $this->turn->rename($owned, $request->user(), $data['title']),
+        ]);
     }
 
-    public function destroy(Request $request, Conversation $conversation): JsonResponse
+    public function destroy(Request $request, string $conversation): JsonResponse
     {
-        $this->authorizeConversation($request, $conversation);
+        $owned = $this->owned($request, $conversation);
+
         abort_unless(ChatAbilities::allows('delete', $request->user()), 403);
 
-        $conversation->delete();
-
-        return response()->json(['deleted' => true]);
+        return response()->json(['deleted' => $this->turn->delete($owned, $request->user())]);
     }
 
-    /**
-     * Thumbs up / down on one answer.
-     *
-     * Writes rag_queries.feedback, which has existed since the first migration
-     * and until now had nothing writing to it -- this is the evaluation signal
-     * the query log was designed to collect.
-     */
-    public function feedback(Request $request, QueryLog $query): JsonResponse
-    {
-        abort_unless(ChatAbilities::allows('feedback', $request->user()), 403);
-
-        $data = $request->validate([
-            'feedback' => ['required', Rule::in([-1, 0, 1])],
-        ]);
-
-        $owner = $request->user()?->getAuthIdentifier();
-        $owner = $owner === null ? null : (string) $owner;
-
-        if (! ChatAbilities::allows('all_conversations', $request->user())) {
-            abort_unless($query->user_id === $owner, 404);
-        }
-
-        $query->forceFill(['feedback' => (int) $data['feedback']])->save();
-
-        return response()->json(['feedback' => $query->feedback]);
-    }
-
-    private function page(Request $request, ?Conversation $conversation): View
+    private function page(Request $request, ?string $conversation): View
     {
         // The page, unlike the endpoints behind it, belongs to the standalone
         // chat alone: switching that off leaves the panel's chat working.
         abort_unless(config('rag.chat.enabled', true), 404);
 
-        $data = $this->payload->build($request->user(), $conversation, $this->options($request));
+        $data = $this->payload->build($request->user(), [
+            'conversation' => $conversation,
+            'resource' => $request->string('resource')->toString() ?: null,
+            'record' => $request->string('record')->toString() ?: null,
+        ]);
 
         return view('rag::chat.index', [
             'payload' => $data,
@@ -124,20 +90,17 @@ class ChatController
     }
 
     /**
-     * What the query string asks for: which mode, which agent thread, and
-     * which record the user came from. All of it is checked again inside the
-     * payload -- an ability that says no, a thread that is not theirs or a
-     * record they may not view simply produces nothing.
-     *
-     * @return array{mode: ?string, agent: ?string, resource: ?string, record: ?string}
+     * A conversation this user owns, or a 404. A thread that is not theirs and
+     * a thread that never existed are the same answer on purpose.
      */
-    private function options(Request $request): array
+    private function owned(Request $request, string $conversation): string
     {
-        return [
-            'mode' => $request->string('mode')->toString() ?: null,
-            'agent' => $request->string('agent')->toString() ?: null,
-            'resource' => $request->string('resource')->toString() ?: null,
-            'record' => $request->string('record')->toString() ?: null,
-        ];
+        abort_unless($this->turn->available(), 404);
+
+        $owned = $this->turn->ownedConversation($conversation, $request->user());
+
+        abort_if($owned === null, 404);
+
+        return $owned;
     }
 }

@@ -1,13 +1,13 @@
 {{--
-    The chat, as one component.
+    The assistant chat, as one component.
 
     There is exactly one chat in this package: the standalone page at
     /rag/chat and the panel page render this same markup, the same stylesheet
     and the same script. It is built out of plain HTML and CSS custom
     properties rather than Filament components on purpose -- that is what lets
-    it run on a page that has no panel around it -- and `embedded` rewrites
-    those properties from Filament's own tokens so it does not look like a
-    guest inside one.
+    it run on a page with no panel around it -- and `embedded` rewrites those
+    properties from Filament's own tokens so it does not look like a guest
+    inside one.
 
     Props:
       payload   -- everything the browser is allowed to know, from ChatPayload
@@ -26,7 +26,10 @@
 @php
     use Murkrow\FilamentAi\Http\Controllers\AssetController;
 
-    $showSettings = $abilities['advanced'] || $abilities['model'] || $abilities['sources'];
+    // The panel is the settings ability alone: what is inside it is gated
+    // field by field, and a panel with nothing in it is a button that opens an
+    // empty box.
+    $showSettings = $abilities['settings'] && $abilities['model'] && $payload['models'] !== [];
 
     // Rendered server-side so reopening a saved chat does not flash the empty
     // state before the script has run.
@@ -51,8 +54,6 @@
 
         @include('rag::chat.partials.composer')
     </main>
-
-    @include('rag::chat.partials.drawer')
 
     @if ($showSettings)
         <div class="rag-backdrop" id="rag-backdrop" hidden></div>

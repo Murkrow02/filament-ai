@@ -10,14 +10,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * The chat page's authorization vocabulary.
+ * The chat's authorization vocabulary.
  *
- * Every control on the page maps to one ability here, so "who is allowed to
- * see the cost" is answered in one place instead of being scattered through
- * a Blade template. The abilities are registered as ordinary Gate abilities
- * named `rag.chat.<name>`, which means a host can override any of them the
- * way it overrides anything else -- Gate::define, a policy, spatie's
- * permission strings -- without the package knowing about it.
+ * Every control on the page maps to one ability here, so "who may pick the
+ * model" is answered in one place instead of being scattered through a Blade
+ * template. The abilities are registered as ordinary Gate abilities named
+ * `rag.chat.<name>`, which means a host can override any of them the way it
+ * overrides anything else -- Gate::define, a policy, spatie's permission
+ * strings -- without the package knowing about it.
  *
  * The resolution order is deliberate:
  *
@@ -33,52 +33,40 @@ final class ChatAbilities
      * Every ability, with the answer given when neither the host's Gate nor
      * config has an opinion.
      *
-     * Defaults are open except `all_conversations`: the page already sits
-     * behind whatever middleware the host configured, and a chat that hides
-     * its own answer's sources by default would be pointless. Reading other
-     * people's conversations is the one thing that must be asked for.
+     * Defaults are open except `all_conversations`: the chat already sits
+     * behind whatever middleware the host configured, and it is gated again by
+     * `rag.agent.authorize`. Reading other people's conversations is the one
+     * thing that must be asked for.
      *
      * @var array<string, bool>
      */
     public const DEFAULTS = [
-        // Reaching the page at all.
+        // Reaching the chat at all.
         'view' => true,
 
         // The sidebar of saved conversations, and saving them in the first place.
         'history' => true,
 
-        // Renaming, pinning and deleting one's own conversations.
+        // Renaming and deleting one's own conversations.
         'delete' => true,
 
         // The model picker, and the model name under each answer.
         'model' => true,
 
-        // The knowledge-source picker.
-        'sources' => true,
+        // The settings panel itself. Denied, there is no gear button at all,
+        // whatever else is allowed inside it.
+        'settings' => true,
 
-        // The sources drawer and the clickable [#n] citation pills.
-        'passages' => true,
-
-        // Per-answer cost and token counts, and the conversation total.
+        // Per-answer cost and token counts.
         'cost' => true,
 
-        // top_k, min_score and retrieval-only mode, behind the gear button.
-        'advanced' => true,
-
-        // Thumbs up / down on an answer.
-        'feedback' => true,
-
-        // Copying or downloading a conversation.
-        'export' => true,
-
-        // The agent mode: tools, writes and approvals, as opposed to answers
-        // built from the knowledge base. Still subject to rag.agent.authorize:
-        // this ability can only take the mode away, never grant it.
-        'agent' => true,
-
-        // The iterative search toggle in the composer. Subject to
-        // rag.agent.solving.enabled the same way.
+        // The "keep trying" toggle: waves of attempts instead of one answer.
+        // It multiplies what a question costs, which is why it is its own
+        // ability rather than a corner of `settings`.
         'solve' => true,
+
+        // Copying an answer out.
+        'export' => true,
 
         // Reading conversations that belong to somebody else.
         'all_conversations' => false,

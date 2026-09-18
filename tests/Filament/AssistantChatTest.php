@@ -34,7 +34,7 @@ it('is registered on the panel', function (): void {
     expect(Filament::getPanel('testing')->getPages())->toContain(AssistantChat::class);
 });
 
-it('renders the chat component, bootstrapped in agent mode', function (): void {
+it('renders the chat component', function (): void {
     $html = Livewire::test(AssistantChat::class)->assertOk()->html();
 
     expect($html)->toContain('id="rag-chat"')
@@ -47,26 +47,21 @@ it('renders the chat component, bootstrapped in agent mode', function (): void {
 
     $payload = payloadFrom($html);
 
-    expect($payload['mode'])->toBe('agent')
-        ->and($payload['modes']['agent'])->toBeTrue()
-        ->and($payload['embedded'])->toBeTrue()
-        ->and($payload['endpoints']['agentDecide'])->toContain('/decisions');
+    expect($payload['embedded'])->toBeTrue()
+        ->and($payload['installed'])->toBeTrue()
+        ->and($payload['endpoints']['decide'])->toContain('/decisions');
 });
 
-it('offers the knowledge mode alongside the agent', function (): void {
-    $html = Livewire::test(AssistantChat::class)->html();
+it('is the same component the standalone page renders', function (): void {
+    $panel = Livewire::test(AssistantChat::class)->html();
+    $standalone = $this->get('/rag/chat')->getContent();
 
-    expect($html)->toContain('data-mode="knowledge"')
-        ->toContain('data-mode="agent"');
-});
-
-it('drops the agent mode when the assistant is switched off', function (): void {
-    config()->set('rag.chat.abilities.agent', false);
-
-    $payload = payloadFrom(Livewire::test(AssistantChat::class)->html());
-
-    expect($payload['modes']['agent'])->toBeFalse()
-        ->and($payload['mode'])->toBe('knowledge');
+    // One chat, two doors: the difference is the embedding flag and nothing
+    // else about the markup.
+    expect($panel)->toContain('id="rag-chat"')
+        ->and($standalone)->toContain('id="rag-chat"')
+        ->and(payloadFrom($panel)['embedded'])->toBeTrue()
+        ->and(payloadFrom($standalone)['embedded'])->toBeFalse();
 });
 
 it('will not open a conversation that belongs to someone else', function (): void {
@@ -130,22 +125,3 @@ it('explains itself instead of failing when laravel/ai tables are missing', func
         ->assertOk()
         ->assertSee('Publish and run laravel/ai');
 });
-
-/**
- * The bootstrap payload, read back out of the rendered page.
- *
- * Asserting on the rendered HTML rather than on the component's state is
- * deliberate: every server-side assertion passed once while the approval
- * buttons were dead in the browser, and that is not a mistake worth making
- * twice.
- *
- * @return array<string, mixed>
- */
-function payloadFrom(string $html): array
-{
-    expect($html)->toContain('id="rag-chat-payload"');
-
-    preg_match('/<script type="application\/json" id="rag-chat-payload">(.*?)<\/script>/s', $html, $matches);
-
-    return json_decode(html_entity_decode($matches[1], ENT_QUOTES), true);
-}

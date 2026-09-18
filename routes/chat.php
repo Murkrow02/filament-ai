@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| RAG chat routes
+| Assistant chat routes
 |--------------------------------------------------------------------------
 |
 | Registered automatically by the service provider, so there is nothing to
-| publish for the page to work. Publish this file with
+| publish for the chat to work. Publish this file with
 |
 |     php artisan vendor:publish --tag=rag-chat-routes
 |
@@ -17,20 +17,19 @@ declare(strict_types=1);
 | so it is not registered twice, and register the routes with the same names:
 | the page builds its own URLs from them.
 |
+| Everything except the two page routes is transport shared with the panel's
+| chat page, which renders the same component.
+|
 */
 
 use Illuminate\Support\Facades\Route;
-use Murkrow\FilamentAi\Http\Controllers\AskController;
-use Murkrow\FilamentAi\Http\Controllers\AssistantController;
 use Murkrow\FilamentAi\Http\Controllers\AssetController;
+use Murkrow\FilamentAi\Http\Controllers\AssistantController;
 use Murkrow\FilamentAi\Http\Controllers\ChatController;
 
-/*
- * The standalone page. Everything else in this file is transport, shared with
- * the panel page, so only these two check rag.chat.enabled -- and they check
- * it when the request arrives, not here: an application that flips the flag
- * at runtime has already had its routes bound.
- */
+// The standalone page. Both check rag.chat.enabled when the request arrives,
+// not here: an application that flips the setting at runtime has already had
+// its routes bound.
 Route::get('/', [ChatController::class, 'index'])->name('index');
 Route::get('c/{conversation}', [ChatController::class, 'show'])->name('show');
 
@@ -39,23 +38,15 @@ Route::get('c/{conversation}', [ChatController::class, 'show'])->name('show');
 // that ever requests them.
 Route::get('assets/{file}', AssetController::class)->name('asset');
 
-Route::post('conversations', [ChatController::class, 'store'])->name('store');
-
 Route::get('c/{conversation}/messages', [ChatController::class, 'messages'])->name('messages');
 Route::patch('c/{conversation}', [ChatController::class, 'update'])->name('update');
 Route::delete('c/{conversation}', [ChatController::class, 'destroy'])->name('destroy');
 
-Route::post('m/{query}/feedback', [ChatController::class, 'feedback'])->name('feedback');
+// Approving or rejecting what a paused turn is waiting on resumes it, and
+// streams what the assistant does next.
+Route::post('c/{conversation}/decisions', [AssistantController::class, 'decide'])->name('decide');
 
-/*
- * Agent threads live in laravel/ai's own tables, not in rag_conversations:
- * they are the only place a turn paused for approval can be resumed from. So
- * they get their own two routes rather than a shared model binding.
- */
-Route::get('a/{conversation}/messages', [AssistantController::class, 'messages'])->name('agent.messages');
-Route::post('a/{conversation}/decisions', [AssistantController::class, 'decide'])->name('agent.decide');
-
-$ask = Route::post('ask', AskController::class)->name('ask');
+$ask = Route::post('ask', [AssistantController::class, 'ask'])->name('ask');
 
 if (($throttle = config('rag.chat.throttle')) !== null && $throttle !== '') {
     $ask->middleware('throttle:'.$throttle);

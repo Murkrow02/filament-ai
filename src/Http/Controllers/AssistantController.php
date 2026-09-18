@@ -30,12 +30,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 /**
- * The chat page's other mode: the agent, with its tools and its approvals.
+ * Asking the assistant: one turn, streamed.
  *
- * Same page, same wire format. Where the knowledge mode streams an answer
- * built from retrieved passages, this streams a turn of the panel assistant:
- * text as it is written, a `tool` event whenever it reaches for something,
- * and an `approval` event when a change needs the user's word before it runs.
+ * Text as it is written, a `tool` event whenever it reaches for something, an
+ * `approval` event when a change needs the user's word before it runs, and
+ * `solve` events when the question was asked with "keep trying" on.
  */
 class AssistantController
 {
@@ -52,8 +51,7 @@ class AssistantController
     ) {}
 
     /**
-     * Ask the agent. Arrives here from AskController when the page is in agent
-     * mode, so the question has already been validated.
+     * Ask the assistant.
      */
     public function ask(AskRequest $request): StreamedResponse|JsonResponse
     {
@@ -82,7 +80,7 @@ class AssistantController
             $conversation,
             $request->contextResource(),
             $request->contextRecord(),
-        );
+        )->withModel($request->model());
 
         return $this->stream($request, $assistant, $request->question(), $conversation);
     }
@@ -110,7 +108,7 @@ class AssistantController
         $request->session()?->save();
 
         return response()->stream(function () use ($question, $context, $user): void {
-            $this->send('start', ['conversation' => null, 'mode' => 'agent', 'solving' => true]);
+            $this->send('start', ['conversation' => null, 'solving' => true]);
 
             try {
                 $run = app(Solver::class)->solve($question, new SolveOptions(
@@ -167,7 +165,6 @@ class AssistantController
 
         $this->send('done', [
             'conversation' => null,
-            'mode' => 'agent',
             'answer' => $run->status === SolveStatus::Solved
                 ? (string) ($run->best?->finalAnswer() ?? $run->message)
                 : (string) $run->message,
@@ -251,25 +248,6 @@ class AssistantController
     }
 
     /**
-     * One agent thread, for switching threads without a reload.
-     */
-    public function messages(Request $request, string $conversation): JsonResponse
-    {
-        abort_unless(ChatAbilities::allows('view', $request->user()) && $this->turn->available(), 403);
-
-        $owned = $this->turn->ownedConversation($conversation, $request->user());
-
-        abort_if($owned === null, 404);
-
-        return response()->json([
-            'uuid' => $owned,
-            'mode' => 'agent',
-            'messages' => $this->turn->messages($owned),
-            'pending' => $this->approvalsFor($owned),
-        ]);
-    }
-
-    /**
      * The turn itself, event by event.
      */
     private function stream(Request $request, PanelAssistant $assistant, Decisions|string $prompt, ?string $conversation): StreamedResponse
@@ -282,7 +260,7 @@ class AssistantController
         $request->session()?->save();
 
         return response()->stream(function () use ($assistant, $prompt, $conversation, $allowed): void {
-            $this->send('start', ['conversation' => $conversation, 'mode' => 'agent']);
+            $this->send('start', ['conversation' => $conversation]);
 
             try {
                 $stream = $assistant->stream($prompt);
@@ -354,7 +332,6 @@ class AssistantController
 
         return [
             'conversation' => $conversation,
-            'mode' => 'agent',
             'answer' => (string) ($response?->text ?? ''),
             // What is still waiting after the turn: laravel/ai's store is the
             // only authority on that, not the events we happened to see.

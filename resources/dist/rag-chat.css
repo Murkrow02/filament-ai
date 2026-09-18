@@ -583,7 +583,7 @@ body.rag-body,
 
   /* The page scrolls the panel, not the document: a fixed 100dvh island
      inside a Filament page would fight the panel's own sticky header. */
-  height: min(72vh, 46rem);
+  height: min(85vh, 46rem);
   border: 1px solid var(--rag-border);
   border-radius: 0.75rem;
   overflow: hidden;

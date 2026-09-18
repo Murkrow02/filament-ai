@@ -37,6 +37,46 @@ final class ConversationTranscript
         }
     }
 
+    /**
+     * Rename a conversation the user owns. Returns the stored title, or null
+     * when the conversation is not theirs.
+     */
+    public function rename(string $conversationId, object $user, string $title): ?string
+    {
+        $conversation = $this->forUser($user)->whereKey($conversationId)->first();
+
+        if ($conversation === null) {
+            return null;
+        }
+
+        $title = trim($title);
+
+        $conversation->forceFill(['title' => $title === '' ? null : mb_substr($title, 0, 200)])->save();
+
+        return $conversation->title;
+    }
+
+    /**
+     * Delete a conversation the user owns, messages included.
+     */
+    public function delete(string $conversationId, object $user): bool
+    {
+        $conversation = $this->forUser($user)->whereKey($conversationId)->first();
+
+        if ($conversation === null) {
+            return false;
+        }
+
+        ConversationMessage::query()->where('conversation_id', $conversation->getKey())->delete();
+
+        return (bool) $conversation->delete();
+    }
+
+    public function title(string $conversationId): ?string
+    {
+        return Conversation::query()->whereKey($conversationId)->value('title');
+    }
+
     public function owns(string $conversationId, object $user): bool
     {
         return $conversationId !== '' && $this->forUser($user)->whereKey($conversationId)->exists();

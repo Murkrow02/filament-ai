@@ -56,7 +56,7 @@ class AssistantChat extends Page
 
     public function getTitle(): string
     {
-        return (string) __('rag::rag.assistant.title');
+        return '';//(string) __('rag::rag.assistant.title');
     }
 
     public static function getNavigationGroup(): string|UnitEnum|null
@@ -108,11 +108,8 @@ class AssistantChat extends Page
     {
         $turn = app(AssistantTurn::class);
 
-        $payload = app(ChatPayload::class)->build(auth()->user(), null, [
-            // The panel page opens in agent mode; the knowledge mode is still
-            // one click away in the same component.
-            'mode' => 'agent',
-            'agent' => $this->conversationId,
+        $payload = app(ChatPayload::class)->build(auth()->user(), [
+            'conversation' => $this->conversationId,
             'resource' => $this->contextResource,
             'record' => $this->contextRecord,
         ]);

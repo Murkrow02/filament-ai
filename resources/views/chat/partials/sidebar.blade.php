@@ -25,11 +25,7 @@
     <div class="rag-threads" id="rag-threads"></div>
 
     <div class="rag-sidebar__foot">
-        @if ($abilities['cost'])
-            <span id="rag-total"></span>
-        @else
-            <span></span>
-        @endif
+        <span></span>
 
         <button type="button" class="rag-icon-btn" id="rag-theme"
                 title="{{ __('rag::rag.chat.toggle_theme') }}"

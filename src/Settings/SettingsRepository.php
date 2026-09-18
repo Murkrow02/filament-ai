@@ -107,6 +107,22 @@ final class SettingsRepository
     }
 
     /**
+     * Read the overrides again and layer them on.
+     *
+     * The in-process memo is what a long-lived worker would otherwise keep
+     * for its whole life: under Octane or Horizon the process outlives the
+     * request, so a setting saved in the panel would not be seen until the
+     * next deploy. The shared cache entry is left alone -- it is invalidated
+     * on write -- so this costs one cache read, not a query.
+     */
+    public function refresh(): void
+    {
+        $this->cache = null;
+
+        $this->apply();
+    }
+
+    /**
      * Layer the stored overrides onto the config repository.
      */
     public function apply(): void

@@ -9,16 +9,14 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 use Murkrow\FilamentAi\Chat\ChatAbilities;
-use Murkrow\FilamentAi\Data\RetrievalOptions;
-use Murkrow\FilamentAi\Sources\SourceRegistry;
 
 /**
- * The one place a chat question turns into retrieval options.
+ * One question for the assistant.
  *
  * Hiding a control in the template is a presentation decision. This is the
  * authorization: a field whose ability is denied is dropped before validation
- * even sees it, so posting `top_k=30` by hand to an account that may not tune
- * retrieval gets the configured default, not an error and not the value.
+ * even sees it, so posting `model=...` by hand from an account that may not
+ * choose the model gets the configured one, not an error and not the value.
  */
 class AskRequest extends FormRequest
 {
@@ -64,23 +62,11 @@ class AskRequest extends FormRequest
             'question' => ['required', 'string', 'min:2', 'max:4000'],
             // Not validated as a uuid: an unusable thread id means "this
             // thread is gone", which is a reason to start a new one, never a
-            // reason to refuse to answer the question. AskController resolves
-            // it or opens a fresh conversation.
+            // reason to refuse to answer the question.
             'conversation' => ['sometimes', 'nullable', 'string', 'max:64'],
             'model' => ['sometimes', 'nullable', 'string', Rule::in($this->modelKeys())],
-            'sources' => ['sometimes', 'array'],
-            'sources.*' => ['string', Rule::in(app(SourceRegistry::class)->keys())],
-            // The ceiling matches rag.settings.overridable's, so a value the
-            // control panel accepts can never be rejected here.
-            'top_k' => ['sometimes', 'integer', 'min:1', 'max:50'],
-            'min_score' => ['sometimes', 'numeric', 'min:0', 'max:1'],
-            'retrieval_only' => ['sometimes', 'boolean'],
 
-            // Which half of the page asked: the knowledge pipeline, or the
-            // agent with its tools and approvals.
-            'mode' => ['sometimes', 'nullable', Rule::in(['knowledge', 'agent'])],
-
-            // Agent mode only: keep trying in waves instead of answering once.
+            // Keep trying in waves instead of answering once.
             'solve' => ['sometimes', 'boolean'],
 
             // The page the user is on, so "this order" resolves. Checked
@@ -100,20 +86,6 @@ class AskRequest extends FormRequest
 
         if (! $this->allows('model')) {
             $drop[] = 'model';
-        }
-
-        if (! $this->allows('sources')) {
-            $drop[] = 'sources';
-        }
-
-        if (! $this->allows('advanced')) {
-            $drop = [...$drop, 'top_k', 'min_score', 'retrieval_only'];
-        }
-
-        if (! $this->allows('agent')) {
-            // Without the agent there is no agent mode and nothing to solve
-            // with: both fall back to the knowledge pipeline.
-            $drop = [...$drop, 'mode', 'solve'];
         }
 
         if (! $this->allows('solve')) {
@@ -137,27 +109,13 @@ class AskRequest extends FormRequest
         return is_string($model) && $model !== '' ? $model : null;
     }
 
-    public function retrievalOnly(): bool
-    {
-        // Retrieval with no model call is a knowledge-mode idea: the agent has
-        // no passages to return.
-        return ! $this->isAgentMode() && (bool) $this->validated('retrieval_only', false);
-    }
-
-    public function isAgentMode(): bool
-    {
-        return $this->validated('mode') === 'agent';
-    }
-
     /**
      * Whether this question should be answered by waves of attempts instead of
      * one turn. Only ever true when solving is switched on for real.
      */
     public function solves(): bool
     {
-        return $this->isAgentMode()
-            && (bool) $this->validated('solve', false)
-            && (bool) config('rag.agent.solving.enabled', false);
+        return (bool) $this->validated('solve', false) && (bool) config('rag.agent.solving.enabled', false);
     }
 
     public function conversationId(): ?string
@@ -181,35 +139,6 @@ class AskRequest extends FormRequest
         return is_string($record) && $record !== '' ? $record : null;
     }
 
-    /**
-     * Built through RetrievalOptions::fromArray so the chat speaks exactly the
-     * same request vocabulary as the MCP tools and the console commands.
-     */
-    public function retrievalOptions(): RetrievalOptions
-    {
-        return RetrievalOptions::fromArray(array_filter([
-            'sources' => $this->validated('sources'),
-            'top_k' => $this->validated('top_k'),
-            'min_score' => $this->validated('min_score'),
-        ], static fn ($value): bool => $value !== null && $value !== []));
-    }
-
-    /**
-     * What the answer was produced under, stored on the conversation so
-     * reopening it restores the same settings.
-     *
-     * @return array<string, mixed>
-     */
-    public function settings(): array
-    {
-        return array_filter([
-            'model' => $this->model(),
-            'sources' => $this->validated('sources'),
-            'top_k' => $this->validated('top_k'),
-            'min_score' => $this->validated('min_score'),
-        ], static fn ($value): bool => $value !== null && $value !== []);
-    }
-
     private function allows(string $ability): bool
     {
         $this->allowed ??= ChatAbilities::allowed($this->user());
@@ -227,10 +156,10 @@ class AskRequest extends FormRequest
         // The model the application is actually configured to use is always
         // acceptable, whether or not it was listed as a choice. Without this,
         // an app that offers no alternatives rejects its own default.
-        $default = (string) config('rag.llm.model', '');
-
-        if ($default !== '' && ! in_array($default, $keys, true)) {
-            $keys[] = $default;
+        foreach ([config('rag.agent.model'), config('rag.llm.model')] as $default) {
+            if (filled($default) && ! in_array((string) $default, $keys, true)) {
+                $keys[] = (string) $default;
+            }
         }
 
         return $keys;

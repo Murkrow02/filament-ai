@@ -1,5 +1,6 @@
-<x-filament-panels::page>
-    @if (! $installed)
+<x-filament-panels::page full-height="true">
+
+@if (! $installed)
         <x-filament::section icon="heroicon-o-exclamation-triangle" icon-color="warning">
             <p>{{ __('rag::rag.assistant.not_installed') }}</p>
         </x-filament::section>

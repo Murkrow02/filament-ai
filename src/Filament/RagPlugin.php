@@ -77,7 +77,7 @@ class RagPlugin implements Plugin
      */
     protected function registerChatLink(Panel $panel): void
     {
-        if (! config('rag.filament.pages.chat_link', true) || ! config('rag.chat.enabled', true)) {
+        if (! config('rag.filament.pages.chat_link', true)) {
             return;
         }
 
@@ -117,7 +117,11 @@ class RagPlugin implements Plugin
                 ->group(fn () => config('rag.filament.navigation_group', 'Knowledge'))
                 ->sort((int) config('rag.filament.navigation_sort', 90) + 3)
                 ->url(fn () => $url)
-                ->visible(fn (): bool => ChatAbilities::allows('view')),
+                // Both checks belong here rather than around the
+                // registration: the panel is built once per worker under
+                // Octane, and a page switched off in the settings has to
+                // disappear on the next render, not on the next deploy.
+                ->visible(fn (): bool => config('rag.chat.enabled', true) && ChatAbilities::allows('view')),
         ]);
     }
 

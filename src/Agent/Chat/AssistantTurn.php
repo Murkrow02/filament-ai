@@ -123,6 +123,27 @@ final class AssistantTurn
         return $conversationId === null ? [] : $this->transcript->messages($conversationId);
     }
 
+    public function title(?string $conversationId): ?string
+    {
+        return $conversationId === null ? null : $this->transcript->title($conversationId);
+    }
+
+    /**
+     * Rename a thread the user owns. Null when it is not theirs.
+     */
+    public function rename(string $conversationId, ?Authenticatable $user, string $title): ?string
+    {
+        return $user === null ? null : $this->transcript->rename($conversationId, $user, $title);
+    }
+
+    /**
+     * Delete a thread the user owns, its messages included.
+     */
+    public function delete(string $conversationId, ?Authenticatable $user): bool
+    {
+        return $user !== null && $this->transcript->delete($conversationId, $user);
+    }
+
     /**
      * @return list<array{id: string, title: string, updated_at: ?string}>
      */
