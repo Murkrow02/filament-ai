@@ -9,6 +9,8 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-09-21
+
 ### Added
 
 - `ai:status` names any `RAG_*` variable still in the environment and prints
@@ -172,7 +174,8 @@ inside a Filament panel.
 - The knowledge settings page no longer writes back the agent's settings: it
   rendered no field for them but carried them in its state.
 
-[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v4.0.2...HEAD
+[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v4.1.0...HEAD
+[4.1.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v4.1.0
 [4.0.2]: https://github.com/Murkrow02/filament-ai/releases/tag/v4.0.2
 [4.0.1]: https://github.com/Murkrow02/filament-ai/releases/tag/v4.0.1
 [4.0.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v4.0.0
