@@ -47,6 +47,8 @@ class StatusCommand extends Command
 
     private function showOverview(SourceRegistry $sources): void
     {
+        $this->warnAboutLegacyEnvironment();
+
         $model = (string) config('filament-ai.embeddings.model');
         $dimensions = (int) config('filament-ai.embeddings.dimensions');
 
@@ -132,6 +134,45 @@ class StatusCommand extends Command
         $this->components->twoColumnDetail('embedding model', $model.' <fg=gray>('.$dimensions.'d)</>');
 
         $this->warnAboutIndex();
+    }
+
+    /**
+     * Environment variables this package stopped reading when it took its own
+     * name.
+     *
+     * A renamed variable does not fail: it is simply not there, and the
+     * package quietly uses its own default -- which is how an application
+     * configured for one provider spent a day answering 401 from another.
+     * Silence is the wrong answer here, so this says so out loud.
+     */
+    private function warnAboutLegacyEnvironment(): void
+    {
+        $legacy = array_values(array_filter(
+            array_unique([...array_keys($_ENV), ...array_keys($_SERVER)]),
+            static fn (string $name): bool => str_starts_with($name, 'RAG_') || str_starts_with($name, 'HORIZON_RAG_'),
+        ));
+
+        if ($legacy === []) {
+            return;
+        }
+
+        sort($legacy);
+
+        $this->components->error('These variables are no longer read; rename them (see CHANGELOG 4.0.0):');
+
+        foreach (array_slice($legacy, 0, 12) as $name) {
+            $renamed = str_starts_with($name, 'HORIZON_RAG_')
+                ? 'HORIZON_FILAMENT_AI_'.substr($name, strlen('HORIZON_RAG_'))
+                : 'FILAMENT_AI_'.substr($name, strlen('RAG_'));
+
+            $this->line('  <fg=red>'.$name.'</> -> <fg=green>'.$renamed.'</>');
+        }
+
+        if (count($legacy) > 12) {
+            $this->line('  <fg=gray>and '.(count($legacy) - 12).' more</>');
+        }
+
+        $this->newLine();
     }
 
     private function showRun(string $uuid): void

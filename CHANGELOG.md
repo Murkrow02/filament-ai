@@ -9,6 +9,14 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+### Added
+
+- `ai:status` names any `RAG_*` variable still in the environment and prints
+  what it should be called now. A renamed variable does not fail -- it is
+  simply not read, and the package falls back to its own defaults, which is
+  how an application configured for DeepSeek spent a day answering 401 from
+  OpenAI.
+
 ## [4.0.2] - 2026-09-19
 
 ### Fixed

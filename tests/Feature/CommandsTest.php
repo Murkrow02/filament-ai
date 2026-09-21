@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Artisan;
 use Murkrow\FilamentAi\Facades\FilamentAi;
 use Murkrow\FilamentAi\Models\Chunk;
 use Murkrow\FilamentAi\Models\Document;
@@ -177,4 +178,27 @@ it('warns when no source is configured', function (): void {
 
 it('reports a vector store that cannot be used', function (): void {
     $this->artisan('ai:vector:install')->assertExitCode(0);
+});
+
+it('says out loud when a variable still uses the old name', function (): void {
+    // A renamed variable does not fail, it is simply not read: the package
+    // uses its own default instead, which is how an application configured
+    // for one provider spent a day answering 401 from another.
+    $_ENV['RAG_LLM_PROVIDER'] = 'deepseek';
+
+    try {
+        Artisan::call('ai:status');
+        $output = Artisan::output();
+    } finally {
+        unset($_ENV['RAG_LLM_PROVIDER']);
+    }
+
+    expect($output)->toContain('no longer read')
+        ->toContain('RAG_LLM_PROVIDER -> FILAMENT_AI_LLM_PROVIDER');
+});
+
+it('says nothing when every name is current', function (): void {
+    Artisan::call('ai:status');
+
+    expect(Artisan::output())->not->toContain('no longer read');
 });
