@@ -177,6 +177,64 @@ final class ConversationTranscript
         return $messages;
     }
 
+    /**
+     * The whole conversation for whoever audits it: every message with its
+     * time and status, every tool call with its arguments and what it
+     * returned, the tokens each answer used, and the error a failed turn
+     * died with. Not for the chat itself, which shows people sentences.
+     *
+     * @return list<array{role: string, content: string, at: ?string, status: ?string, error: ?string, input_tokens: ?int, output_tokens: ?int, tools: list<array{name: string, label: string, arguments: array<string, mixed>, result: ?string, status: string}>}>
+     */
+    public function auditTrail(string $conversationId): array
+    {
+        $labels = app(ToolLabels::class);
+        $trail = [];
+
+        foreach ($this->rows($conversationId) as $row) {
+            $tools = [];
+
+            foreach ($row->role === 'user' ? [] : $row->tool_calls as $call) {
+                if (! is_array($call)) {
+                    continue;
+                }
+
+                $name = (string) ($call['name'] ?? '');
+                $result = $call['result'] ?? null;
+
+                $tools[] = [
+                    'name' => $name,
+                    'label' => $labels->label($name),
+                    'arguments' => is_array($call['arguments'] ?? null) ? $call['arguments'] : [],
+                    'result' => $result === null ? null : (is_string($result) ? $result : (string) json_encode($result, JSON_UNESCAPED_UNICODE)),
+                    'status' => match (true) {
+                        ! PendingApproval::isAnswered($call) => 'pending',
+                        (bool) ($call['denied'] ?? false) => 'denied',
+                        (bool) ($call['failed'] ?? false), is_string($result) && str_starts_with($result, 'Error:') => 'failed',
+                        default => 'done',
+                    },
+                ];
+            }
+
+            $usage = $row->getAttribute('usage');
+            $usage = is_array($usage) ? $usage : [];
+
+            $trail[] = [
+                'role' => (string) $row->role,
+                'content' => (string) $row->content,
+                'at' => $row->created_at?->toIso8601String(),
+                'status' => $row->status?->value,
+                'error' => $row->status === MessageStatus::Failed ? $this->errorOf($row) : null,
+                // laravel/ai 1.0 names them input/output; rows written by 0.x
+                // before the backfill still say prompt/completion.
+                'input_tokens' => isset($usage['input_tokens']) ? (int) $usage['input_tokens'] : (isset($usage['prompt_tokens']) ? (int) $usage['prompt_tokens'] : null),
+                'output_tokens' => isset($usage['output_tokens']) ? (int) $usage['output_tokens'] : (isset($usage['completion_tokens']) ? (int) $usage['completion_tokens'] : null),
+                'tools' => $tools,
+            ];
+        }
+
+        return $trail;
+    }
+
     private function errorOf(ConversationMessage $row): ?string
     {
         $meta = $row->getAttribute('meta');

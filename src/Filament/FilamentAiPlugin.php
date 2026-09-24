@@ -18,6 +18,7 @@ use Murkrow\FilamentAi\Filament\Pages\IngestKnowledge;
 use Murkrow\FilamentAi\Filament\Pages\KnowledgeDashboard;
 use Murkrow\FilamentAi\Filament\Pages\KnowledgePlayground;
 use Murkrow\FilamentAi\Filament\Pages\KnowledgeSettings;
+use Murkrow\FilamentAi\Filament\Resources\AssistantConversationResource;
 use Murkrow\FilamentAi\Filament\Resources\DocumentResource;
 use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource;
 use Murkrow\FilamentAi\Filament\Resources\QueryResource;
@@ -142,6 +143,7 @@ class FilamentAiPlugin implements Plugin
             config('filament-ai.filament.resources.runs', true) ? IngestionRunResource::class : null,
             config('filament-ai.filament.resources.documents', true) ? DocumentResource::class : null,
             config('filament-ai.filament.resources.queries', true) ? QueryResource::class : null,
+            config('filament-ai.agent.enabled', true) && config('filament-ai.filament.resources.conversations', true) ? AssistantConversationResource::class : null,
             // Only worth a navigation entry where solving is switched on.
             config('filament-ai.agent.solving.enabled', false) ? SolveRunResource::class : null,
         ]));

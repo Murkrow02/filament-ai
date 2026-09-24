@@ -680,6 +680,11 @@ Restrict what MCP can reach with `filament-ai.mcp.sources`. An empty allow-list 
 
 That is the whole installation. Add `'Knowledge'` to your panel's `navigationGroups()`, or point `filament-ai.filament.navigation_group` at a group you already have.
 
+Everything under it is gated by `filament-ai.filament.authorize`. Among the pages:
+
+- **Questions** (`/ai/queries`) -- the knowledge base's own answers: the playground, `ai:ask`, MCP.
+- **Assistant conversations** (`/ai/conversations`) -- every conversation anyone had with the assistant, read-only: who asked what and when, the answer, each tool it called with its arguments and result, tokens, and the error a failed turn died with. Filter by user or by failures. Switch it off with `filament-ai.filament.resources.conversations`.
+
 ### Styling
 
 Nothing to build. The panel's pages are styled with Filament's own components

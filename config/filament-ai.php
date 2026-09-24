@@ -660,6 +660,9 @@ return [
             'runs' => true,
             'documents' => true,
             'queries' => true,
+            // Every assistant conversation, read-only, for whoever may open
+            // the knowledge pages.
+            'conversations' => true,
         ],
     ],
 

@@ -152,6 +152,22 @@ return [
         'not_editable_body' => 'The embedding model and its dimensions are missing from this form on purpose. Changing either invalidates every vector already stored, because vectors from two different models are not comparable and pgvector columns have a fixed width. Changing them is a deployment: update <code>config/filament-ai.php</code>, run <code>php artisan ai:vector:reindex</code>, then re-embed with <code>php artisan ai:ingest &lt;source&gt; --mode=embeddings_only</code>.',
     ],
 
+    'conversations' => [
+        'label' => 'Assistant conversation',
+        'plural' => 'Assistant conversations',
+        'last_activity' => 'Last activity',
+        'started' => 'Started',
+        'user' => 'User',
+        'title' => 'Title',
+        'messages' => 'Messages',
+        'failures' => 'Errors',
+        'failed_only' => 'With errors only',
+        'tokens' => 'Tokens in / out',
+        'arguments' => 'Arguments',
+        'result' => 'Result',
+        'empty' => 'This conversation has no messages.',
+    ],
+
     'tools' => [
         'list' => 'Search :plural',
         'view' => 'Open a :label',

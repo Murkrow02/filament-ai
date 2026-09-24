@@ -9,6 +9,19 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-09-24
+
+### Added
+
+- **Assistant conversations** in the panel (`/ai/conversations`): every
+  conversation anyone had with the assistant, read-only and gated like the
+  other knowledge pages. The list shows who, when, how many messages and
+  whether a turn failed, filterable by user and by failures; a conversation
+  opens turn by turn with the answer rendered, each tool call with its
+  arguments and result, the tokens used and the error of a failed turn.
+  The question log (`/ai/queries`) only ever held the knowledge base's own
+  answers, so assistant conversations had nowhere to be read.
+
 ## [5.0.2] - 2026-09-24
 
 ### Fixed
@@ -332,7 +345,8 @@ inside a Filament panel.
 - The knowledge settings page no longer writes back the agent's settings: it
   rendered no field for them but carried them in its state.
 
-[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v5.0.2...HEAD
+[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v5.1.0...HEAD
+[5.1.0]: https://github.com/Murkrow02/filament-ai/compare/v5.0.2...v5.1.0
 [5.0.2]: https://github.com/Murkrow02/filament-ai/compare/v5.0.1...v5.0.2
 [5.0.1]: https://github.com/Murkrow02/filament-ai/compare/v5.0.0...v5.0.1
 [5.0.0]: https://github.com/Murkrow02/filament-ai/compare/v4.1.0...v5.0.0

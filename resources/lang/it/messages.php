@@ -152,6 +152,22 @@ return [
         'not_editable_body' => 'Il modello di embedding e le sue dimensioni mancano da questo modulo di proposito. Cambiarli invalida ogni vettore già salvato: vettori di modelli diversi non sono confrontabili e le colonne pgvector hanno una larghezza fissa. È un rilascio: aggiorna <code>config/filament-ai.php</code>, esegui <code>php artisan ai:vector:reindex</code>, poi ricalcola con <code>php artisan ai:ingest &lt;source&gt; --mode=embeddings_only</code>.',
     ],
 
+    'conversations' => [
+        'label' => 'Conversazione con l\'assistente',
+        'plural' => 'Conversazioni con l\'assistente',
+        'last_activity' => 'Ultima attività',
+        'started' => 'Iniziata',
+        'user' => 'Utente',
+        'title' => 'Titolo',
+        'messages' => 'Messaggi',
+        'failures' => 'Errori',
+        'failed_only' => 'Solo con errori',
+        'tokens' => 'Token in / out',
+        'arguments' => 'Argomenti',
+        'result' => 'Risultato',
+        'empty' => 'Questa conversazione non ha messaggi.',
+    ],
+
     'tools' => [
         'list' => 'Cerca in :plural',
         'view' => 'Apri :label',
