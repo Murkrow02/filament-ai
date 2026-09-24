@@ -383,6 +383,9 @@ return [
         // (config/ai.php) in charge.
         'provider' => env('FILAMENT_AI_AGENT_PROVIDER'),
         'model' => env('FILAMENT_AI_AGENT_MODEL'),
+        // The language the assistant falls back to and never drifts from.
+        // Null uses answering.language, then the application's locale.
+        'language' => env('FILAMENT_AI_AGENT_LANGUAGE'),
         // Null falls back to llm.temperature, then to the provider's default.
         'temperature' => env('FILAMENT_AI_AGENT_TEMPERATURE'),
 

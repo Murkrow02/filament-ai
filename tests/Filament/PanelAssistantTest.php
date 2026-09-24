@@ -107,3 +107,16 @@ it('says it has no access to records when no resource is offered', function (): 
 it('keeps the write rule when writes are offered', function (): void {
     expect((new \Murkrow\FilamentAi\Agent\PanelAssistant)->instructions())->toContain('_create, _edit and _delete');
 });
+
+it('anchors the reply language to the application\'s', function (): void {
+    config()->set('filament-ai.answering.language', 'it');
+
+    $instructions = (new \Murkrow\FilamentAi\Agent\PanelAssistant)->instructions();
+
+    expect($instructions)->toContain('This application\'s language is Italian')
+        ->toContain('including the short notes before or between tool calls');
+
+    config()->set('filament-ai.agent.language', 'de');
+
+    expect((new \Murkrow\FilamentAi\Agent\PanelAssistant)->instructions())->toContain('language is German');
+});

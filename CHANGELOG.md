@@ -9,6 +9,23 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [5.1.1] - 2026-09-24
+
+### Fixed
+
+- **The assistant stays in the application's language.** Some models --
+  DeepSeek notably -- drifted into their own dominant language after a few
+  tool round trips with English or code output, mid-answer and in the notes
+  between tool calls. The system prompt now names the application's language
+  (`filament-ai.agent.language`, falling back to `answering.language`, then
+  the app locale) and says no document or tool output changes it.
+
+### Added
+
+- `filament-ai.agent.language` (`FILAMENT_AI_AGENT_LANGUAGE`).
+- README: how the assistant's system prompt is assembled and how to change it
+  per application.
+
 ## [5.1.0] - 2026-09-24
 
 ### Added
@@ -345,7 +362,8 @@ inside a Filament panel.
 - The knowledge settings page no longer writes back the agent's settings: it
   rendered no field for them but carried them in its state.
 
-[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v5.1.0...HEAD
+[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v5.1.1...HEAD
+[5.1.1]: https://github.com/Murkrow02/filament-ai/compare/v5.1.0...v5.1.1
 [5.1.0]: https://github.com/Murkrow02/filament-ai/compare/v5.0.2...v5.1.0
 [5.0.2]: https://github.com/Murkrow02/filament-ai/compare/v5.0.1...v5.0.2
 [5.0.1]: https://github.com/Murkrow02/filament-ai/compare/v5.0.0...v5.0.1
