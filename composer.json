@@ -35,9 +35,8 @@
         "illuminate/session": "^12.0|^13.0",
         "illuminate/support": "^12.0|^13.0",
         "illuminate/view": "^12.0|^13.0",
-        "laravel/ai": "^0.11",
-        "pgvector/pgvector": "^0.2",
-        "prism-php/prism": "^0.100"
+        "laravel/ai": "^1.0",
+        "pgvector/pgvector": "^0.2"
     },
     "require-dev": {
         "laravel/mcp": "^1.0",

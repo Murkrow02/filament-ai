@@ -51,8 +51,8 @@ final class JudgeVerifier implements Verifier
             ? Verdict::accept((int) ($structured['score'] ?? 100), (string) ($structured['reason'] ?? ''))
             : Verdict::reject((int) ($structured['score'] ?? 0), (string) ($structured['reason'] ?? ''));
 
-        $promptTokens = (int) ($response->usage->promptTokens ?? 0);
-        $completionTokens = (int) ($response->usage->completionTokens ?? 0);
+        $promptTokens = (int) ($response->usage->inputTokens ?? 0);
+        $completionTokens = (int) ($response->usage->outputTokens ?? 0);
 
         return $verdict->withCost(
             $promptTokens + $completionTokens,

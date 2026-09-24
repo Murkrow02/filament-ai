@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Agent\Resources;
 
+use Filament\Resources\Resource;
 use InvalidArgumentException;
 
 /**
@@ -29,6 +30,9 @@ final class AgentTools
     public const ABILITIES = [self::LIST, self::VIEW, self::CREATE, self::EDIT, self::DELETE];
 
     public const DEFAULTS = [self::LIST, self::VIEW, self::CREATE, self::EDIT];
+
+    /** A page of records the model can still read in one tool result. */
+    public const MAX_RECORDS = 200;
 
     /** @var list<string> */
     private array $abilities = self::DEFAULTS;
@@ -93,6 +97,16 @@ final class AgentTools
     }
 
     /**
+     * Ask the user again before these writes, undoing `withoutApproval()`.
+     */
+    public function requireApproval(string ...$abilities): self
+    {
+        $this->unapproved = array_values(array_diff($this->unapproved, $this->validated($abilities)));
+
+        return $this;
+    }
+
+    /**
      * Columns a free-text search matches, instead of the table's searchable
      * columns.
      *
@@ -123,7 +137,7 @@ final class AgentTools
      */
     public function limit(int $limit): self
     {
-        $this->limit = max(1, $limit);
+        $this->limit = max(1, min(self::MAX_RECORDS, $limit));
 
         return $this;
     }

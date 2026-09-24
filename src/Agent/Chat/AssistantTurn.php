@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Murkrow\FilamentAi\Agent\Chat;
 
 use Filament\Facades\Filament;
+use Filament\Resources\Resource;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Laravel\Ai\Approvals\Decision;
@@ -80,39 +81,20 @@ final class AssistantTurn
     /**
      * What is waiting, in the shape the page draws an approval card from --
      * the same whether it arrives in the stream, at the end of a turn or with
-     * a reloaded conversation.
+     * a reloaded conversation. See `ApprovalCards`.
      *
-     * @return list<array{id: string, tool: string, reason: ?string, arguments: array<string, string>}>
+     * @return list<array<string, mixed>>
      */
-    public function approvalCards(?string $conversationId): array
+    public function approvalCards(?string $conversationId, bool $debug = false): array
     {
         $cards = [];
+        $builder = app(ApprovalCards::class);
 
         foreach ($this->pending($conversationId) as $id => $call) {
-            $cards[] = self::card((string) $id, $call['tool'], $call['reason'], $call['arguments']);
+            $cards[] = $builder->card((string) $id, $call['tool'], $call['reason'], $call['arguments'], $debug);
         }
 
         return $cards;
-    }
-
-    /**
-     * @param  array<string, mixed>  $arguments
-     * @return array{id: string, tool: string, reason: ?string, arguments: array<string, string>}
-     */
-    public static function card(string $id, string $tool, ?string $reason, array $arguments): array
-    {
-        $shown = [];
-
-        foreach ($arguments as $key => $value) {
-            // Every argument is shown as text and cut short: it is what the
-            // user approves, not a place to dump a document.
-            $shown[(string) $key] = \Illuminate\Support\Str::limit(
-                is_scalar($value) || $value === null ? (string) $value : (string) json_encode($value, JSON_UNESCAPED_UNICODE),
-                200,
-            );
-        }
-
-        return ['id' => $id, 'tool' => $tool, 'reason' => $reason, 'arguments' => $shown];
     }
 
     /**

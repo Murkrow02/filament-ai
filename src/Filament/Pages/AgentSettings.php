@@ -28,7 +28,7 @@ use UnitEnum;
 /**
  * What the assistant may do, editable from the panel.
  *
- * Gated by `rag.filament.authorize`, not by `rag.agent.authorize`: using the
+ * Gated by `filament-ai.filament.authorize`, not by `filament-ai.agent.authorize`: using the
  * assistant and deciding what it is allowed to do are different permissions.
  *
  * Only differences from the code are stored. A resource left exactly as its
@@ -134,6 +134,7 @@ class AgentSettings extends Page
         ];
 
         $sections[] = $this->sandboxSection();
+        $sections[] = $this->webSearchSection();
         $sections[] = $this->solvingSection();
 
         foreach ($this->catalogue() as $index => $resource) {
@@ -170,6 +171,11 @@ class AgentSettings extends Page
             'agent.sandbox.timeout' => (int) ($state['agent__sandbox__timeout'] ?? 5000),
             'agent.sandbox.max_output' => (int) ($state['agent__sandbox__max_output'] ?? 4000),
             'agent.sandbox.max_code_characters' => (int) ($state['agent__sandbox__max_code'] ?? 20000),
+            'agent.web_search.enabled' => (bool) ($state['agent__web_search__enabled'] ?? false),
+            'agent.web_search.default_results' => (int) ($state['agent__web_search__default_results'] ?? 5),
+            'agent.web_search.cache_ttl' => (int) ($state['agent__web_search__cache_ttl'] ?? 3600),
+            'agent.web_search.fetch_page.enabled' => (bool) ($state['agent__web_search__fetch_page'] ?? false),
+            'agent.web_search.fetch_page.max_output_characters' => (int) ($state['agent__web_search__fetch_max_output'] ?? 6000),
             'agent.solving.enabled' => (bool) ($state['agent__solving__enabled'] ?? false),
             'agent.solving.attempts_per_wave' => (int) ($state['agent__solving__attempts'] ?? 4),
             'agent.solving.max_waves' => (int) ($state['agent__solving__waves'] ?? 3),
@@ -301,6 +307,35 @@ class AgentSettings extends Page
     }
 
     /**
+     * Search on/off and its limits. The provider's key, engine id and endpoint
+     * stay in config: a form that decides where the application sends
+     * requests is not a setting.
+     */
+    private function webSearchSection(): Section
+    {
+        return Section::make(__('filament-ai::messages.assistant_settings.web_section'))
+            ->description(__('filament-ai::messages.assistant_settings.web_section_help'))
+            ->columns(2)
+            ->collapsible()
+            ->schema([
+                Toggle::make('agent__web_search__enabled')
+                    ->label(__('filament-ai::messages.assistant_settings.web_enabled')),
+                Toggle::make('agent__web_search__fetch_page')
+                    ->label(__('filament-ai::messages.assistant_settings.web_fetch'))
+                    ->helperText(__('filament-ai::messages.assistant_settings.web_fetch_help')),
+                TextInput::make('agent__web_search__default_results')
+                    ->label(__('filament-ai::messages.assistant_settings.web_results'))
+                    ->numeric()->minValue(1)->maxValue(10),
+                TextInput::make('agent__web_search__cache_ttl')
+                    ->label(__('filament-ai::messages.assistant_settings.web_cache_ttl'))
+                    ->numeric()->minValue(0)->maxValue(86400),
+                TextInput::make('agent__web_search__fetch_max_output')
+                    ->label(__('filament-ai::messages.assistant_settings.web_fetch_max_output'))
+                    ->numeric()->minValue(500)->maxValue(50000),
+            ]);
+    }
+
+    /**
      * What may be picked: what the sandbox has installed, plus whatever the
      * configuration already names.
      *
@@ -392,7 +427,9 @@ class AgentSettings extends Page
     private function resourceSection(int $index, array $resource): Section
     {
         $declared = $resource['abilities'];
-        $approvable = array_values(array_intersect($declared, [AgentTools::CREATE, AgentTools::EDIT]));
+        // Only a write the code already runs unsupervised can stay that way:
+        // this page may add a question, never remove one.
+        $approvable = array_values(array_intersect($declared, $resource['unapproved']));
 
         return Section::make(ucfirst($resource['plural']))
             ->description($resource['resource'])
@@ -451,7 +488,7 @@ class AgentSettings extends Page
                     isset($override['abilities']) && is_array($override['abilities']) ? $override['abilities'] : $resource['abilities'],
                 )),
                 'unapproved' => array_values(array_intersect(
-                    $resource['abilities'],
+                    $resource['unapproved'],
                     isset($override['unapproved']) && is_array($override['unapproved']) ? $override['unapproved'] : $resource['unapproved'],
                 )),
                 'max_records' => (int) ($override['max_records'] ?? $resource['max_records']),
@@ -477,6 +514,11 @@ class AgentSettings extends Page
             'agent__sandbox__timeout' => (int) $settings->effective('agent.sandbox.timeout'),
             'agent__sandbox__max_output' => (int) $settings->effective('agent.sandbox.max_output'),
             'agent__sandbox__max_code' => (int) $settings->effective('agent.sandbox.max_code_characters'),
+            'agent__web_search__enabled' => (bool) $settings->effective('agent.web_search.enabled'),
+            'agent__web_search__default_results' => (int) $settings->effective('agent.web_search.default_results'),
+            'agent__web_search__cache_ttl' => (int) $settings->effective('agent.web_search.cache_ttl'),
+            'agent__web_search__fetch_page' => (bool) $settings->effective('agent.web_search.fetch_page.enabled'),
+            'agent__web_search__fetch_max_output' => (int) $settings->effective('agent.web_search.fetch_page.max_output_characters'),
             'agent__solving__enabled' => (bool) $settings->effective('agent.solving.enabled'),
             'agent__solving__attempts' => (int) $settings->effective('agent.solving.attempts_per_wave'),
             'agent__solving__waves' => (int) $settings->effective('agent.solving.max_waves'),
@@ -502,7 +544,7 @@ class AgentSettings extends Page
             $row = (array) ($state['resources'][$index] ?? []);
 
             $abilities = array_values(array_intersect($resource['abilities'], (array) ($row['abilities'] ?? $resource['abilities'])));
-            $unapproved = array_values(array_intersect($abilities, (array) ($row['unapproved'] ?? [])));
+            $unapproved = array_values(array_intersect($abilities, $resource['unapproved'], (array) ($row['unapproved'] ?? [])));
             $maxRecords = (int) ($row['max_records'] ?? $resource['max_records']);
 
             $override = [];

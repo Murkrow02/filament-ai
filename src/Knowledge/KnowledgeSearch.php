@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Knowledge;
 
-use Murkrow\FilamentAi\Contracts\Retriever;
+use Closure;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Model;
 use Murkrow\FilamentAi\Agent\Chat\CitedPassages;
+use Murkrow\FilamentAi\Contracts\Retriever;
+use Murkrow\FilamentAi\Contracts\ScopesDocumentsToUser;
 use Murkrow\FilamentAi\Data\RetrievalOptions;
 use Murkrow\FilamentAi\Data\ScoredChunk;
 use Murkrow\FilamentAi\Models\Chunk;
 use Murkrow\FilamentAi\Models\Document;
 use Murkrow\FilamentAi\Sources\SourceRegistry;
+use Throwable;
 
 /**
  * Search and read the indexed corpus on behalf of an external caller.
@@ -70,13 +76,16 @@ final class KnowledgeSearch
             return KnowledgeResult::error('The "query" argument is required.');
         }
 
+        $sourceKeys = self::narrow($allowedSources, $source);
+
         $result = $this->retriever->retrieve($query, new RetrievalOptions(
-            sourceKeys: self::narrow($allowedSources, $source),
+            sourceKeys: $sourceKeys,
             externalIds: $documentIds === null || $documentIds === [] ? null : array_map(strval(...), $documentIds),
             positionFrom: $positionFrom,
             positionTo: $positionTo,
             topK: $limit === null ? null : max(1, min(20, $limit)),
             minScore: $minScore,
+            constrain: $this->userScope($sourceKeys, 'd'),
         ));
 
         if ($result->isEmpty()) {
@@ -100,7 +109,7 @@ final class KnowledgeSearch
                 'label' => ($chunk->documentTitle ?? $chunk->externalId).' - '
                     .$this->positionLabel($chunk->sourceKey, $chunk->positionStart, $chunk->positionEnd),
                 'document_id' => (string) $chunk->externalId,
-                'score' => round($chunk->score, 4),
+                'score' => round($chunk->score, 2),
                 'content' => $chunk->content,
                 'url' => $chunk->url,
             ]);
@@ -123,10 +132,16 @@ final class KnowledgeSearch
             return KnowledgeResult::error('The "document_id" argument is required.');
         }
 
-        $document = Document::query()
+        $sourceKeys = self::narrow($allowedSources, $source);
+        $documents = Document::query()
             ->where('external_id', $externalId)
-            ->whereIn('source_key', self::narrow($allowedSources, $source))
-            ->first();
+            ->whereIn('source_key', $sourceKeys);
+
+        if (($scope = $this->userScope($sourceKeys, $documents->getModel()->getTable())) !== null) {
+            $scope($documents);
+        }
+
+        $document = $documents->first();
 
         if ($document === null) {
             return KnowledgeResult::error("No indexed document with identifier [{$externalId}].");
@@ -164,6 +179,54 @@ final class KnowledgeSearch
             : '';
 
         return KnowledgeResult::text($header.rtrim($body).$footer);
+    }
+
+    /**
+     * What the signed-in user may read, for sources that say so (see
+     * `ScopesDocumentsToUser`). Null when no source narrows anything.
+     *
+     * @param  list<string>  $sourceKeys
+     * @return (Closure(Builder<Model>): void)|null
+     */
+    private function userScope(array $sourceKeys, string $table): ?Closure
+    {
+        $scoped = [];
+
+        foreach ($sourceKeys as $key) {
+            $source = $this->sources->has($key) ? $this->sources->get($key) : null;
+
+            if ($source instanceof ScopesDocumentsToUser) {
+                $scoped[$key] = $source;
+            }
+        }
+
+        if ($scoped === []) {
+            return null;
+        }
+
+        $user = auth()->user();
+
+        return static function (EloquentBuilder $builder) use ($sourceKeys, $scoped, $user, $table): void {
+            $builder->where(static function (EloquentBuilder $any) use ($sourceKeys, $scoped, $user, $table): void {
+                foreach ($sourceKeys as $key) {
+                    $any->orWhere(static function (EloquentBuilder $one) use ($key, $scoped, $user, $table): void {
+                        $one->where("{$table}.source_key", $key);
+
+                        if (! isset($scoped[$key])) {
+                            return;
+                        }
+
+                        try {
+                            $scoped[$key]->scopeDocumentsFor($one->getQuery(), $user, $table);
+                        } catch (Throwable $exception) {
+                            report($exception);
+
+                            $one->whereRaw('0 = 1');
+                        }
+                    });
+                }
+            });
+        };
     }
 
     private function renderPassage(int $marker, ScoredChunk $chunk): string

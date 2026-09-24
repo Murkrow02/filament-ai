@@ -22,6 +22,6 @@ class InvalidSourceConfigurationException extends FilamentAiException
     {
         $given = is_object($entry) ? $entry::class : (is_string($entry) ? $entry : get_debug_type($entry));
 
-        return new self("[{$given}] is registered under rag.sources but is not a ".KnowledgeSource::class.'.');
+        return new self("[{$given}] is registered under filament-ai.sources but is not a ".KnowledgeSource::class.'.');
     }
 }

@@ -34,10 +34,11 @@ final class ChatAbilities
      * Every ability, with the answer given when neither the host's Gate nor
      * config has an opinion.
      *
-     * Defaults are open except `all_conversations`: the chat already sits
-     * behind whatever middleware the host configured, and it is gated again by
-     * `rag.agent.authorize`. Reading other people's conversations is the one
-     * thing that must be asked for.
+     * What a person needs to use the chat is open by default: the chat already
+     * sits behind whatever middleware the host configured, and it is gated
+     * again by `filament-ai.agent.authorize`. What only an administrator or a
+     * developer should see -- what a turn cost, which model answered, the raw
+     * error behind a failure -- has to be granted.
      *
      * @var array<string, bool>
      */
@@ -51,15 +52,15 @@ final class ChatAbilities
         // Renaming and deleting one's own conversations.
         'delete' => true,
 
-        // The model picker, and the model name under each answer.
+        // The model picker, when models are on offer.
         'model' => true,
 
         // The settings panel itself. Denied, there is no gear button at all,
         // whatever else is allowed inside it.
         'settings' => true,
 
-        // Per-answer cost and token counts.
-        'cost' => true,
+        // What each answer cost.
+        'cost' => false,
 
         // The "keep trying" toggle: waves of attempts instead of one answer.
         // It multiplies what a question costs, which is why it is its own
@@ -69,8 +70,12 @@ final class ChatAbilities
         // Copying an answer out.
         'export' => true,
 
-        // Reading conversations that belong to somebody else.
-        'all_conversations' => false,
+        // The technical side of a turn: the raw error behind a failure, the
+        // tool names and arguments behind the plain-language steps and
+        // approval cards, the model, token counts, retrieval scores and the
+        // link to a solving run's attempts. Everyone else gets a sentence
+        // they can act on.
+        'debug' => false,
     ];
 
     /**
@@ -138,7 +143,7 @@ final class ChatAbilities
                 && (bool) $user->can($configured);
         }
 
-        // The `fn (?Authenticatable $user): bool` shape rag.filament.authorize
+        // The `fn (?Authenticatable $user): bool` shape filament-ai.filament.authorize
         // already uses, so a host only has to learn it once.
         //
         // Note for hosts that run `config:cache`: a closure here cannot be

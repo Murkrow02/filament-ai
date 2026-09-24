@@ -24,7 +24,7 @@ class VectorReindexCommand extends Command
         $configured = $store->dimensions();
 
         // The column is created once, by a migration, with whatever the config
-        // said at that moment. Changing rag.embeddings.dimensions afterwards
+        // said at that moment. Changing filament-ai.embeddings.dimensions afterwards
         // does not touch it, and every write then fails in the database with
         // "expected N dimensions, not M" -- rebuilding the index alone cannot
         // fix that.
@@ -36,13 +36,13 @@ class VectorReindexCommand extends Command
         $this->components->twoColumnDetail('embedded chunks', number_format($chunks));
         $this->components->twoColumnDetail('column width', match (true) {
             $installed === null => 'n/a',
-            $resize => "<fg=yellow>{$installed}</> -> {$configured} (rag.embeddings.dimensions)",
+            $resize => "<fg=yellow>{$installed}</> -> {$configured} (filament-ai.embeddings.dimensions)",
             default => (string) $installed,
         });
 
         if ($resize) {
             $this->components->warn(
-                "The vector column holds {$installed}-dimension vectors but rag.embeddings.dimensions is {$configured}. "
+                "The vector column holds {$installed}-dimension vectors but filament-ai.embeddings.dimensions is {$configured}. "
                 .'Resizing discards every stored vector: vectors of different widths come from different models and are not comparable.'
             );
         }

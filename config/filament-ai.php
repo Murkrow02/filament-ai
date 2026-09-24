@@ -54,10 +54,8 @@ return [
     */
 
     'embeddings' => [
-        'driver' => env('FILAMENT_AI_EMBEDDING_DRIVER', 'laravel-ai'), // laravel-ai | prism (deprecated) | fake
+        'driver' => env('FILAMENT_AI_EMBEDDING_DRIVER', 'laravel-ai'), // laravel-ai | fake
         'provider' => env('FILAMENT_AI_EMBEDDING_PROVIDER'),
-        // Read only by the deprecated prism driver.
-        'prism_provider' => env('FILAMENT_AI_EMBEDDING_PROVIDER', 'openai'),
         'model' => env('FILAMENT_AI_EMBEDDING_MODEL', 'text-embedding-3-small'),
         // Seconds per request; null keeps laravel/ai's default.
         'timeout' => env('FILAMENT_AI_EMBEDDING_TIMEOUT'),
@@ -79,7 +77,7 @@ return [
         'cache_queries' => true,
         'query_cache_ttl' => 3600,
 
-        // Passed straight through to Prism's withProviderOptions().
+        // Passed straight through to laravel/ai's withProviderOptions().
         'provider_options' => [],
 
         // USD per 1M tokens, used for cost accounting only.
@@ -97,11 +95,9 @@ return [
     */
 
     'llm' => [
-        'driver' => env('FILAMENT_AI_LLM_DRIVER', 'laravel-ai'), // laravel-ai | prism (deprecated) | fake
+        'driver' => env('FILAMENT_AI_LLM_DRIVER', 'laravel-ai'), // laravel-ai | fake
         // An entry of config/ai.php's "providers"; null uses ai.default.
         'provider' => env('FILAMENT_AI_LLM_PROVIDER'),
-        // Read only by the deprecated prism driver.
-        'prism_provider' => env('FILAMENT_AI_LLM_PROVIDER', 'openai'),
         'model' => env('FILAMENT_AI_LLM_MODEL', 'gpt-4o-mini'),
         // Seconds per request; null keeps laravel/ai's default.
         'timeout' => env('FILAMENT_AI_LLM_TIMEOUT'),
@@ -229,7 +225,6 @@ return [
         ],
 
         'log_queries' => true,
-        'log_retention_days' => 90,
     ],
 
     /*
@@ -250,7 +245,6 @@ return [
         'require_citations' => true,
         'refusal_message' => null, // null => localised default from filament-ai::messages.refusal
         'max_context_tokens' => 6000,
-        'stream' => true,
     ],
 
     /*
@@ -308,7 +302,6 @@ return [
 
         'server' => [
             'name' => env('FILAMENT_AI_MCP_NAME', 'knowledge'),
-            'version' => '1.0.0',
             'instructions' => null, // null => localised default
         ],
 
@@ -385,6 +378,8 @@ return [
         // (config/ai.php) in charge.
         'provider' => env('FILAMENT_AI_AGENT_PROVIDER'),
         'model' => env('FILAMENT_AI_AGENT_MODEL'),
+        // Null falls back to llm.temperature, then to the provider's default.
+        'temperature' => env('FILAMENT_AI_AGENT_TEMPERATURE'),
 
         // fn (?Authenticatable $user): bool -- who may use the assistant.
         // null lets every user who can reach the panel use it.
@@ -428,6 +423,56 @@ return [
             'log_channel' => env('FILAMENT_AI_AGENT_SANDBOX_LOG'),
         ],
 
+        /*
+        | Web search.
+        |
+        | Off by default: this hands the agent a way to reach the open
+        | internet. The shipped driver is Google's Programmable Search
+        | Engine (Custom Search JSON API) -- create an engine at
+        | https://programmablesearchengine.google.com set to search the
+        | whole web, and an API key at
+        | https://console.cloud.google.com/apis/credentials with the
+        | "Custom Search API" enabled.
+        |
+        | search_web only ever returns titles, urls and snippets: fetching a
+        | full page is a second, separate tool (fetch_web_page), so the agent
+        | spends a request reading a page only for the one result it decided
+        | is worth it, not for all ten every time. That split, plus caching
+        | identical queries for `cache_ttl` seconds, is what keeps this
+        | efficient rather than just functional.
+        */
+        'web_search' => [
+            'enabled' => (bool) env('FILAMENT_AI_AGENT_WEB_SEARCH', false),
+
+            // google | fake, or a driver registered on WebSearchManager.
+            'driver' => env('FILAMENT_AI_AGENT_WEB_SEARCH_DRIVER', 'google'),
+
+            'google' => [
+                'api_key' => env('FILAMENT_AI_GOOGLE_SEARCH_API_KEY'),
+                'cx' => env('FILAMENT_AI_GOOGLE_SEARCH_CX'),
+                'endpoint' => env('FILAMENT_AI_GOOGLE_SEARCH_ENDPOINT', 'https://www.googleapis.com/customsearch/v1'),
+                'timeout' => (int) env('FILAMENT_AI_GOOGLE_SEARCH_TIMEOUT', 8),
+            ],
+
+            // Results per call when the model does not say how many; Google
+            // never returns more than 10 regardless of what is asked.
+            'default_results' => (int) env('FILAMENT_AI_AGENT_WEB_SEARCH_RESULTS', 5),
+
+            // Identical (query, limit) pairs are served from cache instead of
+            // billed again. Zero disables caching.
+            'cache_ttl' => (int) env('FILAMENT_AI_AGENT_WEB_SEARCH_CACHE_TTL', 3600),
+
+            // Reading a whole page means fetching a url the model chose from
+            // this server. It is guarded (public addresses only, pinned, size
+            // capped) but it is a separate decision: off unless switched on.
+            'fetch_page' => [
+                'enabled' => (bool) env('FILAMENT_AI_AGENT_WEB_FETCH', false),
+                'timeout' => (int) env('FILAMENT_AI_AGENT_WEB_FETCH_TIMEOUT', 8),
+                'max_bytes' => (int) env('FILAMENT_AI_AGENT_WEB_FETCH_MAX_BYTES', 200000),
+                'max_output_characters' => (int) env('FILAMENT_AI_AGENT_WEB_FETCH_MAX_OUTPUT', 6000),
+            ],
+        ],
+
         // The chat page inside the panel. It keeps its history in laravel/ai's
         // conversation tables: publish and run laravel/ai's migrations.
         'chat' => [
@@ -437,6 +482,10 @@ return [
             'navigation_sort' => -1,
             // Conversations listed in the chat's sidebar.
             'history' => 20,
+            // Decisions on one conversation are taken one at a time, under a
+            // cache lock held while the turn streams: a double click must not
+            // run an approved write twice. Needs a cache store with locks.
+            'turn_lock_seconds' => 600,
             // A button next to global search that opens the chat about the
             // record on screen.
             'topbar_button' => true,
@@ -507,7 +556,7 @@ return [
     |
     | A standalone, Filament-free chat UI served by the package itself. It has
     | no dependency on the panel: the routes are registered from the service
-    | provider, the stylesheet and Alpine build ship inside the package, and
+    | provider, the stylesheet and script ship inside the package, and
     | the layout is a complete HTML document, so a host with no frontend
     | pipeline of its own still gets a working page.
     |
@@ -528,6 +577,11 @@ return [
         'enabled' => env('FILAMENT_AI_CHAT_ENABLED', true),
 
         'path' => env('FILAMENT_AI_CHAT_PATH', 'ai/chat'),
+
+        // The Filament panel the standalone page acts in (its resources, its
+        // policies, its tenancy). Null means the default panel. The panel's
+        // own Assistant page always sends its own panel and tenant.
+        'panel' => env('FILAMENT_AI_CHAT_PANEL'),
         'domain' => env('FILAMENT_AI_CHAT_DOMAIN'),
 
         // The panel here is often mounted at the site root, so the chat gets
@@ -545,29 +599,24 @@ return [
             'accent' => env('FILAMENT_AI_CHAT_ACCENT', '#2f6f4f'),
         ],
 
-        // How many previous turns of the conversation are replayed into the
-        // prompt. Every turn costs input tokens on every subsequent question,
-        // so this is a budget, not a memory setting.
-        'history_turns' => 6,
-
         // Shown on the empty state. Empty => the localised defaults.
         'suggestions' => [],
 
-        // Newest conversations kept per user; older ones are pruned on write.
-        'max_conversations' => 200,
-
+        // Null keeps the default (see ChatAbilities::DEFAULTS): everything a
+        // person needs is on, `cost` and `debug` are off. Each accepts a bool,
+        // a permission name checked with $user->can(), or a [Class::class,
+        // 'method'] callable; a Gate ability `filament-ai.chat.<name>` defined
+        // by the host wins over all of these.
         'abilities' => [
             'view' => null,
             'history' => null,
             'delete' => null,
             'model' => null,
-            'sources' => null,
-            'passages' => null,
+            'settings' => null,
             'cost' => null,
-            'advanced' => null,
-            'feedback' => null,
+            'solve' => null,
             'export' => null,
-            'all_conversations' => null,
+            'debug' => null,
         ],
     ],
 
@@ -665,6 +714,15 @@ return [
             'agent.sandbox.timeout' => ['type' => 'int', 'min' => 500, 'max' => 60000],
             'agent.sandbox.max_output' => ['type' => 'int', 'min' => 200, 'max' => 50000],
             'agent.sandbox.max_code_characters' => ['type' => 'int', 'min' => 200, 'max' => 200000],
+            'agent.web_search.enabled' => ['type' => 'bool'],
+            'agent.web_search.default_results' => ['type' => 'int', 'min' => 1, 'max' => 10],
+            'agent.web_search.cache_ttl' => ['type' => 'int', 'min' => 0, 'max' => 86400],
+            'agent.web_search.fetch_page.enabled' => ['type' => 'bool'],
+            'agent.web_search.fetch_page.max_output_characters' => ['type' => 'int', 'min' => 500, 'max' => 50000],
+            // The Google api_key, cx and endpoint are deliberately not here,
+            // same reasoning as the sandbox url: whoever administers the
+            // panel is not necessarily whoever should be able to point this
+            // application's outbound requests at a different endpoint.
             'agent.max_steps' => ['type' => 'int', 'min' => 1, 'max' => 40],
             'agent.solving.enabled' => ['type' => 'bool'],
             'agent.solving.attempts_per_wave' => ['type' => 'int', 'min' => 1, 'max' => 16],

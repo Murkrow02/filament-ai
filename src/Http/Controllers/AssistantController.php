@@ -4,29 +4,24 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Http\Controllers;
 
+use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Laravel\Ai\Approvals\Decisions;
-use Laravel\Ai\Approvals\PendingApproval;
-use Laravel\Ai\Responses\StreamedAgentResponse;
-use Laravel\Ai\Streaming\Events\Error as ErrorEvent;
-use Laravel\Ai\Streaming\Events\TextDelta;
-use Laravel\Ai\Streaming\Events\ToolApprovalRequest;
-use Laravel\Ai\Streaming\Events\ToolCall as ToolCallEvent;
-use Laravel\Ai\Streaming\Events\ToolResult as ToolResultEvent;
+use Illuminate\Support\Facades\Cache;
 use Murkrow\FilamentAi\Agent\Chat\AssistantTurn;
 use Murkrow\FilamentAi\Agent\Chat\CitedPassages;
+use Murkrow\FilamentAi\Agent\Chat\TurnStream;
+use Murkrow\FilamentAi\Agent\Chat\TurnSummary;
 use Murkrow\FilamentAi\Agent\PanelAssistant;
 use Murkrow\FilamentAi\Agent\Solving\Solver;
 use Murkrow\FilamentAi\Agent\Solving\Strategies;
+use Murkrow\FilamentAi\Chat\ChatAbilities;
 use Murkrow\FilamentAi\Data\SolveOptions;
 use Murkrow\FilamentAi\Enums\SolveStatus;
 use Murkrow\FilamentAi\Filament\Resources\SolveRunResource;
-use Murkrow\FilamentAi\Models\SolveRun;
-use Murkrow\FilamentAi\Chat\ChatAbilities;
 use Murkrow\FilamentAi\Http\Concerns\StreamsServerSentEvents;
 use Murkrow\FilamentAi\Http\Requests\AskRequest;
-use Murkrow\FilamentAi\Ingestion\CostCalculator;
+use Murkrow\FilamentAi\Models\SolveRun;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -61,18 +56,25 @@ class AssistantController
         }
 
         if (! $this->turn->available()) {
-            return response()->json(['message' => __('filament-ai::messages.assistant.not_installed')], 409);
+            return $this->unavailable($request);
         }
 
         $conversation = $this->turn->ownedConversation($request->conversationId(), $request->user());
+        $lock = $conversation === null ? null : $this->lockTurn($conversation);
+
+        if ($lock === false) {
+            return $this->busy();
+        }
 
         // A turn waiting for a decision must be decided first: laravel/ai
         // resumes from the latest stored turn, and a new question would bury
         // the pause where nobody can answer it.
         if ($this->turn->pending($conversation) !== []) {
+            $lock?->release();
+
             return response()->json([
                 'message' => __('filament-ai::messages.assistant.decide_first'),
-                'pending' => $this->approvalsFor($conversation),
+                'pending' => $this->approvalsFor($conversation, $request),
             ], 409);
         }
 
@@ -83,7 +85,7 @@ class AssistantController
             $request->contextRecord(),
         )->withModel($request->model());
 
-        return $this->stream($request, $assistant, $request->question(), $conversation);
+        return $this->stream($request, $assistant, $request->question(), $conversation, $lock ?: null);
     }
 
     /**
@@ -105,10 +107,11 @@ class AssistantController
         $context = $this->turn->resolvedContext($request->contextResource(), $request->contextRecord());
         $user = $request->user();
         $question = $request->question();
+        $allowed = ChatAbilities::allowed($user);
 
         $request->session()?->save();
 
-        return response()->stream(function () use ($question, $context, $user): void {
+        return response()->stream(function () use ($question, $context, $user, $allowed): void {
             $this->send('start', ['conversation' => null, 'solving' => true]);
 
             try {
@@ -118,11 +121,11 @@ class AssistantController
                     context: array_filter(['page' => $context['label'], 'resource' => $context['resource'], 'record' => $context['record']]),
                 ), $user?->getAuthIdentifier());
 
-                $this->follow($run);
+                $this->follow($run, $allowed);
             } catch (Throwable $exception) {
                 report($exception);
 
-                $this->send('error', ['message' => $this->failureMessage($exception)]);
+                $this->send('error', $this->failure($exception, $allowed['debug']));
             }
         }, 200, $this->eventStreamHeaders());
     }
@@ -131,7 +134,10 @@ class AssistantController
      * Report a run's progress until it ends, or until waiting stops making
      * sense.
      */
-    private function follow(SolveRun $run): void
+    /**
+     * @param  array<string, bool>  $allowed
+     */
+    private function follow(SolveRun $run, array $allowed): void
     {
         $budget = (int) (($run->budgets['max_seconds'] ?? null) ?: config('filament-ai.agent.solving.max_seconds', 300));
         $deadline = time() + $budget + self::SOLVE_GRACE_SECONDS;
@@ -140,7 +146,7 @@ class AssistantController
         while (true) {
             $run->refresh();
 
-            $snapshot = $this->solveSnapshot($run);
+            $snapshot = $this->solveSnapshot($run, $allowed['debug']);
 
             // Only what changed goes out: a poll every 750ms that repeated
             // itself would be a stream of noise.
@@ -172,7 +178,7 @@ class AssistantController
             'pending' => [],
             'solve' => $snapshot,
             'tokens' => null,
-            'cost_usd' => ChatAbilities::allows('cost') ? round($run->costUsd(), 6) : null,
+            'cost_usd' => $allowed['cost'] || $allowed['debug'] ? round($run->costUsd(), 6) : null,
             'model' => null,
         ]);
     }
@@ -180,7 +186,7 @@ class AssistantController
     /**
      * @return array<string, mixed>
      */
-    private function solveSnapshot(SolveRun $run): array
+    private function solveSnapshot(SolveRun $run, bool $debug): array
     {
         return [
             'run' => $run->uuid,
@@ -195,8 +201,8 @@ class AssistantController
             ),
             'best_score' => (int) $run->best_score,
             // A link to the whole story -- every attempt, and why each one was
-            // turned down -- for whoever may read it.
-            'url' => $this->solveRunUrl($run),
+            // turned down -- for whoever may read it: it is a debugging view.
+            'url' => $debug ? $this->solveRunUrl($run) : null,
         ];
     }
 
@@ -216,7 +222,11 @@ class AssistantController
      */
     public function decide(Request $request, string $conversation): StreamedResponse|JsonResponse
     {
-        abort_unless(ChatAbilities::canUseChat($request->user()) && $this->turn->available(), 403);
+        abort_unless(ChatAbilities::canUseChat($request->user()), 403);
+
+        if (! $this->turn->available()) {
+            return $this->unavailable($request);
+        }
 
         $owned = $this->turn->ownedConversation($conversation, $request->user());
 
@@ -227,14 +237,28 @@ class AssistantController
             'decisions.*' => ['required', 'boolean'],
         ]);
 
+        // One decision at a time per conversation. laravel/ai records what an
+        // approved call returned only after it has run, so two requests that
+        // both read "pending" -- a double click, a second tab, a retry --
+        // would otherwise both run the write.
+        $lock = $this->lockTurn($owned);
+
+        if ($lock === false) {
+            return $this->busy();
+        }
+
+        // Read under the lock: whatever a request that just finished decided
+        // is no longer pending.
         $decisions = $this->turn->decisions($owned, $data['decisions']);
 
-        if (! $decisions instanceof Decisions) {
+        if ($decisions === null) {
+            $lock->release();
+
             // Either nothing is waiting any more -- another tab decided it --
             // or the browser answered only part of the pause.
             return response()->json([
                 'message' => __('filament-ai::messages.assistant.nothing_pending'),
-                'pending' => $this->approvalsFor($owned),
+                'pending' => $this->approvalsFor($owned, $request),
             ], 409);
         }
 
@@ -245,15 +269,32 @@ class AssistantController
             is_string($request->input('record')) ? $request->input('record') : null,
         );
 
-        return $this->stream($request, $assistant, $decisions, $owned);
+        return $this->stream($request, $assistant, $decisions, $owned, $lock);
     }
 
     /**
-     * The turn itself, event by event.
+     * The conversation's turn lock, or false when another request holds it.
      */
-    private function stream(Request $request, PanelAssistant $assistant, Decisions|string $prompt, ?string $conversation): StreamedResponse
+    private function lockTurn(string $conversation): Lock|false
+    {
+        $lock = Cache::lock('filament-ai:turn:'.$conversation, (int) config('filament-ai.agent.chat.turn_lock_seconds', 600));
+
+        return $lock->get() ? $lock : false;
+    }
+
+    private function busy(): JsonResponse
+    {
+        return response()->json(['message' => __('filament-ai::messages.assistant.busy')], 409);
+    }
+
+    /**
+     * The turn itself, event by event. What the events carry is decided by
+     * `TurnStream`, for this user's abilities.
+     */
+    private function stream(Request $request, PanelAssistant $assistant, object|string $prompt, ?string $conversation, ?Lock $lock = null): StreamedResponse
     {
         $allowed = ChatAbilities::allowed($request->user());
+        $turn = app(TurnStream::class);
 
         // Written out before the first byte: once the response is streaming
         // the framework can no longer persist the session, and a request that
@@ -265,117 +306,106 @@ class AssistantController
         $cited = app(CitedPassages::class);
         $cited->collect();
 
-        return response()->stream(function () use ($assistant, $prompt, $conversation, $allowed, $cited): void {
+        return response()->stream(function () use ($turn, $assistant, $prompt, $conversation, $allowed, $cited, $lock): void {
             $this->send('start', ['conversation' => $conversation]);
 
             try {
-                $stream = $assistant->stream($prompt);
-
-                $final = null;
-                $stream->then(function (StreamedAgentResponse $response) use (&$final): void {
-                    $final = $response;
-                });
-
+                $events = $turn->run($assistant, $prompt, $allowed['debug']);
                 $sent = 0;
 
-                foreach ($stream as $event) {
-                    $this->relay($event);
+                foreach ($events as [$event, $data]) {
+                    $this->send($event, $data);
 
                     // Passages appear as the tools return them, so the list
                     // fills in while the answer is still being written.
                     if ($cited->count() > $sent) {
-                        $this->send('sources', ['passages' => array_slice($cited->all(), $sent)]);
+                        $this->send('sources', ['passages' => $this->passages(array_slice($cited->all(), $sent), $allowed['debug'])]);
                         $sent = $cited->count();
                     }
                 }
 
-                $conversation = $final?->conversationId ?? $conversation;
+                /** @var TurnSummary $summary */
+                $summary = $events->getReturn();
+                $conversation = $summary->conversationId ?? $conversation;
 
-                $this->send('done', $this->done($final, $conversation, $allowed) + ['passages' => $cited->all()]);
+                $this->send('done', $this->done($summary, $conversation, $allowed) + [
+                    'passages' => $this->passages($cited->all(), $allowed['debug']),
+                ]);
             } catch (Throwable $exception) {
                 report($exception);
 
-                $this->send('error', ['message' => $this->failureMessage($exception)]);
+                $this->send('error', $this->failure($exception, $allowed['debug']));
             } finally {
                 $cited->stop();
+                $lock?->release();
             }
         }, 200, $this->eventStreamHeaders());
-    }
-
-    /**
-     * One streamed event, translated into the page's vocabulary. Anything else
-     * -- reasoning, citations, stream bookkeeping -- is not the page's business.
-     */
-    private function relay(object $event): void
-    {
-        match (true) {
-            $event instanceof TextDelta => $this->send('delta', ['text' => $event->delta]),
-            $event instanceof ToolCallEvent => $this->send('tool', [
-                'id' => $event->toolCall->id,
-                'name' => $event->toolCall->name,
-                'status' => 'running',
-            ]),
-            $event instanceof ToolResultEvent => $this->send('tool', [
-                'id' => $event->toolResult->id,
-                'name' => $event->toolResult->name,
-                'status' => match (true) {
-                    $event->denied => 'denied',
-                    ! $event->successful => 'failed',
-                    default => 'done',
-                },
-                'error' => $event->error,
-            ]),
-            $event instanceof ToolApprovalRequest => $this->send('approval', [
-                'calls' => $event->pendingApprovals
-                    ->map(static fn (PendingApproval $approval): array => AssistantTurn::card(
-                        $approval->id, $approval->tool, $approval->reason, $approval->arguments,
-                    ))
-                    ->values()
-                    ->all(),
-            ]),
-            $event instanceof ErrorEvent => $this->send('error', ['message' => $event->message]),
-            default => null,
-        };
     }
 
     /**
      * @param  array<string, bool>  $allowed
      * @return array<string, mixed>
      */
-    private function done(?StreamedAgentResponse $response, ?string $conversation, array $allowed): array
+    private function done(TurnSummary $summary, ?string $conversation, array $allowed): array
     {
-        $promptTokens = (int) ($response?->usage->promptTokens ?? 0);
-        $completionTokens = (int) ($response?->usage->completionTokens ?? 0);
-
         return [
             'conversation' => $conversation,
-            'answer' => (string) ($response?->text ?? ''),
+            'answer' => $summary->text,
             // What is still waiting after the turn: laravel/ai's store is the
             // only authority on that, not the events we happened to see.
-            'pending' => $this->approvalsFor($conversation),
-            'tokens' => $allowed['cost'] ? ['prompt' => $promptTokens, 'completion' => $completionTokens] : null,
-            'cost_usd' => $allowed['cost']
-                ? round(CostCalculator::completionMicros((string) ($response?->meta->model ?? ''), $promptTokens, $completionTokens) / 1_000_000, 6)
-                : null,
-            'model' => $allowed['model'] ? ($response?->meta->model ?? null) : null,
+            'pending' => $this->turn->approvalCards($conversation, $allowed['debug']),
+            'cost_usd' => $allowed['cost'] || $allowed['debug'] ? $summary->costUsd : null,
+            'model' => $allowed['debug'] ? $summary->model : null,
+            'tokens' => $allowed['debug'] ? ['input' => $summary->inputTokens, 'output' => $summary->outputTokens] : null,
         ];
     }
 
     /**
-     * @return list<array{id: string, tool: string, reason: ?string, arguments: array<string, string>}>
+     * A passage's score and document id say how retrieval went, which is the
+     * debugging view's business; the reader gets the text and where it is from.
+     *
+     * @param  list<array<string, mixed>>  $passages
+     * @return list<array<string, mixed>>
      */
-    private function approvalsFor(?string $conversation): array
+    private function passages(array $passages, bool $debug): array
     {
-        return $this->turn->approvalCards($conversation);
+        return $debug ? $passages : array_map(
+            static fn (array $passage): array => array_diff_key($passage, ['score' => true, 'document_id' => true]),
+            $passages,
+        );
     }
 
     /**
-     * Provider internals and SQL can travel in an exception message, so the
-     * detail is shown only where the application already shows them.
+     * @return list<array<string, mixed>>
      */
-    private function failureMessage(Throwable $exception): string
+    private function approvalsFor(?string $conversation, Request $request): array
     {
-        return (string) __('filament-ai::messages.assistant.failed')
-            .(config('app.debug') ? ' ('.$exception->getMessage().')' : '');
+        return $this->turn->approvalCards($conversation, ChatAbilities::allows('debug', $request->user()));
+    }
+
+    /**
+     * laravel/ai's tables are missing, or predate its 1.0 schema. The person
+     * asking can do nothing about that; whoever can is told how.
+     */
+    private function unavailable(Request $request): JsonResponse
+    {
+        return response()->json(array_filter([
+            'message' => __('filament-ai::messages.assistant.unavailable'),
+            'detail' => ChatAbilities::allows('debug', $request->user()) ? __('filament-ai::messages.assistant.not_installed') : null,
+        ]), 409);
+    }
+
+    /**
+     * Provider internals and SQL travel in an exception message: the reader
+     * gets a sentence, and only the `debug` ability gets the message itself.
+     *
+     * @return array{message: string, detail?: string}
+     */
+    private function failure(Throwable $exception, bool $debug): array
+    {
+        return array_filter([
+            'message' => (string) __('filament-ai::messages.assistant.failed'),
+            'detail' => $debug ? $exception->getMessage() : null,
+        ]);
     }
 }

@@ -15,7 +15,7 @@ class VectorDriverUnsupportedException extends FilamentAiException
     {
         return new self(
             "The [{$driver}] vector store requires a PostgreSQL connection, but the configured "
-            ."connection uses the [{$actual}] driver. Set rag.database.connection to a pgsql connection."
+            ."connection uses the [{$actual}] driver. Set filament-ai.database.connection to a pgsql connection."
         );
     }
 

@@ -20,7 +20,7 @@ FilamentAi::ask('Who convened the council, and when?')->answer;
 | PHP | 8.3+ |
 | Laravel | 12 or 13 |
 | Database | **PostgreSQL with the `vector` extension** (pgvector 0.5+) |
-| Embeddings & generation | any provider [laravel/ai](https://laravel.com/docs/ai-sdk) supports — OpenAI, Anthropic, Gemini, Ollama, VoyageAI, Bedrock, Mistral… |
+| Embeddings & generation | [laravel/ai](https://laravel.com/docs/ai-sdk) **^1.0** and any provider it supports — OpenAI, Anthropic, Gemini, Ollama, VoyageAI, Mistral… (Bedrock needs `aws/aws-sdk-php`) |
 | Panel | `filament/filament` ^5 |
 | Optional | `laravel/mcp` ^1 for the MCP server, `laravel/scout` for hybrid retrieval |
 
@@ -44,8 +44,11 @@ RUN apk add --no-cache --virtual .build build-base git postgresql17-dev \
 ```bash
 composer require murkrow/filament-ai
 php artisan ai:install     # verifies the extension, publishes the config
+php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"   # laravel/ai's config and conversation tables
 php artisan migrate
 ```
+
+The assistant keeps its conversations -- and every change waiting for approval -- in laravel/ai's tables. Coming from laravel/ai 0.x, run the backfill migration from [laravel/ai's upgrade guide](https://github.com/laravel/ai/blob/1.x/UPGRADE.md) before deploying: until then `ai:status` warns and the chat says it is unavailable instead of failing.
 
 `ai:install` tells you, in plain language, what is missing before anything else can go wrong — a database that cannot host vectors, a missing `job_batches` table, a corpus with no source configured.
 
@@ -70,11 +73,11 @@ Then run a worker for the ingestion queue:
 php artisan queue:work redis --queue=rag,default
 ```
 
-Your `config/rag.php` only needs the keys you actually change: the package's defaults are merged underneath it recursively, so overriding one nested value never drops its siblings. Publish the full, commented file when you want to read the defaults:
+Your `config/filament-ai.php` only needs the keys you actually change: the package's defaults are merged underneath it recursively, so overriding one nested value never drops its siblings. Publish the full, commented file when you want to read the defaults:
 
 ```bash
 php artisan vendor:publish --tag=filament-ai-config     # every default, documented
-php artisan vendor:publish --tag=filament-ai-stubs      # the source stub rag:make:source writes
+php artisan vendor:publish --tag=filament-ai-stubs      # the source stub ai:make:source writes
 ```
 
 ---
@@ -145,7 +148,7 @@ final class BookSource extends EloquentSource
 Then list it — the only knowledge configuration there is:
 
 ```php
-// config/rag.php
+// config/filament-ai.php
 'sources' => [
     App\Knowledge\BookSource::class,
 ],
@@ -393,16 +396,36 @@ public static function agentTools(AgentTools $tools): AgentTools
 
 What the agent can and cannot reach:
 
-- Records come from `Resource::getEloquentQuery()`, so tenant scoping and anything you narrowed for the table apply unchanged.
+- It acts in a panel and, on a tenant panel, in a tenant -- the page it was opened from sends both, and the server checks them the way Filament's own `SetUpPanel` / `IdentifyTenant` middleware do. Records come from `Resource::getEloquentQuery()` with the panel's tenant scope active, and created records are assigned to the current tenant by Filament's own observer.
+- A user who could not open the panel (`FilamentUser::canAccessPanel()`), or a tenant panel with no tenant the user may access, gets **no** resource tools at all -- not unscoped ones.
 - The resource's policies (`viewAny`, `view`, `create`, `update`, `delete`) are checked on every call. A resource the user may not view is not even offered to the model.
-- Attributes the model hides (`$hidden`) are never returned.
+- Attributes a model hides -- `$hidden`, or anything missing from `$visible` -- are never returned, on related models too (`customer.api_token`).
+- Everything a tool returns is treated as data, not instructions: the agent's rules say so, record titles are quoted into its instructions, and web pages come back marked as untrusted.
 - Resources without `AgentResource` are invisible to it.
 
 ### Changing data
 
-An opted-in resource also gets `orders_create` and `orders_edit`, built from its form: the arguments are the form's fields, validated with the form's own rules, and saved the way the panel's create and edit pages save them. `orders_delete` exists only when the resource asks for it with `->with(AgentTools::DELETE)`. Fields that are not one attribute value -- uploads, repeaters, many-to-many selects -- are not offered to the agent.
+An opted-in resource also gets `orders_create` and `orders_edit`, and `orders_delete` when it asks for it with `->with(AgentTools::DELETE)`.
 
-No write runs on the model's word alone. The turn pauses with a pending approval that names the change (`Create order -- Customer: Acme; Total: 120`), and the tool runs only once the user decides:
+Writes go **through the resource's own form**, run the way the panel's create and edit pages run it (`Schema::getState()`): the form is built for the operation (`create` / `edit`, with the record), so `visible()`/`hidden()`, `visibleOn()`, `disabledOn()`, `dehydrated(false)`, `dehydrateStateUsing()`, every validation rule -- including a Select's options and a relationship Select's own scoped query -- and fields inside a `->relationship()` layout behave exactly as they do for the user on the page. The agent can never do more than the user could. Arguments the form did not take are reported back to the model as not saved.
+
+Three things are deliberately different from the page:
+
+- **Password fields are never offered.** A secret typed to a language model is in the provider's logs and in the stored conversation.
+- **Page hooks do not run** -- the agent never mounts a page. What a page's `mutateFormDataBeforeCreate()` / `mutateFormDataBeforeSave()` does that must also happen for the agent goes in two optional static methods on the resource:
+
+  ```php
+  public static function agentMutateBeforeCreate(array $data): array
+  {
+      return [...$data, 'user_id' => auth()->id()];
+  }
+
+  public static function agentMutateBeforeSave(Model $record, array $data): array { /* ... */ }
+  ```
+
+- **Nested resources** (with a parent resource) get no write tools.
+
+No write runs on the model's word alone. The turn pauses and the chat shows a card with the change in the form's labels -- the record's current value next to the new one, option labels instead of keys, dates in the reader's format -- and the tool runs only once the user approves. A change the form would refuse is never put to the user: the model gets the validation errors instead. The decision is taken under a per-conversation lock, so a double click or a second tab cannot run the same write twice.
 
 ```php
 use Laravel\Ai\Approvals\Decision;
@@ -418,13 +441,45 @@ foreach ($response->pendingApprovals as $approval) {
 }
 ```
 
-Resuming reads the paused call back from laravel/ai's conversation tables, so publish and run its migrations, and prompt with `forUser()`. Creation and edits can skip the confirmation per resource with `->withoutApproval(AgentTools::CREATE, AgentTools::EDIT)`; a deletion is always confirmed.
+Creation and edits can skip the confirmation per resource with `->withoutApproval(AgentTools::CREATE, AgentTools::EDIT)`. Think twice: record content the agent reads can then steer a write nobody looks at. A deletion is always confirmed, whatever the code or the settings say.
+
+To turn a write back to asking (for instance per environment), `->requireApproval(AgentTools::EDIT)` undoes `withoutApproval()`.
+
+### Documents only some users may read
+
+By default every indexed document of an allowed source is readable by anyone who can use the assistant (or the MCP tools). A source whose documents belong to someone implements `ScopesDocumentsToUser`, and searches and document reads are narrowed for the signed-in user:
+
+```php
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Query\Builder;
+use Murkrow\FilamentAi\Contracts\ScopesDocumentsToUser;
+
+final class InvoiceSource extends EloquentSource implements ScopesDocumentsToUser
+{
+    protected function metadata(): array
+    {
+        return ['customer_id'];   // copied onto each indexed document
+    }
+
+    public function scopeDocumentsFor(Builder $documents, ?Authenticatable $user, string $table): void
+    {
+        if ($user?->isAdmin()) {
+            return;
+        }
+
+        // Compare JSON values as strings: PostgreSQL will not compare text with an integer.
+        $documents->where("{$table}.metadata->customer_id", (string) $user?->customer_id);
+    }
+}
+```
+
+Qualify every column with `$table`. A scope that throws leaves that source out of the search rather than searching it unscoped.
 
 ### Deciding what it may do, from the panel
 
-`Assistant settings` (next to the chat, gated by `rag.filament.authorize`) turns the configuration above into a form: provider and model, whether it may search documents and which sources, how many records an answer may carry, and then one section per opted-in resource -- which abilities it keeps, which writes may run without asking, how many records that resource returns.
+`Assistant settings` (next to the chat, gated by `filament-ai.filament.authorize`) turns the configuration above into a form: provider and model, whether it may search documents and which sources, how many records an answer may carry, and then one section per opted-in resource -- which abilities it keeps, which writes may run without asking, how many records that resource returns.
 
-It can only narrow. A resource that never implemented `AgentResource` is not listed, an ability its class does not offer cannot be ticked, and a deletion is always confirmed by the user. Anything left exactly as the code declared it is not stored at all, so a later change to `agentTools()` is picked up instead of being shadowed by a saved row. Settings live in the same table as the knowledge settings and are layered over `config/rag.php` on boot.
+It can only take away. A resource that never implemented `AgentResource` is not listed, an ability its class does not offer cannot be ticked, and a write the code asks the user about cannot be made silent from here -- only a write the code already runs without asking can be sent back to asking. Anything left exactly as the code declared it is not stored at all, so a later change to `agentTools()` is picked up instead of being shadowed by a saved row. Settings live in the same table as the knowledge settings and are layered over `config/filament-ai.php` on boot.
 
 ### Running code
 
@@ -457,7 +512,37 @@ What the agent gets is `run_code`: a language, a program, optional stdin, and ba
 
 The privilege is real and belongs to the sandbox container, not the app: never point the driver at something that shares this application's filesystem, database or network.
 
-Once a sandbox is configured, the rest is on the `Assistant settings` page: whether the agent may run code at all, which of the installed languages it may use (the page asks the sandbox), the time limit, and how much of a program and of its output to keep. The url and the driver stay in `config/rag.php` -- a form that decides where the application posts code is a way in, not a setting.
+Once a sandbox is configured, the rest is on the `Assistant settings` page: whether the agent may run code at all, which of the installed languages it may use (the page asks the sandbox), the time limit, and how much of a program and of its output to keep. The url and the driver stay in `config/filament-ai.php` -- a form that decides where the application posts code is a way in, not a setting.
+
+### Searching the web
+
+The knowledge base is closed; the web isn't. For anything current or simply outside the indexed corpus, the agent can be given two tools: `search_web`, which returns titles, urls and snippets, and `fetch_web_page`, which reads one page in full. Deliberately two calls, not one -- the agent reads snippets first and fetches the whole page only for the one or two results that actually deserve it, instead of paying for ten full pages on every query.
+
+It is off by default. The shipped driver is Google's [Programmable Search Engine](https://programmablesearchengine.google.com) (Custom Search JSON API): create an engine set to search the whole web, and an API key with the "Custom Search API" enabled at the [Google Cloud console](https://console.cloud.google.com/apis/credentials).
+
+```dotenv
+FILAMENT_AI_AGENT_WEB_SEARCH=true
+FILAMENT_AI_GOOGLE_SEARCH_API_KEY=...
+FILAMENT_AI_GOOGLE_SEARCH_CX=...          # the search engine id, not the key
+```
+
+`search_web` caches identical `(query, limit)` pairs for `web_search.cache_ttl` seconds (an hour by default), so the same question asked twice in a conversation is not billed twice. Google's own cap of 10 results per request applies regardless of what is configured.
+
+`fetch_web_page` is **off unless switched on** (`FILAMENT_AI_AGENT_WEB_FETCH=true`): it makes this server fetch a url the model chose. It only accepts plain `http`/`https` urls resolving to public addresses -- no loopback, private, carrier-grade NAT, link-local (cloud metadata) or IPv6 forms that embed them -- and connects to exactly the address it checked, so DNS cannot answer differently the second time. Every redirect is checked and pinned again, the body is read as a stream and abandoned at `max_bytes`, and the text comes back marked as untrusted content. Every search and fetch is logged with the user who asked.
+
+The Google key is sent as the `X-Goog-Api-Key` header, never in the url. The provider's key, engine id and endpoint are not editable from the panel; on/off, result counts and caching are.
+
+A driver of your own -- Bing, Brave, an internal index -- is a class implementing `WebSearchEngine`, registered on `WebSearchManager`:
+
+```php
+use Murkrow\FilamentAi\Agent\WebSearch\WebSearchManager;
+
+$this->app->make(WebSearchManager::class)->register('bing', function ($app) {
+    return new BingSearchEngine(/* ... */);
+});
+```
+
+then `FILAMENT_AI_AGENT_WEB_SEARCH_DRIVER=bing`.
 
 ### Keeping at it until it works
 
@@ -485,7 +570,7 @@ A wave is N attempts running in parallel on the queue, each a full turn with eve
 
 It always stops. Waves, tokens, cost and seconds are four independent budgets, and the first to run out ends the run as `exhausted` -- keeping the best attempt and the reason it was rejected, which is what the user is told.
 
-Off by default (`rag.agent.solving`), because it multiplies the cost of an answer by attempts × waves plus a judgement each; the panel's `Assistant settings` page carries the switches, and `Solve runs` shows every attempt with its score and the judge's reason. It needs a queue worker: the batch's completion is what starts the next wave.
+Off by default (`filament-ai.agent.solving`), because it multiplies the cost of an answer by attempts × waves plus a judgement each; the panel's `Assistant settings` page carries the switches, and `Solve runs` shows every attempt with its score and the judge's reason. It needs a queue worker: the batch's completion is what starts the next wave.
 
 The judge is a `Verifier`. The shipped one is a language model; an application that already knows what correct means -- a treasure hunt holding the answer, a checksum, a test suite -- binds its own and pays nothing per attempt.
 
@@ -525,22 +610,22 @@ final class HuntStrategy extends DefaultStrategy
 }
 ```
 
-Name it in `rag.agent.solving.strategy`, or per run with `new SolveOptions(strategy: HuntStrategy::class)`. A phase only ever narrows the tools; one that names none gets all of them. The strategy may also sharpen the criteria (`criteriaFor()`) and bring its own verifier (`verifier()`), and it is stored on the run, so changing the config halfway through does not change the method of a run already going. `DefaultStrategy` is what every run did before this existed: one phase, repeated, every tool.
+Name it in `filament-ai.agent.solving.strategy`, or per run with `new SolveOptions(strategy: HuntStrategy::class)`. A phase only ever narrows the tools; one that names none gets all of them. The strategy may also sharpen the criteria (`criteriaFor()`) and bring its own verifier (`verifier()`), and it is stored on the run, so changing the config halfway through does not change the method of a run already going. `DefaultStrategy` is what every run did before this existed: one phase, repeated, every tool.
 
 ### In the panel
 
-The plugin adds an **Assistant** page to the panel. It is not a second chat: it renders the same component as the standalone page at `/rag/chat` (see [Chat page](#chat-page)), talking to the same endpoints, with its colours taken from the panel's theme. It opens in **Assistant** mode -- tools, writes, a card with Approve and Reject for every pending change -- and the **Knowledge** mode, with citations, is one click away. A button next to global search opens it about the page on screen, so "this order" means the order being viewed. Assistant threads live in laravel/ai's conversation tables -- run its migrations -- and are only ever visible to the user who wrote them.
+The plugin adds an **Assistant** page to the panel. It is not a second chat: it renders the same component as the standalone page at `/ai/chat` (see [Chat page](#chat-page)), talking to the same endpoints, with its colours taken from the panel's theme: tools, citations, and a card with Approve and Reject for every pending change. A button next to global search opens it about the page on screen, so "this order" means the order being viewed. Assistant threads live in laravel/ai's conversation tables -- run its migrations -- and are only ever visible to the user who wrote them.
 
 ```php
-// config/rag.php
+// config/filament-ai.php
 'agent' => [
     'assistant' => \App\Ai\Assistant::class,      // your PanelAssistant subclass
-    'authorize' => fn ($user) => $user->can('useAssistant'),
+    'authorize' => [AssistantPolicy::class, 'use'],   // callable; survives config:cache
     'chat' => ['slug' => 'assistant', 'topbar_button' => true],
 ],
 ```
 
-Answers stream, tool calls included. When iterative solving is on, the composer shows a **Keep trying** toggle: the question then starts a run instead of a turn, and the page follows it wave by wave until it ends, with a link to every attempt in `Solve runs`. The run lives on the queue, so closing the page does not stop it.
+Answers stream, tool calls included. When iterative solving is on, the composer shows a **Keep trying** toggle: the question then starts a run instead of a turn, and the page follows it wave by wave until it ends, with a link to every attempt in `Solve runs` for the `debug` ability. The run lives on the queue, in the panel, tenant and user it was started by, and its attempts get read tools only -- nobody is there to approve a write, so closing the page does not stop it.
 
 The agent itself works with no class of your own:
 
@@ -552,7 +637,7 @@ use Murkrow\FilamentAi\Agent\PanelAssistant;
     ->prompt('Has this customer ordered before?');
 ```
 
-Extend it to give it a voice and a domain (`persona()`, `domain()`, `additionalTools()`). Knowledge sources it may read and the default record cap live under `rag.agent`.
+Extend it to give it a voice and a domain (`persona()`, `domain()`, `additionalTools()`). Knowledge sources it may read and the default record cap live under `filament-ai.agent`.
 
 ---
 
@@ -580,7 +665,7 @@ php artisan mcp:inspector knowledge
 claude mcp add --transport http knowledge https://your-app.test/mcp/knowledge
 ```
 
-Restrict what MCP can reach with `rag.mcp.sources`. An empty allow-list exposes nothing.
+Restrict what MCP can reach with `filament-ai.mcp.sources`. An empty allow-list exposes nothing.
 
 ---
 
@@ -591,7 +676,7 @@ Restrict what MCP can reach with `rag.mcp.sources`. An empty allow-list exposes 
 ->plugin(\Murkrow\FilamentAi\Filament\FilamentAiPlugin::make())
 ```
 
-That is the whole installation. Add `'Knowledge'` to your panel's `navigationGroups()`, or point `rag.filament.navigation_group` at a group you already have.
+That is the whole installation. Add `'Knowledge'` to your panel's `navigationGroups()`, or point `filament-ai.filament.navigation_group` at a group you already have.
 
 ### Styling
 
@@ -610,13 +695,10 @@ not exist unless every host application built a theme for it.
 ## Chat page
 
 A standalone chat UI, served by the package and independent of Filament: its
-own route, its own stylesheet, its own layout. It exists because the Playground
-is a diagnostic tool -- single-shot, no memory, every retrieval knob on the
-form -- and most people asking the corpus a question want an answer and a way
-to check it, not a retriever to tune.
+own route, its own stylesheet, its own layout.
 
 ```
-/rag/chat
+/ai/chat
 ```
 
 Nothing to publish and nothing to build. Set `FILAMENT_AI_CHAT_PATH` to move it,
@@ -625,76 +707,66 @@ Nothing to publish and nothing to build. Set `FILAMENT_AI_CHAT_PATH` to move it,
 The panel's Assistant page renders this same component, so the two are one
 chat with two doors. Switching the standalone page off removes the page only:
 the endpoints behind it stay up while the panel chat is on
-(`rag.agent.chat.enabled`), because that page talks to them too. The chat has
-two modes -- **Knowledge**, the grounded answers described below, and
-**Assistant**, the panel agent with its tools and approvals -- and a thread
-belongs to the mode it was started in.
+(`filament-ai.agent.chat.enabled`), because that page talks to them too. The
+standalone page acts in `filament-ai.chat.panel` (the default panel when null)
+(`FILAMENT_AI_CHAT_PANEL`) and, on a tenant panel, in the user's default tenant.
 
-- **Conversations are saved per user** and listed in the sidebar, grouped by
-  day, renameable, pinnable, deletable. Each turn is still an ordinary
-  `QueryLog` row -- citations, tokens and cost included -- with a
-  `conversation_id` on it, so the query log stays the single audit trail.
-- **The answer streams.** Citation markers become clickable pills; clicking one
-  opens the sources panel on that exact passage, with its document, its page
-  range, its similarity score and whether the model actually cited it.
-- **Advanced settings are behind a button.** The main surface carries the
-  question box, the model and the sources. `top_k`, `min_score` and
-  retrieval-only mode live in a modal.
-- **Thumbs up / down** writes `rag_queries.feedback`, which is the evaluation
-  signal the query log was built to collect.
+- **Conversations are saved per user** in laravel/ai's tables and listed in the
+  sidebar, renameable and deletable. A reload, a second tab and a turn paused
+  for approval all show the same thing.
+- **The answer streams**, with each step the assistant takes shown in plain
+  words ("Search customers", "Edit a task") and citation markers that open the
+  passage they point at.
+- **Changes wait on a card** that shows the record and each field's current and
+  new value, with Approve and Reject.
 
 ### Who sees what
 
-Every control maps to an ability named `filament-ai.chat.<name>`:
+A person using the chat sees sentences: what the assistant did, what it wants
+to change, and -- when something fails -- that it failed and what to do. The
+technical side is for whoever debugs the assistant, behind its own ability.
 
 | Ability | Controls | Default |
 |---|---|---|
-| `view` | reaching the page at all | on |
-| `history` | the sidebar, and saving conversations | on |
-| `delete` | renaming, pinning and deleting one's own | on |
-| `model` | the model picker and the model label | on |
-| `sources` | the knowledge-source picker | on |
-| `passages` | the sources panel and the citation pills | on |
-| `cost` | per-answer cost, tokens, conversation total | on |
-| `advanced` | `top_k`, `min_score`, retrieval-only | on |
-| `feedback` | thumbs up / down | on |
-| `export` | copying a conversation | on |
-| `all_conversations` | reading somebody else's | **off** |
+| `view` | reaching the standalone page at all | on |
+| `history` | the sidebar of saved conversations | on |
+| `delete` | renaming and deleting one's own | on |
+| `model` | the model picker, when models are on offer | on |
+| `settings` | the settings panel | on |
+| `solve` | the **Keep trying** toggle | on |
+| `export` | copying an answer | on |
+| `cost` | what each answer cost | **off** |
+| `debug` | raw errors, tool names and arguments, model, tokens, cost, retrieval scores, the solve run link, setup hints | **off** |
 
-Each takes one of four shapes in `config/rag.php`:
+Each takes one of four shapes in `config/filament-ai.php`:
 
 ```php
 'chat' => [
     'abilities' => [
-        'advanced' => false,                          // a literal
-        'cost' => 'see rag costs',                     // a permission name, checked with $user->can()
-        'view' => [RagPolicy::class, 'canAccess'],     // any callable: fn (?Authenticatable $user): bool
-        'model' => null,                               // the package default
+        'solve' => false,                                  // a literal
+        'cost' => 'see assistant costs',                   // a permission name, checked with $user->can()
+        'debug' => [AssistantPolicy::class, 'debug'],      // any callable: fn (?Authenticatable $user): bool
+        'model' => null,                                   // the package default
     ],
 ],
 ```
 
-`Gate::define('filament-ai.chat.cost', ...)` in your own provider overrides all of it.
-
-Two things are worth knowing. **A closure here cannot be `config:cache`d** --
-use a `[Policy::class, 'method']` array, which is callable and survives
-`var_export()`. And the check is not cosmetic: a field whose ability is denied
-is stripped from the request before validation
-(`Http\Requests\AskRequest::prepareForValidation()`), so posting `top_k=30` by
-hand to an account that may not tune retrieval gets the configured default.
+`Gate::define('filament-ai.chat.debug', ...)` in your own provider overrides all of it.
+**A closure here cannot be `config:cache`d** -- use a `[Policy::class, 'method']`
+array, which is callable and survives `var_export()`. The check is not cosmetic:
+what an ability denies is never put in the payload or the stream at all.
 
 ### Notes
 
-- **Saved history needs the query log.** With `rag.retrieval.log_queries` off
-  there is no turn to reopen, so the page answers normally and hides the
-  sidebar rather than showing one that never fills.
-- **Streaming follows `rag.answering.stream`.** Turn it off and the endpoint
-  returns the whole answer in one JSON response instead of server-sent events
-  -- worth doing if your application server buffers streamed responses.
 - **Authentication is `filament-ai.chat.middleware`**, `['web', 'auth']` by default.
   An application whose login route is not *named* `login` (a Filament panel's
   is `filament.<panel>.auth.login`) must say so here, or Laravel's `auth`
   middleware cannot build its redirect for a guest.
+- **Decisions are serialised with a cache lock**, so the cache store must
+  support locks (database, redis, memcached, file, array).
+- **Streaming under Octane or behind a buffering proxy** needs the response not
+  to be buffered (`X-Accel-Buffering: no` is sent; check your server's own
+  buffering).
 - The stylesheet and script are served from inside the package by a route, not
   published, so they can never be a stale copy in `public/`. Publish them with
   `--tag=filament-ai-chat-assets` if you would rather serve them yourself.
@@ -714,7 +786,7 @@ php artisan ai:purge books --embeddings-only
 
 **Build the index after a bulk load, not before.** `ai:vector:reindex` drops and rebuilds it, which produces a better graph and is substantially faster than incremental inserts. Raise `maintenance_work_mem` first on a large corpus.
 
-**Changing the embedding model invalidates every vector.** Vectors from two models are not comparable, and a pgvector column has a fixed width that the migration set once, from the config of that moment. The change is a deployment, not a setting: update the config, then run `ai:vector:reindex`. When `rag.embeddings.dimensions` no longer matches the column, the command says so, discards the stored vectors, resizes the column and rebuilds the index; re-embed afterwards with `ai:ingest <source> --mode=embeddings_only`. A new model with the same width needs only that last step, and `ai:status` reports vectors from another model as stale so the condition is visible rather than silent.
+**Changing the embedding model invalidates every vector.** Vectors from two models are not comparable, and a pgvector column has a fixed width that the migration set once, from the config of that moment. The change is a deployment, not a setting: update the config, then run `ai:vector:reindex`. When `filament-ai.embeddings.dimensions` no longer matches the column, the command says so, discards the stored vectors, resizes the column and rebuilds the index; re-embed afterwards with `ai:ingest <source> --mode=embeddings_only`. A new model with the same width needs only that last step, and `ai:status` reports vectors from another model as stale so the condition is visible rather than silent.
 
 ### Cost
 
@@ -729,7 +801,7 @@ Roughly, for a 1,000-book library of ~250 pages each at ~350 tokens per page:
 
 The dominant cost is wall-clock time against the provider's API, not money. Batches of 96 chunks per request and parallel workers are what move that number; the built-in rate limiter keeps a bulk run from burning its retry budget against a 429.
 
-Two settings shape a queued run: `rag.queue.chunks_per_job` is how many chunks one job carries, and `rag.embeddings.batch_size` how many of them go into one embedding request, so each job makes ⌈chunks_per_job ÷ batch_size⌉ calls. A self-hosted embedder such as Ollama serves requests strictly one at a time: there, a small `batch_size` (1–2) keeps a search query from waiting behind a long ingestion request, at no cost in throughput, and a second worker adds wait rather than speed.
+Two settings shape a queued run: `filament-ai.queue.chunks_per_job` is how many chunks one job carries, and `filament-ai.embeddings.batch_size` how many of them go into one embedding request, so each job makes ⌈chunks_per_job ÷ batch_size⌉ calls. A self-hosted embedder such as Ollama serves requests strictly one at a time: there, a small `batch_size` (1–2) keeps a search query from waiting behind a long ingestion request, at no cost in throughput, and a second worker adds wait rather than speed.
 
 ---
 

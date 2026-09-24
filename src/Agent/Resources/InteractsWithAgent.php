@@ -13,6 +13,18 @@ namespace Murkrow\FilamentAi\Agent\Resources;
  *     {
  *         return $tools->only(AgentTools::LIST)->searchUsing(['number', 'customer_name']);
  *     }
+ *
+ * The agent writes through the resource's form, but never mounts its pages,
+ * so a page's `mutateFormDataBeforeCreate()` / `mutateFormDataBeforeSave()`
+ * does not run. What those do that must also happen for the agent -- setting
+ * the owner, a slug, a status -- goes in two optional static methods:
+ *
+ *     public static function agentMutateBeforeCreate(array $data): array
+ *     {
+ *         return [...$data, 'user_id' => auth()->id()];
+ *     }
+ *
+ *     public static function agentMutateBeforeSave(Model $record, array $data): array
  */
 trait InteractsWithAgent
 {

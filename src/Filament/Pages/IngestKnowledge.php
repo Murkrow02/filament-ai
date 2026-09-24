@@ -10,6 +10,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Panel;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Schema;
@@ -60,7 +61,7 @@ class IngestKnowledge extends Page
 
     public bool $estimating = false;
 
-    public static function getSlug(?\Filament\Panel $panel = null): string
+    public static function getSlug(?Panel $panel = null): string
     {
         return static::aiSlug('ingest');
     }
@@ -99,7 +100,7 @@ class IngestKnowledge extends Page
                                 $this->data['filters'] = [];
                                 $this->estimate = null;
                             })
-                            ->helperText('Sources are classes in app/Knowledge, listed under rag.sources.'),
+                            ->helperText('Sources are classes in app/Knowledge, listed under filament-ai.sources.'),
 
                         Select::make('mode')
                             ->label('Mode')

@@ -53,7 +53,7 @@ it('pauses a write for approval and runs it only once approved', function (): vo
 
     expect($response->hasPendingApprovals())->toBeTrue()
         ->and($response->pendingApprovals->first()->tool)->toBe('test_books_create')
-        ->and($response->pendingApprovals->first()->reason)->toBe('Create test book -- Title: Statuti del comune')
+        ->and($response->pendingApprovals->first()->reason)->toBe('Create test book — Title: Statuti del comune')
         ->and(TestBook::query()->count())->toBe(0);
 
     $resumed = (new PanelAssistant)

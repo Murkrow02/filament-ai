@@ -3,14 +3,19 @@
 declare(strict_types=1);
 
 use Filament\Facades\Filament;
+use Laravel\Ai\Tools\Request;
 use Livewire\Livewire;
 use Murkrow\FilamentAi\Agent\Resources\AgentTools;
 use Murkrow\FilamentAi\Agent\Resources\ResourceToolRegistry;
+use Murkrow\FilamentAi\Agent\Sandbox\FakeSandbox;
+use Murkrow\FilamentAi\Agent\Tools\RunCode;
+use Murkrow\FilamentAi\Contracts\CodeSandbox;
 use Murkrow\FilamentAi\Filament\Pages\AgentSettings;
 use Murkrow\FilamentAi\Filament\Pages\KnowledgeSettings;
 use Murkrow\FilamentAi\Models\Setting;
 use Murkrow\FilamentAi\Settings\SettingsRepository;
 use Murkrow\FilamentAi\Tests\Fixtures\Filament\TestBookResource;
+use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 
 beforeEach(function (): void {
     config()->set('filament-ai.settings.enabled', true);
@@ -64,8 +69,9 @@ it('takes an ability away from a resource', function (): void {
         ->and(toolNamesAfterSaving($settings))->toBe(['test_books_list', 'test_books_view']);
 });
 
-it('lets a write run without asking', function (): void {
+it('cannot make a write silent that the code asks about', function (): void {
     $settings = app(SettingsRepository::class);
+    $book = TestBook::query()->create(['title' => 'Statuti']);
 
     Livewire::test(AgentSettings::class)
         ->set('data.resources.0.unapproved', [AgentTools::EDIT])
@@ -79,8 +85,8 @@ it('lets a write run without asking', function (): void {
         $tools[$tool->name()] = $tool;
     }
 
-    expect($tools['test_books_edit']->shouldRequestApproval(new Laravel\Ai\Tools\Request(['id' => '1'])))->toBeNull()
-        ->and($tools['test_books_create']->shouldRequestApproval(new Laravel\Ai\Tools\Request(['title' => 'x'])))->not->toBeNull();
+    expect($settings->get('agent.resources.overrides'))->toBe([])
+        ->and($tools['test_books_edit']->shouldRequestApproval(new Request(['id' => (string) $book->id, 'title' => 'Nuovo'])))->not->toBeNull();
 });
 
 it('changes the assistant model and the record cap', function (): void {
@@ -128,11 +134,11 @@ it('offers the languages the sandbox actually has, and pins their versions', fun
 
     expect($settings->get('agent.sandbox.languages'))->toBe(['python' => '1.0.0'])
         ->and(config('filament-ai.agent.sandbox.timeout'))->toBe(8000)
-        ->and(Murkrow\FilamentAi\Agent\Tools\RunCode::enabled())->toBeTrue();
+        ->and(RunCode::enabled())->toBeTrue();
 });
 
 it('says so when the sandbox is not answering, instead of offering nothing in silence', function (): void {
-    app()->instance(Murkrow\FilamentAi\Contracts\CodeSandbox::class, new Murkrow\FilamentAi\Agent\Sandbox\FakeSandbox([]));
+    app()->instance(CodeSandbox::class, new FakeSandbox([]));
 
     Livewire::test(AgentSettings::class)
         ->assertOk()

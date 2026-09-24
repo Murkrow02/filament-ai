@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Agent\Resources;
 
+use Filament\Resources\Resource;
+
 /**
  * Everything the agent tools need to know about one resource, resolved once.
  *
@@ -18,7 +20,8 @@ final readonly class ResourceBlueprint
      * @param  list<string>  $searchColumns  plain columns of the model's table
      * @param  list<string>  $listAttributes  returned by the list tool
      * @param  list<string>  $viewAttributes  returned by the view tool
-     * @param  list<FieldBlueprint>  $fields  writable form fields
+     * @param  list<FieldBlueprint>  $fields  form fields offered when creating
+     * @param  list<FieldBlueprint>|null  $editFields  form fields offered when editing; null means the same as $fields
      * @param  list<FilterBlueprint>  $filters  the table's filters, as list arguments
      * @param  list<string>  $unapprovedAbilities  writes that run without asking
      */
@@ -36,7 +39,27 @@ final readonly class ResourceBlueprint
         public array $fields = [],
         public array $unapprovedAbilities = [],
         public array $filters = [],
+        public ?array $editFields = null,
     ) {}
+
+    /**
+     * @return list<FieldBlueprint>
+     */
+    public function fieldsFor(string $ability): array
+    {
+        return $ability === AgentTools::EDIT ? ($this->editFields ?? $this->fields) : $this->fields;
+    }
+
+    public function field(string $name): ?FieldBlueprint
+    {
+        foreach ([...$this->fields, ...($this->editFields ?? [])] as $field) {
+            if ($field->name === $name) {
+                return $field;
+            }
+        }
+
+        return null;
+    }
 
     public function allows(string $ability): bool
     {

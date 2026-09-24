@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Murkrow\FilamentAi\Tests;
 
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Laravel\Ai\AiServiceProvider;
+use Laravel\Mcp\Server\McpServiceProvider;
 use Murkrow\FilamentAi\Contracts\VectorStore;
 use Murkrow\FilamentAi\FilamentAiServiceProvider;
 use Murkrow\FilamentAi\Tests\Fixtures\InMemoryVectorStore;
-use Murkrow\FilamentAi\Tests\Fixtures\TestBook;
 use Murkrow\FilamentAi\Tests\Fixtures\TestBookSource;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -45,10 +47,10 @@ abstract class TestCase extends Orchestra
         // CREATE EXTENSION migration that SQLite cannot run, and the Blueprint
         // macros it registers are registered by FilamentAiServiceProvider anyway.
         return array_values(array_filter([
-            class_exists(\Laravel\Mcp\Server\McpServiceProvider::class)
-                ? \Laravel\Mcp\Server\McpServiceProvider::class
+            class_exists(McpServiceProvider::class)
+                ? McpServiceProvider::class
                 : null,
-            \Laravel\Ai\AiServiceProvider::class,
+            AiServiceProvider::class,
             FilamentAiServiceProvider::class,
         ]));
     }
@@ -139,7 +141,7 @@ abstract class TestCase extends Orchestra
                 '--tries' => 1,
             ])->run();
 
-            if (\Illuminate\Support\Facades\DB::table('jobs')->count() === 0) {
+            if (DB::table('jobs')->count() === 0) {
                 return;
             }
         }
@@ -155,6 +157,33 @@ abstract class TestCase extends Orchestra
             $table->string('title');
             $table->string('author')->nullable();
             $table->boolean('bad_ocr')->default(false);
+            $table->timestamps();
+        });
+
+        Schema::create('test_teams', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->timestamps();
+        });
+
+        Schema::create('test_tasks', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('test_team_id')->nullable();
+            $table->string('title');
+            $table->timestamps();
+        });
+
+        Schema::create('test_articles', function (Blueprint $table): void {
+            $table->id();
+            $table->string('title');
+            $table->string('status')->nullable();
+            $table->string('secret')->nullable();
+            $table->string('locked')->nullable();
+            $table->string('password')->nullable();
+            $table->string('code')->nullable();
+            $table->foreignId('test_book_id')->nullable();
+            $table->date('published_on')->nullable();
             $table->timestamps();
         });
 

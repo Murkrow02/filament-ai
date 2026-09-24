@@ -75,8 +75,8 @@ final class LaravelAiLanguageModel implements LanguageModel
 
         return $this->result(
             $response->text,
-            $response->usage->promptTokens,
-            $response->usage->completionTokens,
+            $response->usage->inputTokens,
+            $response->usage->outputTokens,
             $model,
         );
     }
@@ -113,8 +113,8 @@ final class LaravelAiLanguageModel implements LanguageModel
             // One StreamEnd per step. A tool-less agent takes one step, but
             // summing keeps the accounting right if that ever changes.
             if ($event instanceof StreamEnd) {
-                $promptTokens += $event->usage->promptTokens;
-                $completionTokens += $event->usage->completionTokens;
+                $promptTokens += $event->usage->inputTokens;
+                $completionTokens += $event->usage->outputTokens;
             }
         }
 

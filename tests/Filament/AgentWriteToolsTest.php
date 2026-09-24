@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Auth\User;
+use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Ai\Approvals\Approval;
 use Laravel\Ai\Contracts\Tool;
@@ -68,7 +69,7 @@ it('derives writable fields, their rules and their labels from the form', functi
 });
 
 it('describes create arguments from the form and edit arguments with the id', function (): void {
-    $schema = new \Illuminate\JsonSchema\JsonSchemaTypeFactory;
+    $schema = new JsonSchemaTypeFactory;
     $tools = bookWriteTools();
 
     expect(array_keys($tools['test_books_create']->schema($schema)))->toBe(['title', 'author'])
@@ -79,7 +80,7 @@ it('asks the user to approve a creation, showing what will be saved', function (
     $approval = bookWriteTools()['test_books_create']->shouldRequestApproval(new Request(['title' => 'Statuti del comune']));
 
     expect($approval)->toBeInstanceOf(Approval::class)
-        ->and($approval->reason)->toBe('Create test book -- Title: Statuti del comune');
+        ->and($approval->reason)->toBe('Create test book — Title: Statuti del comune');
 });
 
 it('creates a record with the form fields only', function (): void {
@@ -100,7 +101,7 @@ it('creates a record with the form fields only', function (): void {
 it('validates a creation with the form rules and saves nothing when invalid', function (): void {
     $output = bookWriteTools()['test_books_create']->handle(new Request(['author' => 'Ser Piero']));
 
-    expect($output)->toStartWith('Error:')->toContain('Title')
+    expect($output)->toStartWith('Error:')->toContain('[title]')
         ->and(TestBook::query()->count())->toBe(0);
 });
 
@@ -154,9 +155,16 @@ it('deletes a record', function (): void {
 });
 
 it('always asks before deleting', function (): void {
+    $book = TestBook::query()->create(['title' => 'Statuti']);
     $tool = bookWriteTools((new AgentTools(TestBookResource::class))->with(AgentTools::DELETE)->withoutApproval(AgentTools::CREATE, AgentTools::EDIT))['test_books_delete'];
 
-    expect($tool->shouldRequestApproval(new Request(['id' => '1'])))->toBeInstanceOf(Approval::class);
+    // withoutApproval() is public on every approvable tool: it must not be a
+    // way around the question either.
+    $tool->withoutApproval();
+
+    expect($tool->shouldRequestApproval(new Request(['id' => (string) $book->id])))
+        ->toBeInstanceOf(Approval::class)
+        ->reason->toBe('Delete test book «Statuti»');
 });
 
 it('refuses to turn approval off for deletion', function (): void {

@@ -18,7 +18,7 @@ use UnexpectedValueException;
  * falls back to `ai.default_for_embeddings`.
  *
  * laravel/ai's own embedding cache is left off: query embeddings are already
- * cached one layer up (`rag.embeddings.cache_queries`), and document vectors
+ * cached one layer up (`filament-ai.embeddings.cache_queries`), and document vectors
  * are reused by content hash in `ChunkDiffer`, so a second cache would only
  * spend storage on vectors that are never asked for twice.
  */
@@ -84,7 +84,7 @@ final class LaravelAiEmbeddingProvider implements EmbeddingProvider
             vectors: array_map(fn (array $vector): array => $this->finalize($vector), array_values($response->embeddings)),
             model: $this->model,
             dimensions: $this->dimensions,
-            tokens: $response->tokens,
+            tokens: $response->usage->inputTokens,
         );
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Ingestion;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
 use Murkrow\FilamentAi\Contracts\VectorStore;
@@ -14,8 +15,8 @@ use Murkrow\FilamentAi\Support\Tables;
 /**
  * Embeds a group of chunks and writes the vectors back.
  *
- * A group is `rag.queue.chunks_per_job` chunks; it is sent to the provider in
- * calls of at most `maxBatchSize()` texts (`rag.embeddings.batch_size`). The
+ * A group is `filament-ai.queue.chunks_per_job` chunks; it is sent to the provider in
+ * calls of at most `maxBatchSize()` texts (`filament-ai.embeddings.batch_size`). The
  * split matters for a self-hosted embedder: Ollama serves one request at a
  * time, so the size of each call is how long a search query can wait behind
  * an ingestion that is running.
@@ -46,7 +47,7 @@ final class ChunkEmbedder
         $model = $this->embeddings->model();
         $dimensions = $this->embeddings->dimensions();
 
-        /** @var \Illuminate\Database\Eloquent\Collection<int, Chunk> $chunks */
+        /** @var Collection<int, Chunk> $chunks */
         $chunks = Chunk::query()
             ->whereIn('id', $chunkIds)
             ->where(function ($query) use ($model, $dimensions): void {

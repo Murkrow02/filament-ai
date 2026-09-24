@@ -121,7 +121,13 @@ it('is forbidden when the authorize callback denies', function (): void {
 it('explains itself instead of failing when laravel/ai tables are missing', function (): void {
     Schema::drop('agent_conversation_messages');
 
+    // A person is told to ask for help; how to fix it is for the debug ability.
     Livewire::test(AssistantChat::class)
         ->assertOk()
-        ->assertSee('Publish and run laravel/ai');
+        ->assertSee(__('filament-ai::messages.assistant.unavailable'))
+        ->assertDontSee('Publish and run laravel/ai');
+
+    config()->set('filament-ai.chat.abilities.debug', true);
+
+    Livewire::test(AssistantChat::class)->assertSee('Publish and run laravel/ai');
 });

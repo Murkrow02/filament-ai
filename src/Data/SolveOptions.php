@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Data;
 
+use Murkrow\FilamentAi\Agent\PanelAssistant;
+use Murkrow\FilamentAi\Agent\Solving\Strategies;
+use Murkrow\FilamentAi\Contracts\SolveStrategy;
+
 /**
  * The shape of one iterative run: what counts as a solution, how wide to
  * search, and when to stop.
  *
- * Everything left null falls back to `rag.agent.solving`, so a caller states
+ * Everything left null falls back to `filament-ai.agent.solving`, so a caller states
  * only what it wants to differ. The four budgets are independent and the first
  * one to run out ends the run -- a search that cannot be stopped is not a
  * feature.
@@ -18,8 +22,8 @@ final readonly class SolveOptions
     /**
      * @param  string  $criteria  what the verifier checks an answer against
      * @param  array<string, mixed>  $context  extra facts handed to every attempt, and stored on the run
-     * @param  class-string|null  $assistant  the agent to use; null takes rag.agent.assistant
-     * @param  class-string<\Murkrow\FilamentAi\Contracts\SolveStrategy>|null  $strategy  how to go about it; null takes rag.agent.solving.strategy
+     * @param  class-string|null  $assistant  the agent to use; null takes filament-ai.agent.assistant
+     * @param  class-string<SolveStrategy>|null  $strategy  how to go about it; null takes filament-ai.agent.solving.strategy
      */
     public function __construct(
         public string $criteria = '',
@@ -42,7 +46,7 @@ final readonly class SolveOptions
 
     public function maxWaves(): int
     {
-        $phases = \Murkrow\FilamentAi\Agent\Solving\Strategies::for($this->strategy())->phases();
+        $phases = Strategies::for($this->strategy())->phases();
 
         // A method with three named steps is not improved by a fourth wave of
         // the last one, so the strategy wins over the configured ceiling --
@@ -67,17 +71,17 @@ final readonly class SolveOptions
 
     public function assistant(): string
     {
-        return $this->assistant ?? (string) config('filament-ai.agent.assistant', \Murkrow\FilamentAi\Agent\PanelAssistant::class);
+        return $this->assistant ?? (string) config('filament-ai.agent.assistant', PanelAssistant::class);
     }
 
     /**
-     * @return class-string<\Murkrow\FilamentAi\Contracts\SolveStrategy>
+     * @return class-string<SolveStrategy>
      */
     public function strategy(): string
     {
-        return $this->strategy !== null && is_a($this->strategy, \Murkrow\FilamentAi\Contracts\SolveStrategy::class, allow_string: true)
+        return $this->strategy !== null && is_a($this->strategy, SolveStrategy::class, allow_string: true)
             ? $this->strategy
-            : \Murkrow\FilamentAi\Agent\Solving\Strategies::configured();
+            : Strategies::configured();
     }
 
     /**
@@ -96,8 +100,8 @@ final readonly class SolveOptions
      */
     public function maxAgentCalls(): int
     {
-        return \Murkrow\FilamentAi\Agent\Solving\Strategies::plannedAttempts(
-            \Murkrow\FilamentAi\Agent\Solving\Strategies::for($this->strategy()),
+        return Strategies::plannedAttempts(
+            Strategies::for($this->strategy()),
             $this->maxWaves(),
             $this->attemptsPerWave(),
         );

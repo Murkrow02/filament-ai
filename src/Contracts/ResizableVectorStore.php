@@ -15,7 +15,7 @@ interface ResizableVectorStore
 {
     /**
      * The width the vector column actually has in the database -- which is not
-     * necessarily `rag.embeddings.dimensions`: the column is created once, by a
+     * necessarily `filament-ai.embeddings.dimensions`: the column is created once, by a
      * migration, with whatever the config said at that moment.
      *
      * Null when the column is missing or has no declared width.

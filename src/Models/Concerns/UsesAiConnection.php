@@ -15,7 +15,7 @@ use Murkrow\FilamentAi\Support\Tables;
 trait UsesAiConnection
 {
     /**
-     * The config key under rag.database.tables this model maps to.
+     * The config key under filament-ai.database.tables this model maps to.
      */
     abstract protected function aiTableKey(): string;
 

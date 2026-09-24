@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Murkrow\FilamentAi\Llm;
 
 use Closure;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Manager;
 use Murkrow\FilamentAi\Contracts\LanguageModel;
 
@@ -23,21 +24,13 @@ final class LanguageModelManager extends Manager
         return LaravelAiLanguageModel::fromConfig();
     }
 
-    /**
-     * @deprecated Use the laravel-ai driver. Removed in the next minor release.
-     */
-    public function createPrismDriver(): LanguageModel
-    {
-        return PrismLanguageModel::fromConfig();
-    }
-
     public function createFakeDriver(): LanguageModel
     {
         return new FakeLanguageModel;
     }
 
     /**
-     * @param  Closure(\Illuminate\Contracts\Container\Container): LanguageModel  $callback
+     * @param  Closure(Container): LanguageModel  $callback
      */
     public function register(string $name, Closure $callback): self
     {

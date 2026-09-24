@@ -7,7 +7,7 @@ namespace Murkrow\FilamentAi\Support;
 /**
  * Resolves the package's table names from configuration.
  *
- * Every table sits behind `rag.database.prefix` so the package can never
+ * Every table sits behind `filament-ai.database.prefix` so the package can never
  * collide with the host application's schema, and each individual name stays
  * overridable in case a host already owns one of the defaults.
  */

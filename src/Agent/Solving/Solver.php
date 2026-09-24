@@ -42,6 +42,7 @@ final class Solver
             'goal' => $goal,
             'criteria' => $options->criteria,
             'context' => $options->context,
+            'scope' => SolveScope::capture(),
             'assistant' => $options->assistant(),
             'strategy' => $options->strategy(),
             'waves_total' => $options->maxWaves(),

@@ -42,7 +42,7 @@ class ChatController
     {
         $owned = $this->owned($request, $conversation);
 
-        return response()->json($this->payload->conversation($owned));
+        return response()->json($this->payload->conversation($owned, ChatAbilities::allows('debug', $request->user())));
     }
 
     public function update(Request $request, string $conversation): JsonResponse

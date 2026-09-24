@@ -10,7 +10,7 @@ class DimensionMismatchException extends FilamentAiException
     {
         return new self(
             "Embedding dimension mismatch: the vector store is configured for {$expected} dimensions "
-            ."but the provider returned {$actual}. Align rag.embeddings.dimensions with the model, then "
+            ."but the provider returned {$actual}. Align filament-ai.embeddings.dimensions with the model, then "
             .'run `php artisan ai:vector:reindex` and re-embed.'
         );
     }

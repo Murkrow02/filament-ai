@@ -8,12 +8,38 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Bus;
 use Murkrow\FilamentAi\Enums\SolveStatus;
 use Murkrow\FilamentAi\Models\Concerns\UsesAiConnection;
 
 /**
  * One iterative search for an answer: a goal, the criteria it is judged
  * against, and the waves of attempts it took.
+ *
+ * @property int $id
+ * @property string $uuid
+ * @property SolveStatus $status
+ * @property string $goal
+ * @property string|null $criteria
+ * @property array<string, mixed>|null $context
+ * @property array{panel: ?string, tenant: ?string, user: int|string|null}|null $scope
+ * @property array<string, mixed>|null $budgets
+ * @property int $wave
+ * @property int $waves_total
+ * @property int $attempts_per_wave
+ * @property int $attempts_total
+ * @property int $attempts_failed
+ * @property int|null $best_attempt_id
+ * @property int $best_score
+ * @property string|null $message
+ * @property int $tokens_used
+ * @property int $cost_micros
+ * @property string|null $batch_id
+ * @property string|null $assistant
+ * @property string|null $strategy
+ * @property string|null $created_by
+ * @property \Illuminate\Support\Carbon|null $started_at
+ * @property \Illuminate\Support\Carbon|null $finished_at
  */
 class SolveRun extends Model
 {
@@ -31,6 +57,7 @@ class SolveRun extends Model
         return [
             'status' => SolveStatus::class,
             'context' => 'array',
+            'scope' => 'array',
             'budgets' => 'array',
             'wave' => 'integer',
             'waves_total' => 'integer',
@@ -107,7 +134,7 @@ class SolveRun extends Model
         }
 
         if ($this->batch_id !== null) {
-            \Illuminate\Support\Facades\Bus::findBatch($this->batch_id)?->cancel();
+            Bus::findBatch($this->batch_id)?->cancel();
         }
 
         $this->forceFill([

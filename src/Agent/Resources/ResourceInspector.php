@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Agent\Resources;
 
-use Filament\Forms\Components\Field;
 use Filament\Resources\Pages\PageRegistration;
-use Filament\Schemas\Contracts\HasSchemas;
-use Filament\Schemas\Schema;
+use Filament\Resources\Resource;
 use Filament\Tables\Columns\Column;
-use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -36,6 +34,7 @@ final class ResourceInspector
     public function __construct(
         private readonly FormFieldMapper $fields,
         private readonly TableFilterMapper $tableFilters,
+        private readonly FormPipeline $forms,
     ) {}
 
     /**
@@ -48,8 +47,9 @@ final class ResourceInspector
         $table = $this->table($resource);
         $columns = $table === null ? [] : $this->tableColumns($table);
         $tableNames = array_values(array_map(static fn (Column $column): string => $column->getName(), $columns));
-        $formFields = $this->formFields($resource);
-        $formNames = array_values(array_unique(array_map(static fn (Field $field): string => $field->getName(), $formFields)));
+        $createFields = $this->formFields($resource, FormPipeline::CREATE);
+        $editFields = $this->formFields($resource, FormPipeline::EDIT);
+        $formNames = array_values(array_unique(array_map(static fn (FieldBlueprint $field): string => $field->name, $editFields)));
 
         $searchColumns = $tools->searchColumns()
             ?? $this->searchableColumns($columns, $model)
@@ -71,9 +71,10 @@ final class ResourceInspector
             viewAttributes: $configured ?? array_values(array_unique([...$tableNames, ...$formNames])),
             maxRecords: $tools->maxRecords(),
             description: $tools->description(),
-            fields: array_values(array_filter(array_map($this->fields->map(...), $formFields))),
+            fields: $createFields,
             unapprovedAbilities: $tools->unapprovedAbilities(),
             filters: $table === null ? [] : $this->tableFilters($table),
+            editFields: $editFields,
         );
     }
 
@@ -90,7 +91,9 @@ final class ResourceInspector
 
         try {
             return $resource::table(Table::make($livewire));
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            report($exception);
+
             return null;
         }
     }
@@ -113,7 +116,9 @@ final class ResourceInspector
     {
         try {
             $filters = $table->getFilters();
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            report($exception);
+
             return [];
         }
 
@@ -159,7 +164,9 @@ final class ResourceInspector
             if ($page !== null && is_subclass_of($page, $contract)) {
                 try {
                     return app($page);
-                } catch (Throwable) {
+                } catch (Throwable $exception) {
+                    report($exception);
+
                     return null;
                 }
             }
@@ -169,33 +176,22 @@ final class ResourceInspector
     }
 
     /**
+     * The form fields offered for an operation, built the way the create or
+     * edit page builds its form: hidden, disabled and password fields for
+     * that operation are not offered at all.
+     *
      * @param  class-string<\Filament\Resources\Resource>  $resource
-     * @return list<Field>
+     * @return list<FieldBlueprint>
      */
-    private function formFields(string $resource): array
+    private function formFields(string $resource, string $operation): array
     {
-        // A schema resolves its components through its Livewire component and
-        // throws a TypeError without one, so the form is built against an
-        // unmounted page of the resource, the same way the table is.
-        $livewire = $this->pageImplementing($resource, HasSchemas::class);
-
-        if (! $livewire instanceof HasSchemas) {
+        if ($resource::getParentResourceRegistration() !== null) {
+            // A nested resource's records are created through their parent's
+            // relationship, which the agent has no parent record for.
             return [];
         }
 
-        try {
-            $fields = $resource::form(Schema::make($livewire))->getFlatFields(withHidden: true);
-        } catch (Throwable) {
-            return [];
-        }
-
-        return array_values(array_filter($fields, static function (mixed $field): bool {
-            try {
-                return $field instanceof Field && $field->getName() !== '';
-            } catch (Throwable) {
-                return false;
-            }
-        }));
+        return array_values(array_filter(array_map($this->fields->map(...), $this->forms->offeredFields($resource, $operation))));
     }
 
     /**

@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Illuminate\Testing\TestResponse;
 use Laravel\Ai\Ai;
-use Laravel\Ai\Gateway\FakeTextGateway;
 use Laravel\Ai\Models\Conversation;
 use Laravel\Ai\Responses\Data\ToolCall;
 use Murkrow\FilamentAi\Facades\FilamentAi;
@@ -60,14 +58,19 @@ it('asks for approval before a write and applies it once approved', function ():
     $approval = lastEvent($events, 'approval');
     $done = lastEvent($events, 'done');
 
-    expect($approval['calls'][0]['id'])->toBe('call_1')
-        ->and($approval['calls'][0]['tool'])->toBe('test_books_create')
-        // The arguments are what the user is approving; without them the
+    $card = [
+        'title' => 'Create test book',
+        'record' => null,
+        // What is being approved, in the form's own words; without it the
         // button asks for a blank cheque.
-        ->and($approval['calls'][0]['arguments'])->toBe(['title' => 'Statuti del comune'])
-        ->and($done['pending'][0]['id'])->toBe('call_1')
+        'changes' => [['label' => 'Title', 'before' => null, 'after' => 'Statuti del comune']],
+        'summary' => null,
+        'id' => 'call_1',
+    ];
+
+    expect($approval['calls'][0])->toBe($card)
         // A reload draws the same card as the stream did.
-        ->and($done['pending'][0]['arguments'])->toBe(['title' => 'Statuti del comune'])
+        ->and($done['pending'][0])->toBe($card)
         ->and(TestBook::query()->count())->toBe(0);
 
     $resumed = eventsOf($this->post("/ai/chat/c/{$done['conversation']}/decisions", [
@@ -160,7 +163,10 @@ it('says so instead of failing when laravel/ai is not installed', function (): v
 
     $this->postJson('/ai/chat/ask', ['question' => 'How many books are there?'])
         ->assertStatus(409)
-        ->assertJsonPath('message', __('filament-ai::messages.assistant.not_installed'));
+        // The reader cannot run a migration: they are told who can help, and
+        // only the debug ability gets the how.
+        ->assertJsonPath('message', __('filament-ai::messages.assistant.unavailable'))
+        ->assertJsonMissingPath('detail');
 });
 
 it('streams the passages a citation points at, and keeps them for a reload', function (): void {

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Murkrow\FilamentAi\Sources;
 
 /**
- * Per-source chunking parameters, layered over the global `rag.chunking` block.
+ * Per-source chunking parameters, layered over the global `filament-ai.chunking` block.
  *
  * Every field is nullable and only the ones set are emitted, so a source that
  * needs a smaller window says exactly that and inherits the rest. Changing any

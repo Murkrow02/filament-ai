@@ -20,7 +20,6 @@ class AssetController
     private const ALLOWED = [
         'filament-ai-chat.css' => 'text/css; charset=utf-8',
         'filament-ai-chat.js' => 'text/javascript; charset=utf-8',
-        'alpine.js' => 'text/javascript; charset=utf-8',
     ];
 
     public function __invoke(string $file): Response

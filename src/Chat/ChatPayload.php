@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Chat;
 
+use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Route;
 use Murkrow\FilamentAi\Agent\Chat\AssistantTurn;
+use Murkrow\FilamentAi\Agent\Chat\PanelScope;
+use Murkrow\FilamentAi\Agent\Chat\ToolLabels;
 use Murkrow\FilamentAi\Data\SolveOptions;
 
 /**
@@ -44,6 +47,9 @@ final class ChatPayload
             'abilities' => $allowed,
             'installed' => $this->turn->available(),
             'context' => $this->turn->resolvedContext($options['resource'] ?? null, $options['record'] ?? null),
+            // Sent back with every request, so the turn runs in this panel and
+            // tenant. See PanelScope.
+            'scope' => $this->scope(),
             'solving' => $this->solving($allowed),
             'endpoints' => $this->endpoints(),
             'csrf' => csrf_token(),
@@ -56,7 +62,7 @@ final class ChatPayload
             'currentModel' => $allowed['model'] ? $this->currentModel() : null,
             'suggestions' => $this->suggestions(),
             'conversations' => $allowed['history'] ? $this->conversations($user) : [],
-            'current' => $conversation === null ? null : $this->conversation($conversation),
+            'current' => $conversation === null ? null : $this->conversation($conversation, $allowed['debug']),
         ];
     }
 
@@ -65,14 +71,51 @@ final class ChatPayload
      *
      * @return array<string, mixed>
      */
-    public function conversation(string $conversationId): array
+    public function conversation(string $conversationId, bool $debug = false): array
     {
         return [
             'uuid' => $conversationId,
             'title' => $this->turn->title($conversationId),
-            'messages' => $this->turn->messages($conversationId),
-            'pending' => $this->turn->approvalCards($conversationId),
+            'messages' => $this->presentMessages($this->turn->messages($conversationId), $debug),
+            'pending' => $this->turn->approvalCards($conversationId, $debug),
         ];
+    }
+
+    /**
+     * The stored turns, as the reader may see them: steps by their label,
+     * a failed turn as a sentence, retrieval scores and raw errors only for
+     * the `debug` ability -- the same rules the live stream follows.
+     *
+     * @param  list<array<string, mixed>>  $messages
+     * @return list<array<string, mixed>>
+     */
+    private function presentMessages(array $messages, bool $debug): array
+    {
+        $labels = app(ToolLabels::class);
+
+        return array_map(static function (array $message) use ($labels, $debug): array {
+            $message['tools'] = array_map(static fn (array $tool): array => array_filter([
+                'id' => $tool['id'],
+                'label' => $labels->label($tool['name']),
+                'status' => $tool['status'],
+                'name' => $debug ? $tool['name'] : null,
+            ], static fn (mixed $value): bool => $value !== null), $message['tools'] ?? []);
+
+            if ($message['failed'] ?? false) {
+                $message['failure'] = (string) __('filament-ai::messages.assistant.failed');
+            }
+
+            if (! $debug) {
+                unset($message['error']);
+
+                $message['passages'] = array_map(
+                    static fn (array $passage): array => array_diff_key($passage, ['score' => true, 'document_id' => true]),
+                    $message['passages'] ?? [],
+                );
+            }
+
+            return $message;
+        }, $messages);
     }
 
     /**
@@ -110,6 +153,21 @@ final class ChatPayload
             // What the user is about to spend: one agent call per attempt,
             // plus one judgement each.
             'calls' => $options->maxAgentCalls(),
+        ];
+    }
+
+    /**
+     * @return array{panel: ?string, tenant: ?string}
+     */
+    private function scope(): array
+    {
+        if (! class_exists(Filament::class)) {
+            return ['panel' => null, 'tenant' => null];
+        }
+
+        return [
+            'panel' => Filament::getCurrentPanel()?->getId(),
+            'tenant' => PanelScope::tenantKey(),
         ];
     }
 

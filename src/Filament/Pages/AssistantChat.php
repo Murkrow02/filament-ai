@@ -56,7 +56,16 @@ class AssistantChat extends Page
 
     public function getTitle(): string
     {
-        return '';//(string) __('filament-ai::messages.assistant.title');
+        return (string) __('filament-ai::messages.assistant.title');
+    }
+
+    /**
+     * The chat fills the page and carries its own header; a second one above
+     * it would only push the conversation down. The title still names the tab.
+     */
+    public function getHeading(): string
+    {
+        return '';
     }
 
     public static function getNavigationGroup(): string|UnitEnum|null

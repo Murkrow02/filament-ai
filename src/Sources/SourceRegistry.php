@@ -12,7 +12,7 @@ use Murkrow\FilamentAi\Exceptions\UnknownSourceException;
 /**
  * Every knowledge source the application exposes.
  *
- * Sources are classes, listed in `rag.sources` and resolved through the
+ * Sources are classes, listed in `filament-ai.sources` and resolved through the
  * container so they can take constructor dependencies. Anything registered at
  * runtime -- a closure-built source, a test double -- wins over the configured
  * list under the same key.

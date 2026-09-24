@@ -6,30 +6,40 @@ namespace Murkrow\FilamentAi;
 
 use Illuminate\Contracts\Foundation\CachesConfiguration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Mcp\Facades\Mcp;
+use Laravel\Mcp\Server;
+use Laravel\Octane\Events\RequestReceived;
+use Laravel\Octane\Events\TaskReceived;
+use Laravel\Octane\Events\TickReceived;
+use Murkrow\FilamentAi\Agent\Chat\CitedPassages;
+use Murkrow\FilamentAi\Agent\Resources\ResourceToolRegistry;
+use Murkrow\FilamentAi\Agent\Sandbox\SandboxManager;
+use Murkrow\FilamentAi\Agent\Solving\JudgeVerifier;
+use Murkrow\FilamentAi\Agent\Solving\Solver;
+use Murkrow\FilamentAi\Agent\WebSearch\WebSearchManager;
 use Murkrow\FilamentAi\Answering\BladePromptRenderer;
 use Murkrow\FilamentAi\Answering\DefaultAnswerer;
 use Murkrow\FilamentAi\Chat\ChatAbilities;
 use Murkrow\FilamentAi\Chunking\SlidingWindowChunker;
 use Murkrow\FilamentAi\Chunking\TokenEstimatorFactory;
-use Murkrow\FilamentAi\Console;
 use Murkrow\FilamentAi\Contracts\Answerer;
 use Murkrow\FilamentAi\Contracts\Chunker;
-use Murkrow\FilamentAi\Agent\Sandbox\SandboxManager;
-use Murkrow\FilamentAi\Agent\Solving\JudgeVerifier;
-use Murkrow\FilamentAi\Agent\Solving\Solver;
 use Murkrow\FilamentAi\Contracts\CodeSandbox;
-use Murkrow\FilamentAi\Contracts\Verifier;
 use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
 use Murkrow\FilamentAi\Contracts\LanguageModel;
 use Murkrow\FilamentAi\Contracts\PromptRenderer;
 use Murkrow\FilamentAi\Contracts\Retriever;
 use Murkrow\FilamentAi\Contracts\VectorStore;
+use Murkrow\FilamentAi\Contracts\Verifier;
+use Murkrow\FilamentAi\Contracts\WebSearchEngine;
 use Murkrow\FilamentAi\Embeddings\EmbeddingManager;
-use Murkrow\FilamentAi\Http\Middleware\AuthorizeChat;
 use Murkrow\FilamentAi\Embeddings\EmbeddingRateLimiter;
+use Murkrow\FilamentAi\Http\Middleware\AuthorizeChat;
+use Murkrow\FilamentAi\Http\Middleware\BootAssistantPanel;
 use Murkrow\FilamentAi\Llm\LanguageModelManager;
 use Murkrow\FilamentAi\Mcp\KnowledgeServer;
 use Murkrow\FilamentAi\Retrieval\DefaultRetriever;
@@ -38,6 +48,7 @@ use Murkrow\FilamentAi\Settings\SettingsRepository;
 use Murkrow\FilamentAi\Sources\SourceRegistry;
 use Murkrow\FilamentAi\Support\Arr;
 use Murkrow\FilamentAi\VectorStores\VectorStoreManager;
+use Pgvector\Laravel\Schema;
 
 /**
  * Wires the package together.
@@ -53,8 +64,6 @@ class FilamentAiServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->patchConversationReplay();
-
         $this->mergeRagConfig();
 
         $this->registerManagers();
@@ -135,12 +144,12 @@ class FilamentAiServiceProvider extends ServiceProvider
         });
 
         $events = array_values(array_filter([
-            \Laravel\Octane\Events\RequestReceived::class,
-            \Laravel\Octane\Events\TaskReceived::class,
-            \Laravel\Octane\Events\TickReceived::class,
+            RequestReceived::class,
+            TaskReceived::class,
+            TickReceived::class,
         ], static fn (string $event): bool => class_exists($event)));
 
-        $events[] = \Illuminate\Queue\Events\JobProcessing::class;
+        $events[] = JobProcessing::class;
 
         Event::listen($events, static function (object $event): void {
             // Octane hands the request its own container; writing the config
@@ -149,25 +158,6 @@ class FilamentAiServiceProvider extends ServiceProvider
             $container = property_exists($event, 'sandbox') ? $event->sandbox : app();
 
             $container->make(SettingsRepository::class)->refresh();
-        });
-    }
-
-    /**
-     * Swap laravel/ai's database conversation store for one that replays a
-     * paused multi-step turn correctly. See ReplaySafeConversationStore.
-     *
-     * Only the stock store is replaced: a host that bound its own keeps it.
-     */
-    private function patchConversationReplay(): void
-    {
-        if (! interface_exists(\Laravel\Ai\Contracts\ConversationStore::class)) {
-            return;
-        }
-
-        $this->app->extend(\Laravel\Ai\Contracts\ConversationStore::class, static function (object $store): object {
-            return $store::class === \Laravel\Ai\Storage\DatabaseConversationStore::class
-                ? new \Murkrow\FilamentAi\Agent\Chat\ReplaySafeConversationStore(config('ai.conversations.connection'))
-                : $store;
         });
     }
 
@@ -204,7 +194,7 @@ class FilamentAiServiceProvider extends ServiceProvider
         $group = [
             'prefix' => $path,
             'as' => 'filament-ai.chat.',
-            'middleware' => [...(array) config('filament-ai.chat.middleware', ['web']), AuthorizeChat::class],
+            'middleware' => [...(array) config('filament-ai.chat.middleware', ['web']), AuthorizeChat::class, BootAssistantPanel::class],
         ];
 
         if (($domain = config('filament-ai.chat.domain')) !== null && $domain !== '') {
@@ -224,7 +214,7 @@ class FilamentAiServiceProvider extends ServiceProvider
      */
     private function registerVectorSchemaMacros(): void
     {
-        if (! class_exists(\Pgvector\Laravel\Schema::class)) {
+        if (! class_exists(Schema::class)) {
             return;
         }
 
@@ -232,14 +222,14 @@ class FilamentAiServiceProvider extends ServiceProvider
             return;
         }
 
-        \Pgvector\Laravel\Schema::register();
+        Schema::register();
     }
 
     private function registerManagers(): void
     {
         // One per request: the passages a turn cited are read back by the
         // chat that asked for them, and nothing else.
-        $this->app->singleton(\Murkrow\FilamentAi\Agent\Chat\CitedPassages::class);
+        $this->app->singleton(CitedPassages::class);
 
         $this->app->singleton(EmbeddingManager::class);
         $this->app->singleton(LanguageModelManager::class);
@@ -269,6 +259,13 @@ class FilamentAiServiceProvider extends ServiceProvider
             static fn ($app): CodeSandbox => $app->make(SandboxManager::class)->driver(),
         );
 
+        $this->app->singleton(WebSearchManager::class);
+
+        $this->app->singleton(
+            WebSearchEngine::class,
+            static fn ($app): WebSearchEngine => $app->make(WebSearchManager::class)->driver(),
+        );
+
         $this->app->singleton(
             VectorStore::class,
             static fn ($app): VectorStore => $app->make(VectorStoreManager::class)->driver(),
@@ -277,6 +274,8 @@ class FilamentAiServiceProvider extends ServiceProvider
 
     private function registerServices(): void
     {
+        $this->app->scoped(ResourceToolRegistry::class);
+
         $this->app->singleton(SourceRegistry::class);
         $this->app->singleton(SettingsRepository::class);
         $this->app->singleton(TokenEstimatorFactory::class);
@@ -341,19 +340,19 @@ class FilamentAiServiceProvider extends ServiceProvider
             return;
         }
 
-        if (! class_exists(\Laravel\Mcp\Facades\Mcp::class) || ! class_exists(\Laravel\Mcp\Server::class)) {
+        if (! class_exists(Mcp::class) || ! class_exists(Server::class)) {
             return;
         }
 
         if (config('filament-ai.mcp.web.enabled', true)) {
-            \Laravel\Mcp\Facades\Mcp::web(
+            Mcp::web(
                 (string) config('filament-ai.mcp.web.path', 'mcp/knowledge'),
                 KnowledgeServer::class,
             )->middleware((array) config('filament-ai.mcp.web.middleware', []));
         }
 
         if (config('filament-ai.mcp.local.enabled', true)) {
-            \Laravel\Mcp\Facades\Mcp::local(
+            Mcp::local(
                 (string) config('filament-ai.mcp.local.handle', 'knowledge'),
                 KnowledgeServer::class,
             );

@@ -6,7 +6,9 @@ namespace Murkrow\FilamentAi\Agent\Resources;
 
 use Filament\Facades\Filament;
 use Filament\Panel;
+use Filament\Resources\Resource;
 use Laravel\Ai\Contracts\Tool;
+use Murkrow\FilamentAi\Agent\Chat\PanelScope;
 use Murkrow\FilamentAi\Agent\Resources\Tools\CreateRecordTool;
 use Murkrow\FilamentAi\Agent\Resources\Tools\DeleteRecordTool;
 use Murkrow\FilamentAi\Agent\Resources\Tools\EditRecordTool;
@@ -25,6 +27,9 @@ use Murkrow\FilamentAi\Agent\Resources\Tools\ViewRecordTool;
  */
 final class ResourceToolRegistry
 {
+    /** @var array<string, list<ResourceBlueprint>> */
+    private array $resolved = [];
+
     public function __construct(private readonly ResourceInspector $inspector) {}
 
     /**
@@ -38,10 +43,31 @@ final class ResourceToolRegistry
 
         $panel ??= Filament::getCurrentOrDefaultPanel();
 
-        if ($panel === null) {
+        // No user who could open this panel, or a tenant panel with no tenant
+        // set: an unscoped query would reach every tenant's records.
+        if (! PanelScope::allowsResources($panel)) {
             return [];
         }
 
+        // The instructions and the tool list both need these, and inspecting
+        // a resource builds its table and form. Remembered for this panel,
+        // tenant, user and set of overrides; the registry is scoped, so the
+        // next request -- or Octane's next one -- starts over.
+        $key = implode('|', [
+            $panel->getId(),
+            (string) PanelScope::tenantKey($panel),
+            (string) auth()->id(),
+            md5((string) json_encode(config('filament-ai.agent.resources'))),
+        ]);
+
+        return $this->resolved[$key] ??= $this->inspectAll($panel);
+    }
+
+    /**
+     * @return list<ResourceBlueprint>
+     */
+    private function inspectAll(Panel $panel): array
+    {
         $blueprints = [];
         $prefixes = [];
 
@@ -155,7 +181,7 @@ final class ResourceToolRegistry
             $tools[] = new CreateRecordTool($blueprint);
         }
 
-        if ($blueprint->allows(AgentTools::EDIT) && $blueprint->fields !== []) {
+        if ($blueprint->allows(AgentTools::EDIT) && $blueprint->fieldsFor(AgentTools::EDIT) !== []) {
             $tools[] = new EditRecordTool($blueprint);
         }
 

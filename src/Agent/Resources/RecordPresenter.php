@@ -6,6 +6,7 @@ namespace Murkrow\FilamentAi\Agent\Resources;
 
 use BackedEnum;
 use DateTimeInterface;
+use Filament\Resources\Resource;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -16,9 +17,10 @@ use UnitEnum;
 /**
  * Turns a record into the plain array a tool result carries.
  *
- * Only the attributes the blueprint names are read, and an attribute the model
- * hides (`$hidden`, e.g. a password hash) is skipped even when named: the
- * resource declaring a column is not consent to hand it to a language model.
+ * Only the attributes the blueprint names are read, and an attribute a model
+ * hides (`$hidden`, e.g. a password hash, or anything missing from a `$visible`
+ * list) is skipped even when named -- on a related model too: the resource
+ * declaring a column is not consent to hand it to a language model.
  */
 final class RecordPresenter
 {
@@ -29,7 +31,6 @@ final class RecordPresenter
     public static function present(Model $record, ResourceBlueprint $blueprint, array $attributes, bool $withUrl = true): array
     {
         $resource = $blueprint->resource;
-        $hidden = $record->getHidden();
 
         $data = [
             'id' => $record->getKey(),
@@ -37,11 +38,19 @@ final class RecordPresenter
         ];
 
         foreach ($attributes as $attribute) {
-            if (in_array(explode('.', $attribute)[0], $hidden, true) || array_key_exists($attribute, $data)) {
+            if (array_key_exists($attribute, $data) || ! self::readable($record, $attribute)) {
                 continue;
             }
 
-            $data[$attribute] = self::scalar(data_get($record, $attribute));
+            // A table column is not always an attribute: `progress` may be a
+            // computed column over a model method that is not a relation, and
+            // reading it throws. One unreadable column must not cost the
+            // whole answer.
+            try {
+                $data[$attribute] = self::scalar(data_get($record, $attribute));
+            } catch (Throwable) {
+                continue;
+            }
         }
 
         if ($withUrl && ($url = self::url($resource, $record)) !== null) {
@@ -49,6 +58,37 @@ final class RecordPresenter
         }
 
         return $data;
+    }
+
+    /**
+     * Whether every step of a dotted path is something its model would put in
+     * its own array form: `customer.api_token` is checked against the
+     * customer's `$hidden`, not the order's, and a model that lists what it
+     * shows in `$visible` is held to that list.
+     */
+    private static function readable(Model $record, string $attribute): bool
+    {
+        $model = $record;
+        $segments = explode('.', $attribute);
+
+        foreach ($segments as $index => $segment) {
+            if (! $model instanceof Model) {
+                // A cast array or JSON column: its keys are not attributes.
+                return true;
+            }
+
+            $visible = $model->getVisible();
+
+            if (in_array($segment, $model->getHidden(), true) || ($visible !== [] && ! in_array($segment, $visible, true))) {
+                return false;
+            }
+
+            if ($index < count($segments) - 1) {
+                $model = $model->isRelation($segment) ? $model->getRelationValue($segment) : null;
+            }
+        }
+
+        return true;
     }
 
     /**

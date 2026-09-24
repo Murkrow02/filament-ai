@@ -9,7 +9,7 @@ namespace Murkrow\FilamentAi\Jobs\Concerns;
  *
  * A wave of attempts is slow and expensive, and an application that wants it
  * on a separate worker -- so a long search cannot starve indexing -- says so
- * once in `rag.agent.solving.queue`.
+ * once in `filament-ai.agent.solving.queue`.
  */
 trait InteractsWithSolvingQueue
 {

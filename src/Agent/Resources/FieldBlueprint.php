@@ -32,5 +32,8 @@ final readonly class FieldBlueprint
         public ?array $options = null,
         public ?string $format = null,
         public bool $relationship = false,
+        public ?string $relationshipName = null,
+        public ?string $titleAttribute = null,
+        public bool $multiple = false,
     ) {}
 }

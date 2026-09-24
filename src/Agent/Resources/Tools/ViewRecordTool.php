@@ -9,6 +9,8 @@ use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
 use Murkrow\FilamentAi\Agent\Resources\RecordPresenter;
 use Murkrow\FilamentAi\Agent\Resources\ResourceBlueprint;
+use Murkrow\FilamentAi\Agent\Resources\Tools\Concerns\ResolvesRecord;
+use Murkrow\FilamentAi\Agent\Tools\Concerns\GuardsToolFailures;
 
 /**
  * Reads one record of a resource, as the current panel user.
@@ -19,6 +21,9 @@ use Murkrow\FilamentAi\Agent\Resources\ResourceBlueprint;
  */
 final class ViewRecordTool implements Tool
 {
+    use GuardsToolFailures;
+    use ResolvesRecord;
+
     public function __construct(private readonly ResourceBlueprint $blueprint) {}
 
     public function name(): string
@@ -42,26 +47,22 @@ final class ViewRecordTool implements Tool
 
     public function handle(Request $request): string
     {
-        $resource = $this->blueprint->resource;
-        $id = trim((string) ($request->all()['id'] ?? ''));
+        return $this->guarded(function () use ($request): string {
+            $resource = $this->blueprint->resource;
+            $record = $this->resolveRecord($request);
 
-        if ($id === '') {
-            return 'Error: the "id" argument is required.';
-        }
+            if (is_string($record)) {
+                return $record;
+            }
 
-        $record = $resource::getEloquentQuery()->whereKey($id)->first();
+            if (! $resource::canView($record)) {
+                return "Error: the current user is not allowed to view this {$this->blueprint->label}.";
+            }
 
-        if ($record === null) {
-            return "Error: no {$this->blueprint->label} with id [{$id}].";
-        }
-
-        if (! $resource::canView($record)) {
-            return "Error: the current user is not allowed to view this {$this->blueprint->label}.";
-        }
-
-        return json_encode(
-            RecordPresenter::present($record, $this->blueprint, $this->blueprint->viewAttributes),
-            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
-        );
+            return json_encode(
+                RecordPresenter::present($record, $this->blueprint, $this->blueprint->viewAttributes),
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+            );
+        });
     }
 }

@@ -12,6 +12,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Murkrow\FilamentAi\Agent\PanelAssistant;
 use Murkrow\FilamentAi\Agent\Solving\SolveProgress;
+use Murkrow\FilamentAi\Agent\Solving\SolveScope;
 use Murkrow\FilamentAi\Agent\Solving\Strategies;
 use Murkrow\FilamentAi\Enums\SolveAttemptStatus;
 use Murkrow\FilamentAi\Ingestion\CostCalculator;
@@ -61,6 +62,10 @@ final class SolveAttemptJob implements ShouldQueue
             return;
         }
 
+        // Back into the panel, tenant and user the question was asked in; the
+        // resource tools stay off when that cannot be done.
+        SolveScope::restore($run);
+
         $strategy = Strategies::for($run->strategy);
         $phase = $strategy->phaseFor((int) $attempt->wave);
 
@@ -73,7 +78,8 @@ final class SolveAttemptJob implements ShouldQueue
 
             // A phase that names its tools gets only those: "try the anagrams
             // first" means nothing if the archive is one call away.
-            $assistant = $assistant->onlyTools($phase->tools)->withMaxSteps($phase->maxSteps);
+            // Nobody is there to approve a write, so an attempt gets none.
+            $assistant = $assistant->onlyTools($phase->tools)->withMaxSteps($phase->maxSteps)->withoutWrites();
         }
 
         $prompt = $strategy->promptFor($run, $phase, (int) $attempt->position, $this->feedback);
@@ -82,8 +88,8 @@ final class SolveAttemptJob implements ShouldQueue
         $response = $assistant->prompt($prompt);
         $durationMs = (int) ((hrtime(true) - $startedAt) / 1_000_000);
 
-        $promptTokens = (int) ($response->usage->promptTokens ?? 0);
-        $completionTokens = (int) ($response->usage->completionTokens ?? 0);
+        $promptTokens = (int) ($response->usage->inputTokens ?? 0);
+        $completionTokens = (int) ($response->usage->outputTokens ?? 0);
         $costMicros = CostCalculator::completionMicros(
             (string) ($response->meta->model ?? ''),
             $promptTokens,

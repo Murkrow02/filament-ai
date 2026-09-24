@@ -6,6 +6,7 @@ namespace Murkrow\FilamentAi\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Murkrow\FilamentAi\Agent\Chat\ConversationTranscript;
 use Murkrow\FilamentAi\Ingestion\CostCalculator;
 use Murkrow\FilamentAi\Models\Chunk;
 use Murkrow\FilamentAi\Models\Document;
@@ -48,6 +49,7 @@ class StatusCommand extends Command
     private function showOverview(SourceRegistry $sources): void
     {
         $this->warnAboutLegacyEnvironment();
+        $this->warnAboutConversationTables();
 
         $model = (string) config('filament-ai.embeddings.model');
         $dimensions = (int) config('filament-ai.embeddings.dimensions');
@@ -145,6 +147,23 @@ class StatusCommand extends Command
      * configured for one provider spent a day answering 401 from another.
      * Silence is the wrong answer here, so this says so out loud.
      */
+    /**
+     * The assistant keeps every conversation, and every change waiting for
+     * approval, in laravel/ai's tables. Missing, or still on the 0.x layout,
+     * the chat can only say it is unavailable.
+     */
+    private function warnAboutConversationTables(): void
+    {
+        if (! config('filament-ai.agent.enabled', true) || app(ConversationTranscript::class)->available()) {
+            return;
+        }
+
+        $this->components->warn(
+            "laravel/ai's conversation tables are missing or predate laravel/ai 1.0 (no `steps`/`status` columns): the assistant is unavailable. "
+            .'Publish and run its migrations; an existing 0.x installation also needs the backfill migration from its upgrade guide.'
+        );
+    }
+
     private function warnAboutLegacyEnvironment(): void
     {
         $legacy = array_values(array_filter(

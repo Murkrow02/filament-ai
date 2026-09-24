@@ -20,7 +20,7 @@ class SourcesCommand extends Command
         $keys = $registry->keys();
 
         if ($keys === []) {
-            $this->components->warn('No knowledge sources configured. Generate one with `php artisan ai:make:source` and list it under rag.sources.');
+            $this->components->warn('No knowledge sources configured. Generate one with `php artisan ai:make:source` and list it under filament-ai.sources.');
 
             return self::SUCCESS;
         }

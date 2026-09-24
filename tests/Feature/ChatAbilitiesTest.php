@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Gate;
 use Murkrow\FilamentAi\Chat\ChatAbilities;
 
@@ -14,9 +15,13 @@ use Murkrow\FilamentAi\Chat\ChatAbilities;
 it('answers from the defaults when nothing is configured', function (): void {
     expect(ChatAbilities::allows('view'))->toBeTrue()
         ->and(ChatAbilities::allows('solve'))->toBeTrue()
-        // Reading other people's conversations is the one thing that has to be
-        // asked for.
-        ->and(ChatAbilities::allows('all_conversations'))->toBeFalse();
+        // What only an administrator should see has to be granted.
+        ->and(ChatAbilities::allows('cost'))->toBeFalse()
+        ->and(ChatAbilities::allows('debug'))->toBeFalse();
+});
+
+it('configures exactly the abilities it knows', function (): void {
+    expect(array_keys((array) config('filament-ai.chat.abilities')))->toBe(ChatAbilities::names());
 });
 
 it('takes a plain boolean from config', function (): void {
@@ -33,7 +38,7 @@ it('resolves an ability from a permission name', function (): void {
 
     // A user model with no can() opinion of its own comes back denied rather
     // than exploding -- which is what a host without that permission wants.
-    $user = new class extends Illuminate\Foundation\Auth\User
+    $user = new class extends User
     {
         public function can($abilities, $arguments = []): bool
         {
@@ -47,7 +52,7 @@ it('resolves an ability from a permission name', function (): void {
 it('resolves an ability from a callable', function (): void {
     config()->set('filament-ai.chat.abilities.model', fn ($user): bool => $user !== null);
 
-    expect(ChatAbilities::resolve('model', new Illuminate\Foundation\Auth\User))->toBeTrue()
+    expect(ChatAbilities::resolve('model', new User))->toBeTrue()
         ->and(ChatAbilities::resolve('model', null))->toBeFalse();
 });
 

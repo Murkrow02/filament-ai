@@ -12,6 +12,9 @@ use Throwable;
 /**
  * Maps a Filament form field to a write tool argument.
  *
+ * Only describes: which fields are offered at all, and whether they are
+ * enforced, is `FormPipeline`'s business -- it runs the form itself.
+ *
  * Keyed by `instanceof`, like `SourceFilterSchema`: a field class this does not
  * know degrades to a plain string, and fields whose value cannot be written as
  * a single attribute (uploads, repeaters, many-to-many selects, ...) are left
@@ -53,10 +56,6 @@ final class FormFieldMapper
             return null;
         }
 
-        if ($this->attempt(fn (): bool => $field->isDisabled(), false)) {
-            return null;
-        }
-
         $relationship = $this->attempt(fn (): bool => method_exists($field, 'hasRelationship') && $field->hasRelationship(), false);
         $multiple = $this->attempt(fn (): bool => method_exists($field, 'isMultiple') && $field->isMultiple(), false);
 
@@ -77,6 +76,9 @@ final class FormFieldMapper
             options: $relationship ? null : $this->options($field),
             format: $format,
             relationship: $relationship,
+            relationshipName: $relationship ? $this->attempt(fn (): ?string => method_exists($field, 'getRelationshipName') ? $field->getRelationshipName() : null, null) : null,
+            titleAttribute: $relationship ? $this->attempt(fn (): ?string => method_exists($field, 'getRelationshipTitleAttribute') ? $field->getRelationshipTitleAttribute() : null, null) : null,
+            multiple: $multiple,
         );
     }
 

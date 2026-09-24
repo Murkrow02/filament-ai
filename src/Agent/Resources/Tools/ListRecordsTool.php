@@ -12,6 +12,7 @@ use Laravel\Ai\Tools\Request;
 use Murkrow\FilamentAi\Agent\Resources\FilterBlueprint;
 use Murkrow\FilamentAi\Agent\Resources\RecordPresenter;
 use Murkrow\FilamentAi\Agent\Resources\ResourceBlueprint;
+use Murkrow\FilamentAi\Agent\Tools\Concerns\GuardsToolFailures;
 use Throwable;
 
 /**
@@ -24,6 +25,11 @@ use Throwable;
  */
 final class ListRecordsTool implements Tool
 {
+    use GuardsToolFailures;
+
+    /** Longer than anybody types into a search box, short enough to stay cheap. */
+    private const MAX_SEARCH = 200;
+
     public function __construct(private readonly ResourceBlueprint $blueprint) {}
 
     public function name(): string
@@ -79,6 +85,11 @@ final class ListRecordsTool implements Tool
 
     public function handle(Request $request): string
     {
+        return $this->guarded(fn (): string => $this->list($request));
+    }
+
+    private function list(Request $request): string
+    {
         $resource = $this->blueprint->resource;
 
         if (! $resource::canViewAny()) {
@@ -90,7 +101,8 @@ final class ListRecordsTool implements Tool
         $page = max(1, (int) ($arguments['page'] ?? 1));
 
         $query = $resource::getEloquentQuery();
-        $this->applySearch($query, trim((string) ($arguments['search'] ?? '')));
+        $search = is_scalar($arguments['search'] ?? null) ? trim((string) $arguments['search']) : '';
+        $this->applySearch($query, mb_substr($search, 0, self::MAX_SEARCH));
 
         foreach ($this->blueprint->filters as $filter) {
             if (! array_key_exists($filter->name, $arguments) || $arguments[$filter->name] === null) {
@@ -101,7 +113,9 @@ final class ListRecordsTool implements Tool
                 // Filament's own filter: a relationship, a scope or a custom
                 // query behaves exactly as it does in the table.
                 $query = $filter->filter->apply($query, $filter->state($arguments[$filter->name]));
-            } catch (Throwable) {
+            } catch (Throwable $exception) {
+                report($exception);
+
                 // Saying so beats answering with unfiltered rows the model
                 // would report as filtered.
                 return "Error: the [{$filter->name}] filter cannot be applied here. Try listing without it.";
@@ -111,6 +125,7 @@ final class ListRecordsTool implements Tool
         $total = (clone $query)->count();
 
         $records = $query
+            ->with($this->relationsToLoad($query->getModel()))
             ->orderByDesc($query->getModel()->getQualifiedKeyName())
             ->forPage($page, $perPage)
             ->get();
@@ -135,15 +150,54 @@ final class ListRecordsTool implements Tool
             return;
         }
 
-        // PostgreSQL's LIKE is case-sensitive; every other supported driver's
-        // is not. A search the user types must behave the same on both.
-        $operator = $query->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+        // PostgreSQL's LIKE is case-sensitive, and refuses a non-text column
+        // outright; every other supported driver's is neither. The column is
+        // cast so a searchable id or number behaves the same everywhere.
+        $pgsql = $query->getConnection()->getDriverName() === 'pgsql';
+        $operator = $pgsql ? 'ilike' : 'like';
         $model = $query->getModel();
 
-        $query->where(function (Builder $where) use ($model, $operator, $search): void {
+        // What the model typed is text to find, not a pattern: an underscore
+        // in a customer code must not match every character. `!` rather than
+        // a backslash as the escape: MySQL reads a backslash inside the
+        // ESCAPE literal as escaping the closing quote.
+        $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search).'%';
+
+        $query->where(function (Builder $where) use ($model, $operator, $pattern, $pgsql): void {
             foreach ($this->blueprint->searchColumns as $column) {
-                $where->orWhere($model->qualifyColumn($column), $operator, '%'.$search.'%');
+                $qualified = $model->qualifyColumn($column);
+                $grammar = $where->getQuery()->getGrammar();
+
+                $where->orWhereRaw(
+                    ($pgsql ? 'CAST('.$grammar->wrap($qualified).' AS TEXT)' : $grammar->wrap($qualified))." {$operator} ? ESCAPE '!'",
+                    [$pattern],
+                );
             }
         });
+    }
+
+    /**
+     * The relations the listed attributes reach through, loaded up front so
+     * a page of records costs one query per relation instead of one per row.
+     *
+     * @return list<string>
+     */
+    private function relationsToLoad(Model $model): array
+    {
+        $relations = [];
+
+        foreach ($this->blueprint->listAttributes as $attribute) {
+            if (! str_contains($attribute, '.')) {
+                continue;
+            }
+
+            $relation = substr($attribute, 0, (int) strrpos($attribute, '.'));
+
+            if ($model->isRelation(explode('.', $relation)[0])) {
+                $relations[] = $relation;
+            }
+        }
+
+        return array_values(array_unique($relations));
     }
 }

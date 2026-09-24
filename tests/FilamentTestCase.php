@@ -4,11 +4,25 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Tests;
 
+use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
+use BladeUI\Icons\BladeIconsServiceProvider;
+use Filament\Actions\ActionsServiceProvider;
+use Filament\FilamentServiceProvider;
+use Filament\Forms\FormsServiceProvider;
+use Filament\Infolists\InfolistsServiceProvider;
+use Filament\Notifications\NotificationsServiceProvider;
+use Filament\Schemas\SchemasServiceProvider;
+use Filament\Support\SupportServiceProvider;
+use Filament\Tables\TablesServiceProvider;
+use Filament\Widgets\WidgetsServiceProvider;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Foundation\Auth\User as AuthUser;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Livewire\LivewireServiceProvider;
 use Murkrow\FilamentAi\Tests\Fixtures\TestPanelProvider;
+use Murkrow\FilamentAi\Tests\Fixtures\TestTenantPanelProvider;
+use Murkrow\FilamentAi\Tests\Fixtures\TestUser;
+use RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider;
 
 /**
  * Boots a real Filament panel with the plugin registered exactly the way a
@@ -41,20 +55,21 @@ abstract class FilamentTestCase extends TestCase
     protected function getPackageProviders($app): array
     {
         return array_merge(parent::getPackageProviders($app), [
-            \BladeUI\Icons\BladeIconsServiceProvider::class,
-            \BladeUI\Heroicons\BladeHeroiconsServiceProvider::class,
-            \Filament\Actions\ActionsServiceProvider::class,
-            \Filament\Forms\FormsServiceProvider::class,
-            \Filament\Infolists\InfolistsServiceProvider::class,
-            \Filament\Notifications\NotificationsServiceProvider::class,
-            \Filament\Schemas\SchemasServiceProvider::class,
-            \Filament\Support\SupportServiceProvider::class,
-            \Filament\Tables\TablesServiceProvider::class,
-            \Filament\Widgets\WidgetsServiceProvider::class,
-            \Filament\FilamentServiceProvider::class,
-            \Livewire\LivewireServiceProvider::class,
-            \RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider::class,
+            BladeIconsServiceProvider::class,
+            BladeHeroiconsServiceProvider::class,
+            ActionsServiceProvider::class,
+            FormsServiceProvider::class,
+            InfolistsServiceProvider::class,
+            NotificationsServiceProvider::class,
+            SchemasServiceProvider::class,
+            SupportServiceProvider::class,
+            TablesServiceProvider::class,
+            WidgetsServiceProvider::class,
+            FilamentServiceProvider::class,
+            LivewireServiceProvider::class,
+            BladeCaptureDirectiveServiceProvider::class,
             TestPanelProvider::class,
+            TestTenantPanelProvider::class,
         ]);
     }
 
@@ -66,14 +81,16 @@ abstract class FilamentTestCase extends TestCase
         // The panel is built once at boot, so a resource gated by config has
         // to be switched on before the provider runs.
         $app['config']->set('filament-ai.agent.solving.enabled', true);
-        $app['config']->set('auth.providers.users.model', AuthUser::class);
+        $app['config']->set('auth.providers.users.model', TestUser::class);
         $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
     }
 
     protected function panelUser(): Authenticatable
     {
-        $user = new AuthUser;
-        $user->setTable('users');
+        TestUser::$panelAccess = true;
+        TestUser::$teams = [];
+
+        $user = new TestUser;
         $user->forceFill([
             'name' => 'Panel user',
             'email' => 'panel@example.test',

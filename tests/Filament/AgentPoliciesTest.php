@@ -47,19 +47,31 @@ it('can silence a resource entirely', function (): void {
     expect(agentToolNames())->toBe([]);
 });
 
-it('can let a write run without asking the user', function (): void {
+it('cannot make a write silent that the code asks about', function (): void {
     config()->set('filament-ai.agent.resources.overrides', [
         TestBookResource::class => ['unapproved' => [AgentTools::CREATE]],
     ]);
 
-    $tools = [];
+    $tools = ResourcePolicies::apply(new AgentTools(TestBookResource::class), TestBookResource::class);
 
-    foreach (app(ResourceToolRegistry::class)->tools() as $tool) {
-        $tools[$tool->name()] = $tool;
-    }
+    expect($tools->unapprovedAbilities())->toBe([]);
+});
 
-    expect($tools['test_books_create']->shouldRequestApproval(new Laravel\Ai\Tools\Request(['title' => 'x'])))->toBeNull()
-        ->and($tools['test_books_edit']->shouldRequestApproval(new Laravel\Ai\Tools\Request(['id' => '1'])))->not->toBeNull();
+it('can put back a question the code does not ask', function (): void {
+    $declared = fn (): AgentTools => (new AgentTools(TestBookResource::class))->withoutApproval(AgentTools::CREATE, AgentTools::EDIT);
+
+    config()->set('filament-ai.agent.resources.overrides', [
+        TestBookResource::class => ['unapproved' => [AgentTools::EDIT]],
+    ]);
+
+    expect(ResourcePolicies::apply($declared(), TestBookResource::class)->unapprovedAbilities())->toBe([AgentTools::EDIT]);
+
+    // An empty list is not "no opinion": it asks about every write again.
+    config()->set('filament-ai.agent.resources.overrides', [
+        TestBookResource::class => ['unapproved' => []],
+    ]);
+
+    expect(ResourcePolicies::apply($declared(), TestBookResource::class)->unapprovedAbilities())->toBe([]);
 });
 
 it('ignores an attempt to take approval off a deletion', function (): void {

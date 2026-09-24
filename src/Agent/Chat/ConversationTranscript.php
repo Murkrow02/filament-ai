@@ -5,7 +5,12 @@ declare(strict_types=1);
 namespace Murkrow\FilamentAi\Agent\Chat;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
+use Laravel\Ai\Approvals\PendingApproval;
+use Laravel\Ai\Contracts\ConversationStore;
+use Laravel\Ai\Contracts\ResolvesPendingApprovals;
+use Laravel\Ai\Enums\MessageStatus;
 use Laravel\Ai\Models\Conversation;
 use Laravel\Ai\Models\ConversationMessage;
 use Throwable;
@@ -33,8 +38,14 @@ final class ConversationTranscript
         try {
             $schema = Schema::connection((new Conversation)->getConnectionName());
 
+            $messages = (new ConversationMessage)->getTable();
+
+            // laravel/ai 1.0 replaced tool_calls/tool_results with one `steps`
+            // column. A host that upgraded without running the backfill has
+            // the table but not the column, and every read would fail.
             return $schema->hasTable((new Conversation)->getTable())
-                && $schema->hasTable((new ConversationMessage)->getTable());
+                && $schema->hasTable($messages)
+                && $schema->hasColumns($messages, ['steps', 'status']);
         } catch (Throwable) {
             return false;
         }
@@ -105,58 +116,44 @@ final class ConversationTranscript
     }
 
     /**
-     * @return list<array{role: string, content: string, tools: list<array{id: string, name: string, status: string}>, passages?: list<array<string, mixed>>}>
+     * @return list<array{role: string, content: string, tools: list<array{id: string, name: string, status: string}>, failed?: bool, passages?: list<array<string, mixed>>}>
      */
     public function messages(string $conversationId): array
     {
-        $rows = $this->rows($conversationId);
-
-        // A call resolved after an approval pause keeps its result on the
-        // paused row, but gather across rows anyway: the store has moved
-        // results between rows before.
-        $results = [];
-
-        foreach ($rows as $row) {
-            foreach ((array) $row->tool_results as $result) {
-                if (is_array($result) && isset($result['id'])) {
-                    $results[(string) $result['id']] = $result;
-                }
-            }
-        }
-
         $messages = [];
 
-        foreach ($rows as $row) {
+        foreach ($this->rows($conversationId) as $row) {
             if ($row->role === 'user') {
                 $messages[] = ['role' => 'user', 'content' => (string) $row->content, 'tools' => []];
 
                 continue;
             }
 
-            $pending = $this->pendingOn($row);
+            // Since laravel/ai 1.0 a turn keeps every step, and each call its
+            // own result, on one row: a resumed turn folds back into the row
+            // it paused on.
             $tools = [];
 
-            foreach ((array) $row->tool_calls as $call) {
+            foreach ($row->tool_calls as $call) {
                 if (! is_array($call)) {
                     continue;
                 }
 
-                $id = (string) ($call['id'] ?? '');
-                $result = $results[$id] ?? null;
-
                 $tools[] = [
-                    'id' => $id,
+                    'id' => (string) ($call['id'] ?? ''),
                     'name' => (string) ($call['name'] ?? ''),
                     'status' => match (true) {
-                        array_key_exists($id, $pending), $result === null => 'pending',
-                        (bool) ($result['denied'] ?? false) => 'denied',
-                        (bool) ($result['failed'] ?? false) => 'failed',
+                        ! PendingApproval::isAnswered($call) => 'pending',
+                        (bool) ($call['denied'] ?? false) => 'denied',
+                        (bool) ($call['failed'] ?? false) => 'failed',
                         default => 'done',
                     },
                 ];
             }
 
-            if (trim((string) $row->content) === '' && $tools === []) {
+            $failed = $row->status === MessageStatus::Failed;
+
+            if (trim((string) $row->content) === '' && $tools === [] && ! $failed) {
                 continue;
             }
 
@@ -164,15 +161,32 @@ final class ConversationTranscript
                 'role' => 'assistant',
                 'content' => (string) $row->content,
                 'tools' => $tools,
+                // A turn that died is stored with what it managed before the
+                // error. The error itself stays in `meta` -- the page says
+                // something went wrong, and only a debug reader sees more.
+                'failed' => $failed,
+                'error' => $failed ? $this->errorOf($row) : null,
                 // A citation the reader cannot open is a decoration. The
                 // passages are not stored as data anywhere, but the text the
                 // knowledge tool returned is -- and this package wrote it, so
                 // it can read it back.
-                'passages' => $this->passagesFrom($row, $results),
+                'passages' => $this->passagesFrom($row),
             ];
         }
 
         return $messages;
+    }
+
+    private function errorOf(ConversationMessage $row): ?string
+    {
+        $meta = $row->getAttribute('meta');
+        $error = is_array($meta) ? ($meta['error'] ?? null) : null;
+
+        if (is_array($error)) {
+            $error = $error['message'] ?? null;
+        }
+
+        return is_string($error) && $error !== '' ? $error : null;
     }
 
     /**
@@ -187,19 +201,18 @@ final class ConversationTranscript
      * weak match is routinely below zero -- so the sign is part of the
      * pattern. Anything that does not match is skipped rather than guessed at.
      *
-     * @param  array<string, array<string, mixed>>  $results
      * @return list<array<string, mixed>>
      */
-    private function passagesFrom(ConversationMessage $row, array $results): array
+    private function passagesFrom(ConversationMessage $row): array
     {
         $passages = [];
 
-        foreach ((array) $row->tool_calls as $call) {
-            if (! is_array($call) || ! in_array($call['name'] ?? '', self::KNOWLEDGE_TOOLS, true)) {
+        foreach ($row->tool_results as $call) {
+            if (! in_array($call['name'] ?? '', self::KNOWLEDGE_TOOLS, true)) {
                 continue;
             }
 
-            $output = $results[(string) ($call['id'] ?? '')]['result'] ?? null;
+            $output = $call['result'] ?? null;
 
             if (! is_string($output) || $output === '') {
                 continue;
@@ -228,36 +241,26 @@ final class ConversationTranscript
 
     /**
      * Tool calls waiting for the user's decision, keyed by call id. Only the
-     * latest assistant turn counts: an older pause the user walked away from
-     * must not block the conversation forever.
+     * newest turn counts, and only while it is paused: an older pause the
+     * user walked away from must not block the conversation forever.
      *
      * @return array<string, array{tool: string, reason: ?string, arguments: array<string, mixed>}>
      */
     public function pendingApprovals(string $conversationId): array
     {
-        $latest = $this->rows($conversationId)->last(static fn (ConversationMessage $row): bool => $row->role === 'assistant');
+        $store = app(ConversationStore::class);
 
-        if ($latest === null) {
-            return [];
-        }
-
-        $names = [];
-        $arguments = [];
-
-        foreach ((array) $latest->tool_calls as $call) {
-            if (is_array($call) && isset($call['id'])) {
-                $names[(string) $call['id']] = (string) ($call['name'] ?? '');
-                $arguments[(string) $call['id']] = is_array($call['arguments'] ?? null) ? $call['arguments'] : [];
-            }
-        }
+        $pending = $store instanceof ResolvesPendingApprovals
+            ? $store->pendingApprovalsFor($conversationId)
+            : $this->pendingFromRows($conversationId);
 
         $approvals = [];
 
-        foreach ($this->pendingOn($latest) as $id => $reason) {
-            $approvals[(string) $id] = [
-                'tool' => $names[(string) $id] ?? '',
-                'reason' => is_string($reason) && $reason !== '' ? $reason : null,
-                'arguments' => $arguments[(string) $id] ?? [],
+        foreach ($pending as $approval) {
+            $approvals[$approval->id] = [
+                'tool' => $approval->tool,
+                'reason' => $approval->reason !== null && $approval->reason !== '' ? $approval->reason : null,
+                'arguments' => $approval->arguments,
             ];
         }
 
@@ -265,9 +268,38 @@ final class ConversationTranscript
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, ConversationMessage>
+     * The same answer for a host that bound a store of its own.
+     *
+     * @return list<PendingApproval>
      */
-    private function rows(string $conversationId): \Illuminate\Support\Collection
+    private function pendingFromRows(string $conversationId): array
+    {
+        $newest = $this->rows($conversationId)->last();
+
+        if ($newest === null || $newest->role !== 'assistant' || $newest->status !== MessageStatus::Paused) {
+            return [];
+        }
+
+        $pending = [];
+
+        foreach ($newest->tool_calls as $call) {
+            if (is_array($call) && isset($call['id']) && PendingApproval::isPending($call)) {
+                $pending[] = new PendingApproval(
+                    (string) $call['id'],
+                    (string) ($call['name'] ?? ''),
+                    is_array($call['arguments'] ?? null) ? $call['arguments'] : [],
+                    is_string($call['approval_reason'] ?? null) ? $call['approval_reason'] : null,
+                );
+            }
+        }
+
+        return $pending;
+    }
+
+    /**
+     * @return Collection<int, ConversationMessage>
+     */
+    private function rows(string $conversationId): Collection
     {
         // Ids are UUIDv7, so ordering by id is ordering by creation even when
         // two rows share a created_at second.
@@ -275,16 +307,6 @@ final class ConversationTranscript
             ->where('conversation_id', $conversationId)
             ->orderBy('id')
             ->get();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function pendingOn(ConversationMessage $row): array
-    {
-        $state = $row->approval_state;
-
-        return is_array($state) && is_array($state['pending'] ?? null) ? $state['pending'] : [];
     }
 
     /**
