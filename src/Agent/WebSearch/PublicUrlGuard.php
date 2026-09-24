@@ -63,6 +63,14 @@ final class PublicUrlGuard
             return null;
         }
 
+        // A host made only of digits, dots and hex notation that is not a
+        // canonical IP ("0177.0.0.1", "2130706433", "0x7f.1") is refused
+        // outright: resolvers and HTTP clients disagree about what it means,
+        // and curl reads 0177.0.0.1 as 127.0.0.1 whatever the check resolved.
+        if (filter_var($host, FILTER_VALIDATE_IP) === false && preg_match('/^(0x[0-9a-f]+|[0-9]+)(\.(0x[0-9a-f]+|[0-9]+))*\.?$/i', $host) === 1) {
+            return null;
+        }
+
         // A literal IP is checked directly; a hostname is resolved and every
         // address it returns must be public -- one private answer among
         // several is still a way in.

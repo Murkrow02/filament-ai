@@ -242,34 +242,209 @@
   }
 
   /*
-   * A deliberately small Markdown subset: paragraphs, lists, bold, italic,
-   * links, inline and fenced code. Input is escaped first, so the only HTML that can
-   * reach the page is the handful of tags produced right here -- a full
-   * Markdown library would be a larger dependency and a larger attack surface
-   * for text that arrives from a language model.
+   * The Markdown a language model actually writes: paragraphs, headings,
+   * nested lists, tables, block quotes, rules, fenced and inline code, bold,
+   * italic, strikethrough and links. No library: every piece of text is
+   * escaped before any tag is produced, so the only HTML that can reach the
+   * page is the handful of tags written right here -- a full Markdown parser
+   * would be a larger dependency and a larger attack surface for text that
+   * arrives from a language model.
+   *
+   * Block structure is read line by line first and inline formatting applied
+   * to each block's text afterwards, so an asterisk that starts a list item
+   * can never be taken for the start of an italic run.
    */
   function markdown(source) {
+    var lines = String(source || '').replace(/\r\n?/g, '\n').split('\n');
+    var html = '';
+    var paragraph = [];
+    var i = 0;
+
+    function flushParagraph() {
+      if (paragraph.length) { html += '<p>' + paragraph.map(inline).join('<br>') + '</p>'; paragraph = []; }
+    }
+
+    while (i < lines.length) {
+      var line = lines[i];
+      var trimmed = line.trim();
+      var match;
+
+      if (trimmed === '') { flushParagraph(); i++; continue; }
+
+      // Fenced code: everything up to the closing fence, verbatim.
+      if ((match = /^(\s*)(`{3,}|~{3,})\s*([\w+#.-]*)\s*$/.exec(line))) {
+        flushParagraph();
+        var fence = match[2];
+        var code = [];
+        i++;
+        while (i < lines.length && lines[i].trim().indexOf(fence) !== 0) { code.push(lines[i]); i++; }
+        i++;
+        html += '<pre><code' + (match[3] ? ' data-lang="' + escapeHtml(match[3]) + '"' : '') + '>' +
+          escapeHtml(code.join('\n')) + '</code></pre>';
+        continue;
+      }
+
+      if ((match = /^(#{1,6})\s+(.*?)\s*#*\s*$/.exec(trimmed))) {
+        flushParagraph();
+        // A chat answer is not a document: its top heading is a section of
+        // the reply, so levels start at h3.
+        var level = Math.min(6, match[1].length + 2);
+        html += '<h' + level + '>' + inline(match[2]) + '</h' + level + '>';
+        i++;
+        continue;
+      }
+
+      if (/^([-*_])(\s*\1){2,}$/.test(trimmed)) { flushParagraph(); html += '<hr>'; i++; continue; }
+
+      if (/^>/.test(trimmed)) {
+        flushParagraph();
+        var quoted = [];
+        while (i < lines.length && /^\s*>/.test(lines[i])) { quoted.push(lines[i].replace(/^\s*>\s?/, '')); i++; }
+        html += '<blockquote>' + markdown(quoted.join('\n')) + '</blockquote>';
+        continue;
+      }
+
+      if (trimmed.indexOf('|') !== -1 && i + 1 < lines.length && isTableRule(lines[i + 1])) {
+        flushParagraph();
+        var header = cells(line);
+        var aligns = cells(lines[i + 1]).map(function (cell) {
+          var left = cell.charAt(0) === ':';
+          var right = cell.charAt(cell.length - 1) === ':';
+          return left && right ? 'center' : (right ? 'right' : (left ? 'left' : ''));
+        });
+        i += 2;
+        var body = '';
+        while (i < lines.length && lines[i].trim() !== '' && lines[i].indexOf('|') !== -1) {
+          body += '<tr>' + cells(lines[i]).map(function (cell, index) { return cellHtml('td', cell, aligns[index]); }).join('') + '</tr>';
+          i++;
+        }
+        html += '<div class="fai-table"><table><thead><tr>' +
+          header.map(function (cell, index) { return cellHtml('th', cell, aligns[index]); }).join('') +
+          '</tr></thead><tbody>' + body + '</tbody></table></div>';
+        continue;
+      }
+
+      if (listItem(line)) {
+        flushParagraph();
+        var consumed = list(lines, i);
+        html += consumed.html;
+        i = consumed.next;
+        continue;
+      }
+
+      paragraph.push(trimmed);
+      i++;
+    }
+
+    flushParagraph();
+
+    return html;
+  }
+
+  function listItem(line) {
+    var match = /^(\s*)([-*+]|\d{1,9}[.)])\s+(.*)$/.exec(line);
+    if (!match) return null;
+    return { indent: match[1].replace(/\t/g, '    ').length, ordered: /\d/.test(match[2]), start: parseInt(match[2], 10), text: match[3] };
+  }
+
+  /*
+   * A list and everything nested in it. A deeper item opens a list inside the
+   * previous item; an indented line that is not an item continues it.
+   */
+  function list(lines, from) {
+    var first = listItem(lines[from]);
+    var tag = first.ordered ? 'ol' : 'ul';
+    var items = [];
+    var i = from;
+
+    while (i < lines.length) {
+      var line = lines[i];
+
+      if (line.trim() === '') {
+        // A blank line inside a list only continues it if the list goes on.
+        var next = i + 1 < lines.length ? listItem(lines[i + 1]) : null;
+        if (next && next.indent >= first.indent) { i++; continue; }
+        break;
+      }
+
+      var item = listItem(line);
+
+      if (item && item.indent < first.indent) break;
+
+      if (item && item.indent === first.indent) {
+        if (item.ordered !== first.ordered) break;
+        items.push(inline(item.text));
+        i++;
+        continue;
+      }
+
+      if (item && items.length) {
+        var nested = list(lines, i);
+        items[items.length - 1] += nested.html;
+        i = nested.next;
+        continue;
+      }
+
+      if (/^\s+/.test(line) && items.length) {
+        items[items.length - 1] += '<br>' + inline(line.trim());
+        i++;
+        continue;
+      }
+
+      break;
+    }
+
+    var start = first.ordered && first.start > 1 ? ' start="' + first.start + '"' : '';
+
+    return { html: '<' + tag + start + '>' + items.map(function (item) { return '<li>' + item + '</li>'; }).join('') + '</' + tag + '>', next: i };
+  }
+
+  function isTableRule(line) {
+    return /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/.test(line) && line.indexOf('|') !== -1;
+  }
+
+  function cells(line) {
+    return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (cell) { return cell.trim(); });
+  }
+
+  function cellHtml(tag, text, align) {
+    return '<' + tag + (align ? ' style="text-align:' + align + '"' : '') + '>' + inline(text) + '</' + tag + '>';
+  }
+
+  /*
+   * Inline formatting for one block's text. Code spans and links are set
+   * aside first, so nothing inside them is taken for emphasis.
+   */
+  function inline(source) {
+    var kept = [];
+
+    function keep(html) {
+      kept.push(html);
+      return '\u0000' + (kept.length - 1) + '\u0000';
+    }
+
     var text = escapeHtml(source);
-    var blocks = [];
 
-    text = text.replace(/```([\s\S]*?)```/g, function (whole, code) {
-      blocks.push('<pre><code>' + code.replace(/^\n/, '') + '</code></pre>');
-      return ' ' + (blocks.length - 1) + ' ';
-    });
-
-    text = text.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    text = text.replace(/`([^`]+)`/g, function (whole, code) { return keep('<code>' + code + '</code>'); });
 
     // Links, because the assistant is told to link every record it mentions.
     // Only http(s) and same-site paths (not //host, which is another site):
-    // the text is already escaped, so the
-    // url cannot close the attribute, and nothing else -- javascript:, data:
-    // -- becomes a link at all.
+    // the text is already escaped, so the url cannot close the attribute, and
+    // nothing else -- javascript:, data: -- becomes a link at all.
     text = text.replace(/\[([^\]\n]+)\]\(((?:https?:\/\/|\/(?!\/))[^\s)]+)\)/g, function (whole, label, href) {
-      return '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + label + '</a>';
+      return keep('<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + label + '</a>');
     });
 
-    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    text = text.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+    text = text.replace(/(^|[\s(])(https?:\/\/[^\s<]+[^\s<.,;:!?)])/g, function (whole, before, href) {
+      return before + keep('<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + href + '</a>');
+    });
+
+    text = text.replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/(^|[^\w])__(?=\S)([\s\S]*?\S)__(?!\w)/g, '$1<strong>$2</strong>');
+    text = text.replace(/(^|[^\w*])\*(?=[^\s*])([^*]*?[^\s*])\*(?![\w*])/g, '$1<em>$2</em>');
+    // Not inside a word: snake_case tool and column names stay as they are.
+    text = text.replace(/(^|[^\w])_(?=[^\s_])([^_]*?[^\s_])_(?!\w)/g, '$1<em>$2</em>');
+    text = text.replace(/~~(?=\S)([\s\S]*?\S)~~/g, '<del>$1</del>');
 
     // Citation markers become buttons that open the sources under the answer
     // on that passage. They are never stripped: the assistant is told to cite
@@ -279,42 +454,7 @@
       return '<button type="button" class="fai-cite" data-marker="' + marker + '">' + marker + '</button>';
     });
 
-    var html = '';
-    var lines = text.split('\n');
-    var list = null;
-    var paragraph = [];
-
-    function flushParagraph() {
-      if (paragraph.length) { html += '<p>' + paragraph.join('<br>') + '</p>'; paragraph = []; }
-    }
-
-    function flushList() {
-      if (list) { html += '<' + list.tag + '>' + list.items.join('') + '</' + list.tag + '>'; list = null; }
-    }
-
-    lines.forEach(function (line) {
-      var trimmed = line.trim();
-      var bullet = /^[-*+]\s+(.*)$/.exec(trimmed);
-      var ordered = /^\d+[.)]\s+(.*)$/.exec(trimmed);
-
-      if (trimmed === '') { flushParagraph(); flushList(); return; }
-
-      if (bullet || ordered) {
-        flushParagraph();
-        var tag = bullet ? 'ul' : 'ol';
-        if (!list || list.tag !== tag) { flushList(); list = { tag: tag, items: [] }; }
-        list.items.push('<li>' + (bullet ? bullet[1] : ordered[1]) + '</li>');
-        return;
-      }
-
-      flushList();
-      paragraph.push(trimmed);
-    });
-
-    flushParagraph();
-    flushList();
-
-    return html.replace(/ (\d+) /g, function (whole, index) { return blocks[Number(index)]; });
+    return text.replace(/\u0000(\d+)\u0000/g, function (whole, index) { return kept[Number(index)]; });
   }
 
   function icon(name) {
@@ -485,8 +625,24 @@
   function approvalsHtml(message) {
     if (!message.approvals || !message.approvals.length) return '';
 
-    var html = '<div class="fai-approvals"><p class="fai-approvals__head">' +
+    var undecided = message.approvals.filter(function (call) {
+      return !(message.decisions && Object.prototype.hasOwnProperty.call(message.decisions, call.id));
+    });
+
+    var html = '<div class="fai-approvals"><div class="fai-approvals__head"><p>' +
       icon('shield') + escapeHtml(t.approvalHeading) + '</p>';
+
+    // Several changes proposed at once -- "close these twelve tasks" -- are
+    // decided in one click, each still shown on its own card above the rest.
+    if (undecided.length > 1) {
+      html += '<div class="fai-approvals__bulk">' +
+        '<button type="button" class="fai-chip" data-bulk="approve">' +
+          escapeHtml(String(t.approveAll).replace(':count', undecided.length)) + '</button>' +
+        '<button type="button" class="fai-chip" data-bulk="reject">' + escapeHtml(t.rejectAll) + '</button>' +
+        '</div>';
+    }
+
+    html += '</div>';
 
     message.approvals.forEach(function (call) {
       var decided = message.decisions && Object.prototype.hasOwnProperty.call(message.decisions, call.id);
@@ -933,6 +1089,28 @@
   }
 
   root.addEventListener('click', function (event) {
+    var bulk = event.target.closest('[data-bulk]');
+
+    if (bulk) {
+      var bulkIndex = Number(bulk.closest('.fai-turn').dataset.index);
+      var bulkMessage = state.messages[bulkIndex];
+
+      if (!bulkMessage || !bulkMessage.approvals.length) return;
+
+      // Only what is still undecided: a card the user already answered keeps
+      // its answer.
+      bulkMessage.approvals.forEach(function (call) {
+        if (!Object.prototype.hasOwnProperty.call(bulkMessage.decisions, call.id)) {
+          bulkMessage.decisions[call.id] = bulk.dataset.bulk === 'approve';
+        }
+      });
+
+      paintTurn(bulkIndex, false);
+      submitDecisions(bulkMessage, bulkIndex);
+
+      return;
+    }
+
     var decision = event.target.closest('.fai-approval__actions button');
 
     if (decision) {

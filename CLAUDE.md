@@ -130,7 +130,7 @@ Source (class)   →  DocumentIngestor  →  Chunker  →  ChunkDiffer  →  Chu
 - laravel/ai 1.0 stores each step with its own results, which fixed the 0.11 replay of a paused multi-step turn; `ReplaySafeConversationStore` is gone and `AgentHardeningTest > it resumes a turn that read before it paused on a write` pins the fix.
 - **What a person sees vs the `debug` ability.** Everyone gets labels ("Search customers"), approval cards with before/after values, and failures as a sentence. Tool names, arguments, raw errors, model, tokens, scores, the solve-run link and setup hints are added only for `debug`, in `TurnStream`, `ApprovalCards`, `ChatPayload::presentMessages()` and `AssistantController` -- never hidden client-side.
 - Every chat request carries `?panel=&tenant=` from `payload.scope` (`scoped()` in the JS).
-- `filament-ai-chat.js`'s Markdown subset escapes first and only produces its own tags. Links are limited to `http(s)://` and same-site `/path` (not `//host`). The code-block placeholder uses control characters, which is why `grep` calls the file binary.
+- `filament-ai-chat.js`'s Markdown renderer reads block structure line by line (headings from h3, nested lists, GFM tables, quotes, rules, fences) and only then applies inline formatting, so a list's `*` is never taken for italics. It escapes first and only produces its own tags; links are limited to `http(s)://` and same-site `/path` (not `//host`). Cases live in `tests/js/markdown.cjs` (run by `ChatMarkdownTest` when node exists). Filament's base styles strip list bullets and heading sizes, so every element it produces is styled explicitly in `filament-ai-chat.css`.
 
 ### Solving strategies
 

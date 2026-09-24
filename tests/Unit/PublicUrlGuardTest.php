@@ -26,6 +26,8 @@ it('refuses urls that reach this network, or are not plain http', function (stri
     'sub localhost' => 'http://app.localhost/',
     'decimal ip' => 'http://2130706433/',
     'octal ip' => 'http://0177.0.0.1/',
+    'hex ip' => 'http://0x7f.0.0.1/',
+    'short ip' => 'http://127.1/',
     'file' => 'file:///etc/passwd',
     'gopher' => 'gopher://example.com/',
     'credentials' => 'http://user:pass@example.com/',

@@ -9,6 +9,27 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [5.0.1] - 2026-09-24
+
+### Fixed
+
+- **The assistant's answers render their Markdown.** Headings, tables, block
+  quotes, rules and nested lists were shown as raw text, a bullet whose text
+  contained emphasis lost its bullet, and inside a Filament panel lists had no
+  bullets at all -- Filament's base styles remove them and the chat did not put
+  them back.
+
+### Security
+
+- `fetch_web_page` refuses hosts written as non-canonical numbers
+  (`0177.0.0.1`, `0x7f.0.0.1`, `127.1`). A resolver could answer one address
+  for them while curl, reading octal, connected to another -- loopback.
+
+### Added
+
+- **Approve all / Reject all** on an approval with several pending changes.
+  Each change keeps its own card; a card already decided keeps its answer.
+
 ## [5.0.0] - 2026-09-24
 
 The assistant's writes, its tenancy and what the chat shows were reviewed for
@@ -292,7 +313,8 @@ inside a Filament panel.
 - The knowledge settings page no longer writes back the agent's settings: it
   rendered no field for them but carried them in its state.
 
-[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v5.0.0...HEAD
+[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v5.0.1...HEAD
+[5.0.1]: https://github.com/Murkrow02/filament-ai/compare/v5.0.0...v5.0.1
 [5.0.0]: https://github.com/Murkrow02/filament-ai/compare/v4.1.0...v5.0.0
 [4.1.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v4.1.0
 [4.0.2]: https://github.com/Murkrow02/filament-ai/releases/tag/v4.0.2

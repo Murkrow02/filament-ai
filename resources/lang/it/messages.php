@@ -260,6 +260,8 @@ return [
             'approvalHeading' => 'Serve la tua approvazione',
             'approve' => 'Approva',
             'reject' => 'Rifiuta',
+            'approveAll' => 'Approva tutte (:count)',
+            'rejectAll' => 'Rifiuta tutte',
             'approved' => 'Approvata',
             'rejected' => 'Rifiutata',
             'decideFirst' => 'Decidi sulla modifica in sospeso prima di chiedere altro.',

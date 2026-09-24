@@ -260,6 +260,8 @@ return [
             'approvalHeading' => 'This needs your approval',
             'approve' => 'Approve',
             'reject' => 'Reject',
+            'approveAll' => 'Approve all (:count)',
+            'rejectAll' => 'Reject all',
             'approved' => 'Approved',
             'rejected' => 'Rejected',
             'decideFirst' => 'Decide on the pending change before asking something else.',
