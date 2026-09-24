@@ -125,6 +125,9 @@ class AgentSettings extends Page
                 ->columns(2)
                 ->schema([
                     Toggle::make('agent__resources__enabled')->label(__('filament-ai::messages.assistant_settings.resources_enabled')),
+                    Toggle::make('agent__resources__writes')
+                        ->label(__('filament-ai::messages.assistant_settings.resources_writes'))
+                        ->helperText(__('filament-ai::messages.assistant_settings.resources_writes_help')),
                     TextInput::make('agent__resources__max_records')
                         ->label(__('filament-ai::messages.assistant_settings.max_records'))
                         ->numeric()
@@ -164,6 +167,7 @@ class AgentSettings extends Page
                 ? null
                 : array_values((array) $state['agent__knowledge__sources']),
             'agent.resources.enabled' => (bool) ($state['agent__resources__enabled'] ?? true),
+            'agent.resources.writes' => (bool) ($state['agent__resources__writes'] ?? true),
             'agent.resources.max_records' => (int) ($state['agent__resources__max_records'] ?? 25),
             'agent.resources.overrides' => $this->overridesFrom($state),
             'agent.sandbox.enabled' => (bool) ($state['agent__sandbox__enabled'] ?? false),
@@ -508,6 +512,7 @@ class AgentSettings extends Page
             'agent__knowledge__enabled' => (bool) $settings->effective('agent.knowledge.enabled'),
             'agent__knowledge__sources' => (array) ($settings->effective('agent.knowledge.sources') ?? []),
             'agent__resources__enabled' => (bool) $settings->effective('agent.resources.enabled'),
+            'agent__resources__writes' => (bool) $settings->effective('agent.resources.writes'),
             'agent__resources__max_records' => (int) $settings->effective('agent.resources.max_records'),
             'agent__sandbox__enabled' => (bool) $settings->effective('agent.sandbox.enabled'),
             'agent__sandbox__languages' => array_keys((array) $settings->effective('agent.sandbox.languages')),

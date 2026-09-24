@@ -175,6 +175,11 @@ final class ResourceToolRegistry
             $tools[] = new ViewRecordTool($blueprint);
         }
 
+        // Read-only assistant: nothing below this line is offered at all.
+        if (! config('filament-ai.agent.resources.writes', true)) {
+            return $tools;
+        }
+
         // Writes need something to write: a resource without a usable form
         // gets no create or edit tool rather than one that accepts nothing.
         if ($blueprint->allows(AgentTools::CREATE) && $blueprint->fields !== [] && $resource::canCreate()) {

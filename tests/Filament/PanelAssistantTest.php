@@ -82,3 +82,28 @@ it('can be prompted end to end through laravel/ai', function (): void {
 
     PanelAssistant::assertPrompted('How many books are there?');
 });
+
+it('never tells the model it can change records when it cannot', function (): void {
+    config()->set('filament-ai.agent.resources.writes', false);
+
+    $assistant = new \Murkrow\FilamentAi\Agent\PanelAssistant;
+    $names = array_map(fn ($tool) => $tool->name(), iterator_to_array($assistant->tools(), false));
+
+    expect($names)->toContain('test_books_list')
+        ->not->toContain('test_books_create', 'test_books_edit')
+        ->and($assistant->instructions())
+        ->toContain('you cannot create, change or delete anything')
+        ->not->toContain('_create, _edit and _delete');
+});
+
+it('says it has no access to records when no resource is offered', function (): void {
+    config()->set('filament-ai.agent.resources.enabled', false);
+
+    expect((new \Murkrow\FilamentAi\Agent\PanelAssistant)->instructions())
+        ->toContain('You have no access to the panel\'s records')
+        ->not->toContain('_create, _edit and _delete');
+});
+
+it('keeps the write rule when writes are offered', function (): void {
+    expect((new \Murkrow\FilamentAi\Agent\PanelAssistant)->instructions())->toContain('_create, _edit and _delete');
+});

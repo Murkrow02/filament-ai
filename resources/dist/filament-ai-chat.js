@@ -224,6 +224,26 @@
     return endpoint + (endpoint.indexOf('?') === -1 ? '?' : '&') + params.join('&');
   }
 
+  /*
+   * A page opened before a deploy runs the old script against new endpoints,
+   * which shows up as steps without names and failures that make no sense.
+   * Every response names the server's version: when it is not ours, ask for
+   * a reload instead of carrying on.
+   */
+  function checkVersion(response) {
+    var served = response.headers.get('X-Filament-Ai-Version');
+
+    if (!served || !payload.version || served === payload.version || document.getElementById('fai-outdated')) return;
+
+    var banner = document.createElement('div');
+    banner.id = 'fai-outdated';
+    banner.className = 'fai-outdated';
+    banner.innerHTML = '<span>' + escapeHtml(t.outdated) + '</span>' +
+      '<button type="button" class="fai-chip">' + escapeHtml(t.reload) + '</button>';
+    banner.querySelector('button').addEventListener('click', function () { window.location.reload(); });
+    root.insertBefore(banner, root.firstChild);
+  }
+
   function request(method, endpoint, body) {
     return fetch(scoped(endpoint), {
       method: method,
@@ -236,6 +256,7 @@
       credentials: 'same-origin',
       body: body === undefined ? undefined : JSON.stringify(body)
     }).then(function (response) {
+      checkVersion(response);
       if (!response.ok) return failureFrom(response);
       return response.status === 204 ? null : response.json();
     });
@@ -972,6 +993,7 @@
       body: JSON.stringify(body),
       signal: controller.signal
     }).then(function (response) {
+      checkVersion(response);
       if (!response.ok) return failureFrom(response);
       if (!response.body) throw new Error('HTTP ' + response.status);
 

@@ -7,6 +7,7 @@ namespace Murkrow\FilamentAi\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Murkrow\FilamentAi\Chat\ChatAbilities;
+use Murkrow\FilamentAi\Http\Controllers\AssetController;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -31,6 +32,11 @@ final class AuthorizeChat
         );
         abort_unless(ChatAbilities::canUseChat($request->user()), 403);
 
-        return $next($request);
+        $response = $next($request);
+
+        // See AssetController::version().
+        $response->headers->set('X-Filament-Ai-Version', AssetController::version());
+
+        return $response;
     }
 }

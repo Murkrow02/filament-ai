@@ -51,4 +51,19 @@ class AssetController
 
         return route('filament-ai.chat.asset', ['file' => $file]).'?v='.$version;
     }
+
+    /**
+     * The version of the chat's script this server ships. A page opened
+     * before a deploy keeps running the old script against the new endpoints;
+     * every response names this, and the page asks to be reloaded when it
+     * differs from its own.
+     */
+    public static function version(): string
+    {
+        static $version = null;
+
+        $path = self::path('filament-ai-chat.js');
+
+        return $version ??= is_file($path) ? substr(md5_file($path) ?: '', 0, 8) : 'dev';
+    }
 }

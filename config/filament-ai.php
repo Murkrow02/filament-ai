@@ -353,6 +353,11 @@ return [
 
         'resources' => [
             'enabled' => true,
+
+            // False makes the assistant read-only: no create, edit or delete
+            // tool is offered for any resource, whatever the resources declare.
+            'writes' => (bool) env('FILAMENT_AI_AGENT_WRITES', true),
+
             // Default cap on records per list call; AgentTools::limit() overrides it per resource.
             'max_records' => 25,
 
@@ -704,6 +709,7 @@ return [
             'agent.knowledge.enabled' => ['type' => 'bool'],
             'agent.knowledge.sources' => ['type' => 'json'],
             'agent.resources.enabled' => ['type' => 'bool'],
+            'agent.resources.writes' => ['type' => 'bool'],
             'agent.resources.max_records' => ['type' => 'int', 'min' => 1, 'max' => 200],
             'agent.resources.overrides' => ['type' => 'json'],
             'agent.chat.enabled' => ['type' => 'bool'],

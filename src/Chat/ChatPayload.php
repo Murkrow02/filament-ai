@@ -11,6 +11,7 @@ use Murkrow\FilamentAi\Agent\Chat\AssistantTurn;
 use Murkrow\FilamentAi\Agent\Chat\PanelScope;
 use Murkrow\FilamentAi\Agent\Chat\ToolLabels;
 use Murkrow\FilamentAi\Data\SolveOptions;
+use Murkrow\FilamentAi\Http\Controllers\AssetController;
 
 /**
  * Everything the chat hands to the browser, in one object.
@@ -50,6 +51,7 @@ final class ChatPayload
             // Sent back with every request, so the turn runs in this panel and
             // tenant. See PanelScope.
             'scope' => $this->scope(),
+            'version' => AssetController::version(),
             'solving' => $this->solving($allowed),
             'endpoints' => $this->endpoints(),
             'csrf' => csrf_token(),

@@ -9,6 +9,25 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [5.0.2] - 2026-09-24
+
+### Fixed
+
+- **The assistant no longer claims abilities it does not have.** Its rules
+  always described changing records, even with no write tool -- or no record
+  tool at all -- so it offered to delete records and asked the user to confirm.
+  The rules and the list of capabilities are now written from the tools the
+  turn actually has, and say plainly when records cannot be read or changed.
+
+### Added
+
+- `agent.resources.writes` (`FILAMENT_AI_AGENT_WRITES`, also on the Assistant
+  settings page): off makes the assistant read-only -- no create, edit or
+  delete tool for any resource.
+- A page opened before a deploy notices that the server now ships a
+  different version of the chat and asks to be reloaded, instead of running
+  the old script against the new endpoints (steps without names, odd errors).
+
 ## [5.0.1] - 2026-09-24
 
 ### Fixed
@@ -313,7 +332,8 @@ inside a Filament panel.
 - The knowledge settings page no longer writes back the agent's settings: it
   rendered no field for them but carried them in its state.
 
-[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v5.0.1...HEAD
+[Unreleased]: https://github.com/Murkrow02/filament-ai/compare/v5.0.2...HEAD
+[5.0.2]: https://github.com/Murkrow02/filament-ai/compare/v5.0.1...v5.0.2
 [5.0.1]: https://github.com/Murkrow02/filament-ai/compare/v5.0.0...v5.0.1
 [5.0.0]: https://github.com/Murkrow02/filament-ai/compare/v4.1.0...v5.0.0
 [4.1.0]: https://github.com/Murkrow02/filament-ai/releases/tag/v4.1.0

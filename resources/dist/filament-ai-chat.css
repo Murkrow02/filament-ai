@@ -709,3 +709,13 @@ a.fai-step:hover { color: var(--fai-text); }
   from { background: color-mix(in oklab, var(--fai-accent) 22%, transparent); }
   to { background: var(--fai-bg-sunken); }
 }
+
+/* The page is older than the server: see checkVersion() in the script. */
+.fai-outdated {
+  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 60;
+  display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px);
+  padding: 10px 14px; border-radius: var(--fai-radius); font-size: 13px;
+  border: 1px solid color-mix(in srgb, var(--fai-fair) 45%, var(--fai-border));
+  background: var(--fai-bg); color: var(--fai-text);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+}

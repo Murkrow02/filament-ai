@@ -210,3 +210,8 @@ it('streams the passages a citation points at, and keeps them for a reload', fun
         ->and($passages[0]['label'])->toContain('Cronaca cittadina')
         ->and($passages[0]['content'])->toContain('consiglio');
 });
+
+it('names the version of the chat it serves, so a stale page can ask for a reload', function (): void {
+    $this->getJson('/ai/chat/c/'.Illuminate\Support\Str::uuid7().'/messages')
+        ->assertHeader('X-Filament-Ai-Version', Murkrow\FilamentAi\Http\Controllers\AssetController::version());
+});

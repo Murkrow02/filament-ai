@@ -441,6 +441,8 @@ foreach ($response->pendingApprovals as $approval) {
 }
 ```
 
+To make the whole assistant read-only, set `FILAMENT_AI_AGENT_WRITES=false` (or switch it off on the Assistant settings page): no create, edit or delete tool is offered for any resource, and the assistant is told it cannot change anything.
+
 Creation and edits can skip the confirmation per resource with `->withoutApproval(AgentTools::CREATE, AgentTools::EDIT)`. Think twice: record content the agent reads can then steer a write nobody looks at. A deletion is always confirmed, whatever the code or the settings say.
 
 To turn a write back to asking (for instance per environment), `->requireApproval(AgentTools::EDIT)` undoes `withoutApproval()`.
