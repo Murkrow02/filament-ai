@@ -203,7 +203,7 @@ return [
         'top_k' => 8,
 
         // Over-fetch before de-duplication and MMR re-ranking.
-        'fetch_k' => 40,
+        'fetch_k' => 60,
 
         'min_score' => 0.25,
 
@@ -216,12 +216,65 @@ return [
         // Pull ordinal +/- n around every hit to restore surrounding context.
         'expand_neighbors' => 0,
 
+        // Keyword leg fused with the vector one by rank (RRF). `tsvector` needs
+        // Postgres and reports itself unavailable elsewhere, so it is a safe
+        // default; set to null to search by meaning alone.
         'hybrid' => [
-            'driver' => env('FILAMENT_AI_HYBRID_DRIVER'), // null | tsvector | scout
+            'driver' => env('FILAMENT_AI_HYBRID_DRIVER', 'tsvector'), // null | tsvector | scout
             'candidates' => 100,
             'rrf_k' => 60,
-            'weight' => 0.35,
+            'weight' => (float) env('FILAMENT_AI_HYBRID_WEIGHT', 0.4),
+            // Read by the full-text migration: changing it later means running
+            // `ai:fulltext` so the stored column is rebuilt in the new language.
             'tsvector_language' => env('FILAMENT_AI_TSVECTOR_LANGUAGE', 'italian'),
+            // Fold accents through the `unaccent` extension when it can be
+            // created. Without it the column is built from the text as is.
+            'unaccent' => true,
+            // Past this the keyword search is abandoned and the vector leg
+            // answers alone. 0 = no limit.
+            'timeout_ms' => 3000,
+            // Recount word frequencies (rarity weights) this many seconds
+            // after an ingestion changed chunks; one recount per import.
+            'refresh_statistics' => true,
+            'statistics_delay' => 60,
+        ],
+
+        // Rewrite the question with the generation model before searching:
+        // concrete restatements, synonyms (archaic and dialect forms
+        // included) and a passage in the source's voice, each retrieved and
+        // fused with the original. Costs one short model call per new
+        // question (cached); worth it when users paraphrase or ask riddles.
+        'expansion' => [
+            'enabled' => (bool) env('FILAMENT_AI_QUERY_EXPANSION', false),
+            'model' => env('FILAMENT_AI_QUERY_EXPANSION_MODEL'), // null => llm.model
+            'max_queries' => 4,
+            // Fusion weight of each rewrite relative to the question itself.
+            'weight' => 0.7,
+            // One line about the collection, to steer the rewrites.
+            'hint' => env('FILAMENT_AI_QUERY_EXPANSION_HINT', ''),
+            'cache_ttl' => 86400,
+        ],
+
+        // Second-stage reranking of the fused candidates.
+        //   null   off
+        //   ollama a local instruction model judges each passage (yes/no
+        //          log-probabilities); needs Ollama with logprobs support
+        //   llm    the generation model grades all candidates in one call
+        'rerank' => [
+            'driver' => env('FILAMENT_AI_RERANK_DRIVER'),
+            'candidates' => (int) env('FILAMENT_AI_RERANK_CANDIDATES', 30),
+            'model' => env('FILAMENT_AI_RERANK_MODEL', 'qwen3:1.7b'),
+            'max_chars' => 1200,
+            'instruction' => 'Judge whether the passage contains the answer to the question, even if it uses different words.',
+            'ollama' => [
+                'url' => env('FILAMENT_AI_RERANK_URL'), // null => ai.providers.ollama.url
+                'concurrency' => (int) env('FILAMENT_AI_RERANK_CONCURRENCY', 4),
+                'timeout' => (int) env('FILAMENT_AI_RERANK_TIMEOUT', 60),
+                'keep_alive' => '30m',
+                'num_ctx' => 2048,
+            ],
+            'llm_model' => env('FILAMENT_AI_RERANK_LLM_MODEL'), // null => llm.model
+            'llm_max_chars' => 700,
         ],
 
         'log_queries' => true,
@@ -349,6 +402,10 @@ return [
             'enabled' => true,
             // null => every registered source; [] => none.
             'sources' => null,
+            // Cut each search result to the window of this many characters
+            // where the query's words cluster; fetch_document still reads the
+            // whole text. null => every passage whole.
+            'passage_characters' => env('FILAMENT_AI_AGENT_PASSAGE_CHARACTERS'),
         ],
 
         'resources' => [
@@ -702,6 +759,10 @@ return [
             'retrieval.mmr.lambda' => ['type' => 'float', 'min' => 0, 'max' => 1],
             'retrieval.expand_neighbors' => ['type' => 'int', 'min' => 0, 'max' => 5],
             'retrieval.hybrid.driver' => ['type' => 'enum', 'options' => [null, 'tsvector', 'scout']],
+            'retrieval.hybrid.weight' => ['type' => 'float', 'min' => 0, 'max' => 1],
+            'retrieval.expansion.enabled' => ['type' => 'bool'],
+            'retrieval.rerank.driver' => ['type' => 'enum', 'options' => [null, 'ollama', 'llm']],
+            'retrieval.rerank.candidates' => ['type' => 'int', 'min' => 2, 'max' => 100],
             'answering.refusal_message' => ['type' => 'text'],
             'answering.require_citations' => ['type' => 'bool'],
             'answering.max_context_tokens' => ['type' => 'int', 'min' => 500, 'max' => 100000],

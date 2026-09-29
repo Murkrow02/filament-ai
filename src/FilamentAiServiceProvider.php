@@ -40,7 +40,10 @@ use Murkrow\FilamentAi\Embeddings\EmbeddingManager;
 use Murkrow\FilamentAi\Embeddings\EmbeddingRateLimiter;
 use Murkrow\FilamentAi\Http\Middleware\AuthorizeChat;
 use Murkrow\FilamentAi\Http\Middleware\BootAssistantPanel;
+use Murkrow\FilamentAi\Events\DocumentIngested;
+use Murkrow\FilamentAi\Jobs\RefreshLexicalStatisticsJob;
 use Murkrow\FilamentAi\Llm\LanguageModelManager;
+use Murkrow\FilamentAi\Reranking\RerankerManager;
 use Murkrow\FilamentAi\Mcp\KnowledgeServer;
 use Murkrow\FilamentAi\Retrieval\DefaultRetriever;
 use Murkrow\FilamentAi\Retrieval\Lexical\LexicalSearchManager;
@@ -107,6 +110,8 @@ class FilamentAiServiceProvider extends ServiceProvider
                 Console\MakeSourceCommand::class,
                 Console\IngestCommand::class,
                 Console\SearchCommand::class,
+                Console\EvalCommand::class,
+                Console\FullTextCommand::class,
                 Console\AskCommand::class,
                 Console\StatusCommand::class,
                 Console\PurgeCommand::class,
@@ -121,6 +126,10 @@ class FilamentAiServiceProvider extends ServiceProvider
         EmbeddingRateLimiter::register();
 
         $this->applySettings();
+
+        // New chunks get their tsvector from a trigger; the word counts that
+        // weight keyword matches are recounted once an import settles.
+        Event::listen(DocumentIngested::class, [RefreshLexicalStatisticsJob::class, 'afterIngestion']);
 
         $this->registerMcpServer();
         $this->registerChat();
@@ -235,6 +244,7 @@ class FilamentAiServiceProvider extends ServiceProvider
         $this->app->singleton(LanguageModelManager::class);
         $this->app->singleton(VectorStoreManager::class);
         $this->app->singleton(LexicalSearchManager::class);
+        $this->app->singleton(RerankerManager::class);
 
         $this->app->singleton(
             EmbeddingProvider::class,

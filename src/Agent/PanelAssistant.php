@@ -268,6 +268,16 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
     }
 
     /**
+     * How to search this application's documents, when there is more to say
+     * than the generic advice: which sources hold what, their language, their
+     * spelling. Null when the host has nothing to add.
+     */
+    protected function searchStrategy(): ?string
+    {
+        return null;
+    }
+
+    /**
      * Host-specific tools, added to the derived ones.
      *
      * @return iterable<Tool>
@@ -442,6 +452,14 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
 
         if (in_array('search_knowledge', $names, true)) {
             $rules[] = '- When an answer relies on a knowledge passage, cite its marker, e.g. [#1].';
+            $rules[] = '- Searching the documents: a question may paraphrase, allude or be a riddle, while the source names things plainly. '
+                .'Work out what the question probably refers to and search for the words the source would use (names, objects, places, trades, '
+                .'old or dialect forms). If a search finds nothing useful, change angle -- other synonyms, the people, the place, the event -- '
+                .'rather than repeating near-identical queries. When a passage looks promising but cut short, read around it with fetch_document.';
+
+            if (($strategy = $this->searchStrategy()) !== null) {
+                $rules[] = '- '.$strategy;
+            }
         }
 
         return implode("\n", [

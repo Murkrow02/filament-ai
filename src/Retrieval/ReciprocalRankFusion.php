@@ -4,49 +4,35 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Retrieval;
 
-use Illuminate\Support\Collection;
-use Murkrow\FilamentAi\Data\ScoredChunk;
-
 /**
- * Fuses the vector and lexical result lists by rank rather than by score.
+ * Fuses ranked result lists by rank rather than by score.
  *
  * Cosine similarity and BM25 are not on comparable scales, so blending the raw
  * numbers is meaningless. RRF only uses each item's position in its own list:
  *
  *     score = sum over lists of  weight / (k + rank)
+ *
+ * The lists can be any mix of legs: the vector and lexical results of the
+ * question, and those of each rewrite of it when query expansion is on.
  */
 final class ReciprocalRankFusion
 {
     /**
-     * @param  Collection<int, ScoredChunk>  $vectorHits  ordered by relevance
-     * @param  array<int, int>  $lexicalChunkIds  ordered by relevance
-     * @return Collection<int, ScoredChunk>
+     * @param  list<array{ids: array<int, int>, weight: float}>  $lists  each ordered by relevance
+     * @return array<int, float> fused score keyed by chunk id, best first
      */
-    public function fuse(Collection $vectorHits, array $lexicalChunkIds, int $k, float $lexicalWeight): Collection
+    public function fuse(array $lists, int $k): array
     {
-        if ($lexicalChunkIds === []) {
-            return $vectorHits;
-        }
-
-        $vectorWeight = 1.0 - $lexicalWeight;
         $scores = [];
 
-        foreach ($vectorHits->values() as $rank => $chunk) {
-            $scores[$chunk->chunkId] = ($scores[$chunk->chunkId] ?? 0.0)
-                + $vectorWeight / ($k + $rank + 1);
+        foreach ($lists as $list) {
+            foreach (array_values($list['ids']) as $rank => $chunkId) {
+                $scores[$chunkId] = ($scores[$chunkId] ?? 0.0) + $list['weight'] / ($k + $rank + 1);
+            }
         }
 
-        foreach (array_values($lexicalChunkIds) as $rank => $chunkId) {
-            $scores[$chunkId] = ($scores[$chunkId] ?? 0.0)
-                + $lexicalWeight / ($k + $rank + 1);
-        }
+        arsort($scores);
 
-        // Only chunks the vector leg actually returned can be re-scored here;
-        // lexical-only ids are handled by the caller, which decides whether to
-        // hydrate them.
-        return $vectorHits
-            ->map(static fn (ScoredChunk $c): ScoredChunk => $c->withScore($scores[$c->chunkId] ?? $c->score))
-            ->sortByDesc(static fn (ScoredChunk $c): float => $c->score)
-            ->values();
+        return $scores;
     }
 }

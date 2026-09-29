@@ -7,6 +7,7 @@ namespace Murkrow\FilamentAi\Retrieval;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Murkrow\FilamentAi\Contracts\EmbeddingProvider;
+use Murkrow\FilamentAi\Contracts\LexicalSearch;
 use Murkrow\FilamentAi\Contracts\Retriever;
 use Murkrow\FilamentAi\Contracts\VectorStore;
 use Murkrow\FilamentAi\Data\RetrievalOptions;
@@ -16,13 +17,16 @@ use Murkrow\FilamentAi\Data\VectorQuery;
 use Murkrow\FilamentAi\Models\Chunk;
 use Murkrow\FilamentAi\Models\Document;
 use Murkrow\FilamentAi\Retrieval\Lexical\LexicalSearchManager;
+use Murkrow\FilamentAi\Reranking\RerankerManager;
 use Murkrow\FilamentAi\Sources\SourceRegistry;
+use Throwable;
 
 /**
  * The retrieval pipeline.
  *
- * Over-fetch (fetch_k) -> optional lexical fusion -> score floor -> de-dupe ->
- * MMR -> optional neighbour expansion -> top_k.
+ * Optional query expansion -> per query: vector search (score floor applied
+ * there) and optional lexical search -> rank fusion -> optional cross
+ * reranking -> de-dupe -> MMR -> optional neighbour expansion -> top_k.
  *
  * The over-fetch is what makes the later stages possible: de-duplication and
  * MMR both remove candidates, so asking the store for exactly top_k would leave
@@ -39,6 +43,7 @@ final class DefaultRetriever implements Retriever
         private readonly Mmr $mmr = new Mmr,
         private readonly ReciprocalRankFusion $fusion = new ReciprocalRankFusion,
         private readonly NeighborExpander $neighbors = new NeighborExpander,
+        private readonly ?RerankerManager $rerankerManager = null,
     ) {}
 
     public function retrieve(string $question, RetrievalOptions $options = new RetrievalOptions): RetrievalResult
@@ -53,9 +58,19 @@ final class DefaultRetriever implements Retriever
         $dedupeThreshold = (float) config('filament-ai.retrieval.dedupe_threshold', 0.97);
         $expand = $options->expandNeighbors ?? (int) config('filament-ai.retrieval.expand_neighbors', 0);
 
+        $queries = [trim($question)];
+
+        if ($this->shouldExpand($question, $options)) {
+            $start = hrtime(true);
+            $queries = [...$queries, ...app(QueryExpander::class)->expand($question)];
+            $timings['expand_ms'] = $this->msSince($start);
+        }
+
         $start = hrtime(true);
-        $vector = $this->embedQuery($question);
+        $vectors = array_map(fn (string $q): array => $this->embedQuery($q), $queries);
         $timings['embed_ms'] = $this->msSince($start);
+
+        $vector = $vectors[0];
 
         if ($vector === []) {
             return new RetrievalResult(collect(), $question, 0, $timings);
@@ -73,16 +88,76 @@ final class DefaultRetriever implements Retriever
             constrain: $options->constrain,
         );
 
-        $start = hrtime(true);
-        $hits = $this->store->search($query);
-        $timings['search_ms'] = $this->msSince($start);
+        $lexical = $this->lexicalSearch($options);
+        $rewriteWeight = (float) config('filament-ai.retrieval.expansion.weight', 0.7);
+        $lexicalWeight = (float) config('filament-ai.retrieval.hybrid.weight', 0.35);
 
-        $examined = $hits->count();
+        /** @var array<int, ScoredChunk> $pool best cosine seen for each chunk */
+        $pool = [];
+        $lists = [];
+        $examined = 0;
+        $timings['search_ms'] = 0;
 
-        $hits = $this->fuseLexical($question, $query, $hits, $options, $timings);
+        foreach ($queries as $index => $text) {
+            if ($vectors[$index] === []) {
+                continue;
+            }
 
-        if ($minScore > 0) {
-            $hits = $hits->filter(static fn (ScoredChunk $c): bool => $c->score >= $minScore)->values();
+            $weight = $index === 0 ? 1.0 : $rewriteWeight;
+
+            $start = hrtime(true);
+            $hits = $this->store->search(new VectorQuery(
+                $vectors[$index], $query->limit, $query->sourceKeys, $query->documentIds, $query->externalIds,
+                $query->positionFrom, $query->positionTo, $query->minScore, $query->constrain,
+            ));
+            $timings['search_ms'] += $this->msSince($start);
+            $examined += $hits->count();
+
+            foreach ($hits as $hit) {
+                if (! isset($pool[$hit->chunkId]) || $pool[$hit->chunkId]->score < $hit->score) {
+                    $pool[$hit->chunkId] = $hit;
+                }
+            }
+
+            $lists[] = ['ids' => $hits->pluck('chunkId')->all(), 'weight' => $weight * (1 - ($lexical === null ? 0.0 : $lexicalWeight))];
+
+            if ($lexical !== null) {
+                $start = hrtime(true);
+                $ids = $lexical->candidates($text, $query, (int) config('filament-ai.retrieval.hybrid.candidates', 100));
+                $timings['lexical_ms'] = ($timings['lexical_ms'] ?? 0) + $this->msSince($start);
+
+                $lists[] = ['ids' => $ids, 'weight' => $weight * $lexicalWeight];
+            }
+        }
+
+        // One list is the plain vector search: its cosine order stands, and so
+        // does the score floor the store already applied.
+        if (count($lists) === 1) {
+            $hits = collect(array_values($pool));
+            $relevance = null;
+        } else {
+            $fused = $this->fusion->fuse($lists, (int) config('filament-ai.retrieval.hybrid.rrf_k', 60));
+            $fused = array_slice($fused, 0, $fetchK, true);
+
+            $start = hrtime(true);
+            $pool += $this->hydrate(array_keys(array_diff_key($fused, $pool)), $query);
+            $timings['hydrate_ms'] = $this->msSince($start);
+
+            $hits = collect(array_keys($fused))
+                ->filter(static fn (int $id): bool => isset($pool[$id]))
+                ->map(static fn (int $id): ScoredChunk => $pool[$id])
+                ->values();
+
+            // Fused scores are ~0.01 and mean nothing on their own: rescale to
+            // 0-1 so MMR can weigh them against cosine redundancy.
+            $max = max($fused ?: [1.0]);
+            $relevance = array_map(static fn (float $s): float => $max > 0 ? $s / $max : 0.0, $fused);
+        }
+
+        $reranked = $this->rerank($question, $hits, $options, $timings);
+
+        if ($reranked !== null) {
+            [$hits, $relevance] = $reranked;
         }
 
         // MMR and near-duplicate collapsing both compare candidates against
@@ -99,7 +174,7 @@ final class DefaultRetriever implements Retriever
         $hits = $this->deduplicator->dedupe($hits, $dedupeThreshold);
 
         if ($useMmr) {
-            $hits = $this->mmr->rerank($hits, $vector, $lambda, $topK);
+            $hits = $this->mmr->rerank($hits, $vector, $lambda, $topK, $relevance);
         } else {
             $hits = $hits->take($topK)->values();
         }
@@ -127,6 +202,111 @@ final class DefaultRetriever implements Retriever
         );
     }
 
+    private function shouldExpand(string $question, RetrievalOptions $options): bool
+    {
+        if (! ($options->expand ?? (bool) config('filament-ai.retrieval.expansion.enabled', false))) {
+            return false;
+        }
+
+        // A quoted query asks for those exact words; rewriting it would not help.
+        return preg_match('/^\s*["\x{201C}\x{00AB}].*["\x{201D}\x{00BB}]\s*$/us', $question) !== 1;
+    }
+
+    private function lexicalSearch(RetrievalOptions $options): ?LexicalSearch
+    {
+        $driver = $options->hybridDriver ?? config('filament-ai.retrieval.hybrid.driver');
+
+        if ($driver === null || $driver === '' || $driver === 'null' || $driver === 'none') {
+            return null;
+        }
+
+        $search = $this->lexical->driver((string) $driver);
+
+        return $search->isAvailable() ? $search : null;
+    }
+
+    /**
+     * Load the chunks only the lexical leg or a rewrite found, scored by cosine
+     * against the question itself. The store applies the caller's filters and
+     * scope again, so nothing the caller may not see gets in this way.
+     *
+     * @param  array<int, int>  $chunkIds
+     * @return array<int, ScoredChunk>
+     */
+    private function hydrate(array $chunkIds, VectorQuery $query): array
+    {
+        if ($chunkIds === []) {
+            return [];
+        }
+
+        $hits = $this->store->search(new VectorQuery(
+            $query->vector, count($chunkIds), $query->sourceKeys, $query->documentIds, $query->externalIds,
+            $query->positionFrom, $query->positionTo, null, $query->constrain, $chunkIds,
+        ));
+
+        return $hits->keyBy('chunkId')->all();
+    }
+
+    /**
+     * Second-stage ranking of the head of the list. Returns null when no
+     * reranker is configured or it failed, so the fused order stands.
+     *
+     * @param  Collection<int, ScoredChunk>  $hits
+     * @param  array<string, int>  $timings
+     * @return array{0: Collection<int, ScoredChunk>, 1: array<int, float>}|null
+     */
+    private function rerank(string $question, Collection $hits, RetrievalOptions $options, array &$timings): ?array
+    {
+        $driver = $options->rerankDriver ?? config('filament-ai.retrieval.rerank.driver');
+
+        if ($hits->count() < 2 || $driver === null || $driver === '' || $driver === 'null' || $driver === 'none') {
+            return null;
+        }
+
+        $start = hrtime(true);
+
+        try {
+            $reranker = ($this->rerankerManager ?? app(RerankerManager::class))->driver((string) $driver);
+
+            if (! $reranker->isAvailable()) {
+                return null;
+            }
+
+            $head = $hits->take(max(2, (int) config('filament-ai.retrieval.rerank.candidates', 30)))->values();
+            $scores = $reranker->score($question, $head->map(fn (ScoredChunk $c): string => $this->rerankText($c))->all());
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return null;
+        } finally {
+            $timings['cross_rerank_ms'] = $this->msSince($start);
+        }
+
+        if (count($scores) !== $head->count()) {
+            return null;
+        }
+
+        $relevance = [];
+
+        foreach ($head as $index => $chunk) {
+            $relevance[$chunk->chunkId] = $scores[$index];
+        }
+
+        $ranked = $head
+            ->sortByDesc(static fn (ScoredChunk $c): float => $relevance[$c->chunkId])
+            ->map(static fn (ScoredChunk $c): ScoredChunk => $c->withScore($relevance[$c->chunkId]))
+            ->values();
+
+        return [$ranked, $relevance];
+    }
+
+    private function rerankText(ScoredChunk $chunk): string
+    {
+        $title = $chunk->documentTitle === null ? '' : $chunk->documentTitle."\n";
+
+        return $title.$chunk->content;
+    }
+
     /**
      * @return array<int, float>
      */
@@ -150,50 +330,6 @@ final class DefaultRetriever implements Retriever
             (int) config('filament-ai.embeddings.query_cache_ttl', 3600),
             fn (): array => $this->embeddings->embedQuery($question),
         );
-    }
-
-    /**
-     * @param  Collection<int, ScoredChunk>  $hits
-     * @param  array<string, int>  $timings
-     * @return Collection<int, ScoredChunk>
-     */
-    private function fuseLexical(
-        string $question,
-        VectorQuery $query,
-        Collection $hits,
-        RetrievalOptions $options,
-        array &$timings,
-    ): Collection {
-        $driver = $options->hybridDriver ?? config('filament-ai.retrieval.hybrid.driver');
-
-        if ($driver === null || $driver === '' || $driver === 'null') {
-            return $hits;
-        }
-
-        $search = $this->lexical->driver((string) $driver);
-
-        if (! $search->isAvailable()) {
-            return $hits;
-        }
-
-        $start = hrtime(true);
-
-        $ids = $search->candidates(
-            $question,
-            $query,
-            (int) config('filament-ai.retrieval.hybrid.candidates', 100),
-        );
-
-        $fused = $this->fusion->fuse(
-            $hits,
-            $ids,
-            (int) config('filament-ai.retrieval.hybrid.rrf_k', 60),
-            (float) config('filament-ai.retrieval.hybrid.weight', 0.35),
-        );
-
-        $timings['lexical_ms'] = $this->msSince($start);
-
-        return $fused;
     }
 
     /**

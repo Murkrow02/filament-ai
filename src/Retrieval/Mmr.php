@@ -25,9 +25,12 @@ final class Mmr
     /**
      * @param  Collection<int, ScoredChunk>  $candidates  must carry vectors
      * @param  array<int, float>  $queryVector
+     * @param  array<int, float>|null  $relevance  0-1 relevance keyed by chunk id,
+     *                                             for when a candidate's score is not a cosine (fused
+     *                                             or reranked lists); null uses the candidate's score
      * @return Collection<int, ScoredChunk>
      */
-    public function rerank(Collection $candidates, array $queryVector, float $lambda, int $limit): Collection
+    public function rerank(Collection $candidates, array $queryVector, float $lambda, int $limit, ?array $relevance = null): Collection
     {
         if ($candidates->count() <= 1 || $limit <= 1) {
             return $candidates->take($limit)->values();
@@ -60,7 +63,8 @@ final class Mmr
                     }
                 }
 
-                $score = $lambda * $candidate->score - (1 - $lambda) * $redundancy;
+                $score = $lambda * ($relevance[$candidate->chunkId] ?? $candidate->score)
+                    - (1 - $lambda) * $redundancy;
 
                 if ($score > $bestScore) {
                     $bestScore = $score;

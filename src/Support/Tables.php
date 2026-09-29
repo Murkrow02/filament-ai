@@ -31,6 +31,14 @@ final class Tables
         return self::name('chunks');
     }
 
+    /**
+     * How many chunks each full-text lexeme occurs in, for keyword weighting.
+     */
+    public static function lexemes(): string
+    {
+        return self::name('lexemes');
+    }
+
     public static function runs(): string
     {
         return self::name('runs');

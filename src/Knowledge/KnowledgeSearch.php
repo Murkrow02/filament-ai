@@ -15,6 +15,7 @@ use Murkrow\FilamentAi\Data\RetrievalOptions;
 use Murkrow\FilamentAi\Data\ScoredChunk;
 use Murkrow\FilamentAi\Models\Chunk;
 use Murkrow\FilamentAi\Models\Document;
+use Murkrow\FilamentAi\Retrieval\Lexical\TsVectorLexicalSearch;
 use Murkrow\FilamentAi\Sources\SourceRegistry;
 use Throwable;
 
@@ -69,6 +70,7 @@ final class KnowledgeSearch
         ?int $positionTo = null,
         ?int $limit = null,
         ?float $minScore = null,
+        bool $exact = false,
     ): KnowledgeResult {
         $query = trim($query);
 
@@ -86,6 +88,7 @@ final class KnowledgeSearch
             topK: $limit === null ? null : max(1, min(20, $limit)),
             minScore: $minScore,
             constrain: $this->userScope($sourceKeys, 'd'),
+            expand: $exact ? false : null,
         ));
 
         if ($result->isEmpty()) {
@@ -103,7 +106,7 @@ final class KnowledgeSearch
         foreach ($chunks as $index => $chunk) {
             $marker = $offset + $index + 1;
 
-            $blocks[] = $this->renderPassage($marker, $chunk);
+            $blocks[] = $this->renderPassage($marker, $chunk, $query);
 
             $this->cited->push([
                 'label' => ($chunk->documentTitle ?? $chunk->externalId).' - '
@@ -229,13 +232,82 @@ final class KnowledgeSearch
         };
     }
 
-    private function renderPassage(int $marker, ScoredChunk $chunk): string
+    private function renderPassage(int $marker, ScoredChunk $chunk, string $query): string
     {
         $position = $this->positionLabel($chunk->sourceKey, $chunk->positionStart, $chunk->positionEnd);
         $title = $chunk->documentTitle ?? $chunk->externalId;
         $score = number_format($chunk->score, 2);
 
-        return "[#{$marker}] {$title} - {$position} (score {$score}, document_id {$chunk->externalId})\n".$chunk->content;
+        return "[#{$marker}] {$title} - {$position} (score {$score}, document_id {$chunk->externalId})\n"
+            .$this->excerpt($chunk->content, $query);
+    }
+
+    /**
+     * The part of a long passage that matters, so eight results do not cost
+     * the context of eight pages. The window is centred on where the query's
+     * words cluster; the full text stays one fetch_document call away. Null
+     * `agent.knowledge.passage_characters` returns every passage whole.
+     */
+    public function excerpt(string $content, string $query): string
+    {
+        $limit = config('filament-ai.agent.knowledge.passage_characters');
+
+        if ($limit === null || $limit === '' || mb_strlen($content) <= (int) $limit) {
+            return $content;
+        }
+
+        $limit = max(200, (int) $limit);
+        $haystack = mb_strtolower($content);
+        $length = mb_strlen($content);
+        $positions = [];
+
+        foreach (TsVectorLexicalSearch::terms($query) as $term) {
+            if (mb_strlen($term) < 4) {
+                continue;
+            }
+
+            // Match on a stem-like prefix, so "sorelle" finds "sorella".
+            $needle = mb_substr($term, 0, max(4, mb_strlen($term) - 2));
+            $offset = 0;
+
+            while (($found = mb_strpos($haystack, $needle, $offset)) !== false) {
+                $positions[] = $found;
+                $offset = $found + 1;
+            }
+        }
+
+        $start = 0;
+
+        if ($positions !== []) {
+            sort($positions);
+            $best = 0;
+
+            // The window start that covers the most matches.
+            foreach ($positions as $candidate) {
+                $from = max(0, $candidate - intdiv($limit, 4));
+                $covered = count(array_filter($positions, static fn (int $p): bool => $p >= $from && $p < $from + $limit));
+
+                if ($covered > $best) {
+                    $best = $covered;
+                    $start = $from;
+                }
+            }
+        }
+
+        $start = min($start, max(0, $length - $limit));
+
+        // Back up to a word boundary so no word is cut in half.
+        if ($start > 0 && ($space = mb_strrpos(mb_substr($content, 0, $start), ' ')) !== false) {
+            $start = $space + 1;
+        }
+
+        $excerpt = mb_substr($content, $start, $limit);
+
+        if ($start + $limit < $length && ($space = mb_strrpos($excerpt, ' ')) !== false) {
+            $excerpt = mb_substr($excerpt, 0, $space);
+        }
+
+        return ($start > 0 ? '… ' : '').trim($excerpt).($start + mb_strlen($excerpt) < $length ? ' …' : '');
     }
 
     private function positionLabel(string $sourceKey, int $start, int $end): string

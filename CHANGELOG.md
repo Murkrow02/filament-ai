@@ -9,6 +9,55 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [5.2.0] - 2026-09-29
+
+Retrieval that finds paraphrased and riddle-like questions. Measured on a
+45-question set over a 105k-chunk corpus: recall@10 0.60 -> 0.82, MRR
+0.447 -> 0.686 (see `ai:eval`).
+
+### Added
+
+- **Keyword leg, on by default on Postgres** (`retrieval.hybrid.driver =
+  tsvector`). A `content_tsv` column kept by a trigger, GIN-indexed, accents
+  folded through `unaccent` when the extension can be created. Every query
+  word is an OR'ed term weighted by rarity (IDF from the new `rag_lexemes`
+  table); words in more than 8% of chunks are left to the vector leg; past
+  `hybrid.timeout_ms` (3000) the vector leg answers alone. The driver is
+  unavailable until the column exists, so it never falls back to a scan.
+- `ai:fulltext`: installs the column and fills it in batches without locking
+  (`--rebuild`, `--batch`, `--drop`). The migration fills it inline only up
+  to 20k chunks; larger corpora run the command once.
+- Word counts are recounted by `RefreshLexicalStatisticsJob`, queued (unique,
+  delayed by `hybrid.statistics_delay`) after an ingestion changes chunks.
+- **Query expansion** (`retrieval.expansion`, `FILAMENT_AI_QUERY_EXPANSION`,
+  off by default): one cached model call rewrites the question into the words
+  a source would use -- decoded periphrases, synonyms including archaic and
+  dialect forms, a passage in the source's voice -- and each rewrite is
+  retrieved and fused. `expansion.hint` describes the collection.
+- **Reranking** (`retrieval.rerank.driver`, `FILAMENT_AI_RERANK_DRIVER`, off
+  by default): `llm` grades the top candidates in one call; `ollama` judges
+  each passage with a local model from yes/no log-probabilities (needs room
+  for it beside the embedder). A failing reranker keeps the fused order.
+- `ai:eval {file}`: recall@k and MRR per category on questions with known
+  answers, with `--hybrid`, `--expand`, `--rerank` to compare setups.
+- `search_knowledge` takes `exact` to skip the rewriting; its description
+  and the assistant's rules now say how to search for a paraphrased question.
+  `PanelAssistant::searchStrategy()` lets an application add its own advice.
+- `agent.knowledge.passage_characters`: search results cut to the window
+  where the query's words cluster; `fetch_document` still reads everything.
+
+### Fixed
+
+- Hybrid retrieval dropped every result: fused RRF scores (~0.01) went
+  through the cosine `min_score` floor. The floor now applies to the vector
+  leg only, lexical-only hits are loaded instead of discarded, and MMR weighs
+  a 0-1 relevance instead of raw RRF scores.
+- The Postgres lexical search ANDed every word and ranked without rarity.
+
+### Changed
+
+- `retrieval.fetch_k` 40 -> 60.
+
 ## [5.1.1] - 2026-09-24
 
 ### Fixed

@@ -1,0 +1,57 @@
+<?php
+
+declare(strict_types=1);
+
+use Murkrow\FilamentAi\Llm\FakeLanguageModel;
+use Murkrow\FilamentAi\Reranking\OllamaReranker;
+use Murkrow\FilamentAi\Retrieval\QueryExpander;
+use Murkrow\FilamentAi\Retrieval\ReciprocalRankFusion;
+
+it('scores yes against no from the answer log-probabilities', function (): void {
+    $likely = OllamaReranker::yesProbability([
+        ['token' => 'yes', 'logprob' => -0.4],
+        ['token' => 'no', 'logprob' => -1.1],
+    ]);
+
+    // A model that answers "no" still ranks by how close "yes" came.
+    $closer = OllamaReranker::yesProbability([
+        ['token' => 'no', 'logprob' => -0.0001],
+        ['token' => 'yes', 'logprob' => -9.3],
+    ]);
+    $farther = OllamaReranker::yesProbability([
+        ['token' => 'no', 'logprob' => -0.0001],
+        [' token' => 'ignored'],
+        ['token' => 'Yes', 'logprob' => -18.4],
+    ]);
+
+    expect($likely)->toBeGreaterThan(0.6)
+        ->and($closer)->toBeGreaterThan($farther)
+        ->and(OllamaReranker::yesProbability([]))->toBe(0.5);
+});
+
+it('fuses any number of weighted lists by rank', function (): void {
+    $fused = (new ReciprocalRankFusion)->fuse([
+        ['ids' => [1, 2, 3], 'weight' => 1.0],
+        ['ids' => [3, 4], 'weight' => 1.0],
+    ], 60);
+
+    expect(array_keys($fused))->toBe([3, 1, 2, 4]);
+});
+
+it('reads rewrites from json, drops duplicates of the question and caps them', function (): void {
+    $expander = new QueryExpander(new FakeLanguageModel);
+
+    $queries = $expander->parse(
+        "Sure:\n{\"queries\": [\"Chi è Giovanni\", \"chi è giovanni\", \"beccaio trippa\", \"  \", \"terza\"]}",
+        'Chi è Giovanni',
+        1,
+    );
+
+    expect($queries)->toBe(['beccaio trippa']);
+});
+
+it('falls back to one rewrite per line', function (): void {
+    $queries = (new QueryExpander(new FakeLanguageModel))->parse("1. beccaio\n- trippa", 'q', 4);
+
+    expect($queries)->toBe(['beccaio', 'trippa']);
+});

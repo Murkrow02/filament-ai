@@ -26,9 +26,12 @@ final class SearchKnowledge implements Tool
 
     public function description(): string
     {
-        return 'Search the indexed knowledge base (documents, manuals, archives) by meaning. '
+        return 'Search the indexed knowledge base (documents, manuals, archives) by meaning and by keyword. '
             .'Returns numbered passages with the document and position they came from. '
             .'Use it for questions about the content of documents, not for application records. '
+            .'When the question paraphrases or alludes (a riddle, "the naive boy", "his relatives"), search for the '
+            .'concrete words a source would use -- names, objects, places, trades, including old or dialect forms -- '
+            .'and try several different phrasings before concluding nothing is there. '
             .'When an answer relies on a passage, cite its marker, e.g. [#1].';
     }
 
@@ -47,6 +50,8 @@ final class SearchKnowledge implements Tool
                 ->description('Only return passages at or before this position.'),
             'limit' => $schema->integer()
                 ->description('How many passages to return, at most 20.'),
+            'exact' => $schema->boolean()
+                ->description('Search the query exactly as written, without automatic rewording. Use it for a literal quotation or a proper name.'),
         ];
 
         if ($this->sources !== []) {
@@ -70,6 +75,7 @@ final class SearchKnowledge implements Tool
             positionFrom: isset($arguments['position_from']) ? (int) $arguments['position_from'] : null,
             positionTo: isset($arguments['position_to']) ? (int) $arguments['position_to'] : null,
             limit: isset($arguments['limit']) ? (int) $arguments['limit'] : null,
+            exact: (bool) ($arguments['exact'] ?? false),
         )->toToolOutput();
     }
 }

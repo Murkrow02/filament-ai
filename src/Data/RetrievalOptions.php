@@ -33,6 +33,8 @@ final readonly class RetrievalOptions
         public ?string $hybridDriver = null,
         public ?Closure $constrain = null,
         public bool $withVectors = false,
+        public ?bool $expand = null,
+        public ?string $rerankDriver = null,
     ) {}
 
     /**
@@ -61,6 +63,8 @@ final readonly class RetrievalOptions
             mmrLambda: isset($input['mmr_lambda']) ? (float) $input['mmr_lambda'] : null,
             expandNeighbors: isset($input['expand_neighbors']) ? (int) $input['expand_neighbors'] : null,
             hybridDriver: isset($input['hybrid']) ? (string) $input['hybrid'] : null,
+            expand: isset($input['expand']) ? (bool) $input['expand'] : null,
+            rerankDriver: isset($input['rerank']) ? (string) $input['rerank'] : null,
         );
     }
 
