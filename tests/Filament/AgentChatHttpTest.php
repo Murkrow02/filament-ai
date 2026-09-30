@@ -211,6 +211,49 @@ it('streams the passages a citation points at, and keeps them for a reload', fun
         ->and($passages[0]['content'])->toContain('consiglio');
 });
 
+it('lists web results among the sources, numbered on from the passages, and keeps them for a reload', function (): void {
+    config()->set('filament-ai.chunking.target_tokens', 30);
+    config()->set('filament-ai.chunking.overlap_tokens', 0);
+    config()->set('filament-ai.chunking.min_tokens', 0);
+    config()->set('filament-ai.agent.web_search.enabled', true);
+    config()->set('filament-ai.agent.web_search.driver', 'fake');
+
+    app()->instance(\Murkrow\FilamentAi\Contracts\WebSearchEngine::class, new \Murkrow\FilamentAi\Agent\WebSearch\FakeSearchEngine([
+        new \Murkrow\FilamentAi\Agent\WebSearch\WebSearchResult([
+            new \Murkrow\FilamentAi\Agent\WebSearch\WebSearchHit('Guido Novello', 'https://it.wikipedia.org/wiki/Guido_Novello', 'Podestà di Firenze', 'it.wikipedia.org'),
+        ]),
+    ]));
+
+    $book = TestBook::create(['title' => 'Cronaca cittadina']);
+    $book->pages()->create(['number' => 7, 'content' => 'Il podesta Guido Novello convoco il consiglio generale nel mese di marzo.']);
+
+    FilamentAi::ingestSync('books');
+
+    scriptAgent([
+        new ToolCall('call_1', 'search_knowledge', ['query' => 'chi convoco il consiglio']),
+        new ToolCall('call_2', 'search_web', ['query' => 'Guido Novello podestà']),
+        'Il podesta Guido Novello [#1], poi podestà di Firenze [#2].',
+    ]);
+
+    $done = lastEvent(eventsOf($this->post('/ai/chat/ask', ['question' => 'Chi convoco il consiglio?'])), 'done');
+    $web = collect($done['passages'])->firstWhere('kind', 'web');
+
+    expect($web['marker'])->toBe(count($done['passages']))
+        ->and($web['marker'])->toBeGreaterThan(1)
+        ->and($web['url'])->toBe('https://it.wikipedia.org/wiki/Guido_Novello')
+        ->and($web['label'])->toBe('Guido Novello - it.wikipedia.org')
+        ->and($web['content'])->toBe('Podestà di Firenze');
+
+    $reopened = $this->getJson('/ai/chat/c/'.$done['conversation'].'/messages')->assertOk()->json();
+    $again = collect($reopened['messages'])->pluck('passages')->filter()->flatten(1)->firstWhere('kind', 'web');
+
+    expect($again)->toMatchArray([
+        'marker' => $web['marker'],
+        'url' => 'https://it.wikipedia.org/wiki/Guido_Novello',
+        'content' => 'Podestà di Firenze',
+    ]);
+});
+
 it('names the version of the chat it serves, so a stale page can ask for a reload', function (): void {
     $this->getJson('/ai/chat/c/'.Illuminate\Support\Str::uuid7().'/messages')
         ->assertHeader('X-Filament-Ai-Version', Murkrow\FilamentAi\Http\Controllers\AssetController::version());

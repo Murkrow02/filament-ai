@@ -731,9 +731,12 @@
       escapeHtml(String(t.sourcesCount).replace(':count', message.passages.length)) + '</summary>';
 
     message.passages.forEach(function (passage) {
-      html += '<div class="fai-source" data-marker="' + escapeHtml(passage.marker) + '">' +
+      var web = passage.kind === 'web';
+
+      html += '<div class="fai-source' + (web ? ' fai-source--web' : '') + '" data-marker="' + escapeHtml(passage.marker) + '">' +
         '<p class="fai-source__head">' +
           '<span class="fai-source__marker">' + escapeHtml(passage.marker) + '</span>' +
+          (web ? '<span class="fai-source__kind">web</span>' : '') +
           '<span class="fai-source__label">' + escapeHtml(passage.label || '') + '</span>' +
           (passage.score != null ? '<span class="fai-source__score">' + escapeHtml(passage.score) + '</span>' : '') +
           (passage.url ? '<a class="fai-source__link" href="' + escapeHtml(passage.url) + '" target="_blank" rel="noopener">' + icon('link') + '</a>' : '') +
@@ -842,6 +845,22 @@
     scroll.scrollTop = scroll.scrollHeight;
   }
 
+  /**
+   * Bring a new turn's question to the top of the view, once, when it is
+   * sent. The answer then grows underneath it and the page never moves on
+   * its own while tokens stream: following every delta to the bottom pulled
+   * the text away from whoever was reading it.
+   */
+  function scrollToTurn(index) {
+    var scroll = el('fai-scroll');
+    var node = el('fai-stream').querySelector('.fai-turn[data-index="' + index + '"]');
+
+    if (!node) { scrollDown(); return; }
+
+    var top = node.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop;
+    scroll.scrollTop = Math.max(0, top - 12);
+  }
+
   // -------------------------------------------------------------- threading
 
   function loadConversation(uuid) {
@@ -903,7 +922,7 @@
 
     renderMessages();
     paintTurn(index, true);
-    scrollDown();
+    scrollToTurn(index);
 
     setStreaming(true);
 
@@ -941,10 +960,11 @@
         }
       })
       .then(function () {
+        // Re-rendering keeps the scroll position: the reader stays where
+        // they were when the answer finished.
         setStreaming(false);
         message.pending = false;
         renderMessages();
-        scrollDown();
       });
   }
 
@@ -1009,10 +1029,13 @@
 
         var parsed = JSON.parse(data[1]);
 
+        // No event scrolls the view: the question was brought to the top
+        // when it was sent, and the answer grows under it at the reader's
+        // pace (see scrollToTurn). Only an approval, which waits on the
+        // reader, is brought into view.
         if (event[1] === 'delta') {
           message.answer += parsed.text;
           paintTurn(index, true);
-          scrollDown();
         } else if (event[1] === 'tool') {
           // Same id, two events: the call and its result. The chip changes
           // state instead of appearing twice.
@@ -1028,19 +1051,19 @@
           }
 
           paintTurn(index, true);
-          scrollDown();
         } else if (event[1] === 'approval') {
           message.approvals = parsed.calls || [];
           message.decisions = {};
           paintTurn(index, true);
-          scrollDown();
+
+          var card = el('fai-stream').querySelector('.fai-turn[data-index="' + index + '"] .fai-approvals');
+          if (card) card.scrollIntoView({ block: 'nearest' });
         } else if (event[1] === 'sources') {
           (parsed.passages || []).forEach(function (passage) { message.passages.push(passage); });
           paintTurn(index, true);
         } else if (event[1] === 'solve') {
           message.solve = parsed;
           paintTurn(index, true);
-          scrollDown();
         } else if (event[1] === 'done') {
           applyDone(parsed, message);
           paintTurn(index, false);

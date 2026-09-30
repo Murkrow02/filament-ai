@@ -7,7 +7,9 @@ namespace Murkrow\FilamentAi\Agent\Tools;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
+use Murkrow\FilamentAi\Agent\Chat\CitedPassages;
 use Murkrow\FilamentAi\Agent\Tools\Concerns\GuardsToolFailures;
+use Murkrow\FilamentAi\Agent\WebSearch\WebSearchHit;
 use Murkrow\FilamentAi\Contracts\WebSearchEngine;
 
 /**
@@ -33,7 +35,8 @@ final class WebSearch implements Tool
         return 'Search the public web via Google and get back titles, urls and snippets. '
             .'Use it for anything current or outside the indexed knowledge base. '
             .'Read the snippets first; call fetch_web_page only on the specific result you need the full text of. '
-            .'Prefer a few precise queries over one broad one.';
+            .'Prefer a few precise queries over one broad one. '
+            .'Results are numbered like knowledge passages: when an answer relies on one, cite its marker, e.g. [#4].';
     }
 
     public function schema(JsonSchema $schema): array
@@ -62,8 +65,39 @@ final class WebSearch implements Tool
 
             // Bound whatever the driver is: a custom one should not have to
             // defend itself against "limit: 5000".
-            return app(WebSearchEngine::class)->search($query, max(1, min(10, $limit)))->toToolOutput();
+            $result = app(WebSearchEngine::class)->search($query, max(1, min(10, $limit)));
+
+            // Web results join the turn's sources next to the knowledge
+            // passages, numbered on from them, so "[#7]" in the answer
+            // points at a page the reader can open.
+            $cited = app(CitedPassages::class);
+            $offset = $cited->offset();
+
+            if (! $result->failed) {
+                foreach ($result->hits as $hit) {
+                    $cited->push(self::source($hit));
+                }
+            }
+
+            return $result->toToolOutput($offset);
         });
+    }
+
+    /**
+     * A web result as the chat lists it among the sources.
+     *
+     * @return array<string, mixed>
+     */
+    public static function source(WebSearchHit $hit): array
+    {
+        $host = $hit->displayUrl ?? (parse_url($hit->url, PHP_URL_HOST) ?: $hit->url);
+
+        return [
+            'label' => ($hit->title !== '' ? $hit->title.' - ' : '').$host,
+            'content' => $hit->snippet,
+            'url' => $hit->url,
+            'kind' => 'web',
+        ];
     }
 
     /**

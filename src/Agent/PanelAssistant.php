@@ -462,6 +462,10 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
             }
         }
 
+        if (in_array('search_web', $names, true)) {
+            $rules[] = '- When an answer relies on a web result, cite its marker the same way, e.g. [#4]; the reader sees it among the sources with its link.';
+        }
+
         return implode("\n", [
             ...$rules,
             '- If a tool answers with "Error:", explain the problem plainly; do not retry the same call unchanged.',

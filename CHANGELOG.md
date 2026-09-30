@@ -9,6 +9,25 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [5.4.0] - 2026-09-30
+
+### Added
+
+- **Web results are sources.** `search_web` results join the turn's sources
+  next to the knowledge passages, with the same `[#n]` markers numbered on
+  from them, a "web" label and the page's link; the assistant is told to cite
+  them like passages. They are read back from the stored tool output, so a
+  reopened conversation lists them too.
+
+### Changed
+
+- **The chat no longer scrolls while an answer streams.** Sending brings the
+  question to the top of the view once; the answer grows underneath it at the
+  reader's pace. Only an approval, which waits on the reader, is scrolled
+  into view. Finishing a turn keeps the scroll position.
+- `WebSearchResult::toToolOutput()` numbers results `[#n]` (was `[n]`) from
+  an optional offset.
+
 ## [5.3.0] - 2026-09-30
 
 ### Added

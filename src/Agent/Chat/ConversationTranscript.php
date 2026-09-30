@@ -13,6 +13,8 @@ use Laravel\Ai\Contracts\ResolvesPendingApprovals;
 use Laravel\Ai\Enums\MessageStatus;
 use Laravel\Ai\Models\Conversation;
 use Laravel\Ai\Models\ConversationMessage;
+use Murkrow\FilamentAi\Agent\Tools\WebSearch;
+use Murkrow\FilamentAi\Agent\WebSearch\WebSearchHit;
 use Throwable;
 
 /**
@@ -28,6 +30,9 @@ final class ConversationTranscript
 {
     /** The tools whose output carries citable passages. */
     private const KNOWLEDGE_TOOLS = ['search_knowledge'];
+
+    /** Its results are sources too, in `WebSearchResult::toToolOutput()`'s format. */
+    private const WEB_SEARCH_TOOL = 'search_web';
 
     /**
      * The tables come from laravel/ai's publishable migrations, which a host
@@ -266,13 +271,19 @@ final class ConversationTranscript
         $passages = [];
 
         foreach ($row->tool_results as $call) {
-            if (! in_array($call['name'] ?? '', self::KNOWLEDGE_TOOLS, true)) {
-                continue;
-            }
-
             $output = $call['result'] ?? null;
 
             if (! is_string($output) || $output === '') {
+                continue;
+            }
+
+            if (($call['name'] ?? '') === self::WEB_SEARCH_TOOL) {
+                array_push($passages, ...$this->webSourcesFrom($output));
+
+                continue;
+            }
+
+            if (! in_array($call['name'] ?? '', self::KNOWLEDGE_TOOLS, true)) {
                 continue;
             }
 
@@ -295,6 +306,40 @@ final class ConversationTranscript
         }
 
         return $passages;
+    }
+
+    /**
+     * The web results a stored `search_web` call returned:
+     *
+     *     [#7] Il conto di Giovanni lo Scemo
+     *     https://example.org/doria
+     *     ...the snippet...
+     *
+     * Only http(s) urls are kept: the text came from the web and is rendered
+     * as a link.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function webSourcesFrom(string $output): array
+    {
+        $body = trim(str_replace(['<untrusted_web_content>', '</untrusted_web_content>'], '', $output));
+        $sources = [];
+
+        foreach (preg_split('/\n(?=\[#\d+\] )/', $body) ?: [] as $block) {
+            if (preg_match('/^\[#(\d+)\] (.*)\n(https?:\/\/\S+)\n?(.*)$/s', trim($block), $matches) !== 1) {
+                continue;
+            }
+
+            $snippet = trim($matches[4]);
+
+            $sources[] = ['marker' => (int) $matches[1]] + WebSearch::source(new WebSearchHit(
+                title: trim($matches[2]),
+                url: $matches[3],
+                snippet: $snippet === '(no snippet)' ? '' : $snippet,
+            ));
+        }
+
+        return $sources;
     }
 
     /**

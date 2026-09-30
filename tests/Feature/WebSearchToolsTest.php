@@ -45,7 +45,7 @@ it('searches through the bound engine and bounds the limit', function (): void {
     $output = (new WebSearch)->handle(new Request(['query' => 'filament', 'limit' => 5000]));
 
     expect($fake->calls)->toBe([['query' => 'filament', 'limit' => 10]])
-        ->and($output)->toContain('[1] Title')->toStartWith('<untrusted_web_content>');
+        ->and($output)->toContain('[#1] Title')->toStartWith('<untrusted_web_content>');
 });
 
 it('sends the Google key as a header and caches by engine', function (): void {

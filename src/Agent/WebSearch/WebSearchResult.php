@@ -65,11 +65,13 @@ final readonly class WebSearchResult
     }
 
     /**
-     * The single string the tool hands back to the model, numbered for
-     * reference. Titles and snippets are written by the pages' authors, so the
-     * list is marked as untrusted content.
+     * The single string the tool hands back to the model. Results carry the
+     * same "[#n]" markers as knowledge passages, numbered on from `$offset`,
+     * so the answer can cite a web page exactly as it cites a book and the
+     * reader finds it among the sources. Titles and snippets are written by
+     * the pages' authors, so the list is marked as untrusted content.
      */
-    public function toToolOutput(): string
+    public function toToolOutput(int $offset = 0): string
     {
         if ($this->failed) {
             return 'Error: '.($this->error ?? 'the web search could not run.');
@@ -82,8 +84,8 @@ final readonly class WebSearchResult
         $lines = [];
 
         foreach ($this->hits as $index => $hit) {
-            $n = $index + 1;
-            $lines[] = "[{$n}] {$hit->title}\n{$hit->url}\n".($hit->snippet === '' ? '(no snippet)' : $hit->snippet);
+            $n = $offset + $index + 1;
+            $lines[] = "[#{$n}] {$hit->title}\n{$hit->url}\n".($hit->snippet === '' ? '(no snippet)' : $hit->snippet);
         }
 
         return "<untrusted_web_content>\n".implode("\n\n", $lines)."\n</untrusted_web_content>";

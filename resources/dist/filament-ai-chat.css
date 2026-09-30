@@ -719,3 +719,10 @@ a.fai-step:hover { color: var(--fai-text); }
   background: var(--fai-bg); color: var(--fai-text);
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
 }
+
+/* A web result among the sources: same card, labelled as coming from the web. */
+.fai-source__kind {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 1px 6px; border-radius: 6px;
+  background: color-mix(in srgb, var(--fai-accent) 14%, transparent); color: var(--fai-accent);
+}
