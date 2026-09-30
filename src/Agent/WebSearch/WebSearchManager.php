@@ -24,6 +24,11 @@ final class WebSearchManager extends Manager
         return GoogleSearchEngine::fromConfig();
     }
 
+    public function createSerperDriver(): WebSearchEngine
+    {
+        return SerperSearchEngine::fromConfig();
+    }
+
     public function createFakeDriver(): WebSearchEngine
     {
         return new FakeSearchEngine;

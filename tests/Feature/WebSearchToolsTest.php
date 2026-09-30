@@ -10,6 +10,8 @@ use Murkrow\FilamentAi\Agent\Tools\FetchWebPage;
 use Murkrow\FilamentAi\Agent\Tools\WebSearch;
 use Murkrow\FilamentAi\Agent\WebSearch\FakeSearchEngine;
 use Murkrow\FilamentAi\Agent\WebSearch\GoogleSearchEngine;
+use Murkrow\FilamentAi\Agent\WebSearch\SerperSearchEngine;
+use Murkrow\FilamentAi\Agent\WebSearch\WebSearchManager;
 use Murkrow\FilamentAi\Agent\WebSearch\WebSearchHit;
 use Murkrow\FilamentAi\Agent\WebSearch\WebSearchResult;
 use Murkrow\FilamentAi\Contracts\WebSearchEngine;
@@ -63,6 +65,58 @@ it('sends the Google key as a header and caches by engine', function (): void {
 
     Http::assertSentCount(2);
     expect(Cache::get('filament-ai:web-search:google:'.md5('engine-1|laravel|3')))->toBeArray();
+});
+
+it('is offered with serper only once its key is set', function (): void {
+    config()->set('filament-ai.agent.web_search.driver', 'serper');
+
+    expect(WebSearch::enabled())->toBeFalse();
+
+    config()->set('filament-ai.agent.web_search.serper.api_key', 'serper-key');
+
+    expect(WebSearch::enabled())->toBeTrue()
+        ->and(app(WebSearchManager::class)->driver('serper'))->toBeInstanceOf(SerperSearchEngine::class);
+});
+
+it('asks serper for italian results with the key in a header, answer box first, and caches', function (): void {
+    config()->set('filament-ai.agent.web_search.serper.api_key', 'serper-key');
+    config()->set('filament-ai.agent.web_search.serper.gl', 'it');
+    config()->set('filament-ai.agent.web_search.serper.hl', 'it');
+
+    Http::fake(['google.serper.dev/*' => Http::response([
+        'answerBox' => ['title' => 'Sorrento', 'link' => 'https://it.wikipedia.org/wiki/Sorrento', 'snippet' => 'Comune della città metropolitana di Napoli'],
+        'organic' => [
+            ['title' => 'Visit Sorrento', 'link' => 'https://visit.example/sorrento', 'snippet' => 'Guida', 'position' => 1],
+            ['title' => 'Senza link'],
+            ['title' => 'Storia', 'link' => 'https://storia.example', 'snippet' => 'Tasso', 'position' => 2],
+        ],
+    ])]);
+
+    $engine = SerperSearchEngine::fromConfig();
+    $result = $engine->search('Sorrento', 2);
+    $engine->search('Sorrento', 2);
+
+    Http::assertSentCount(1);
+    Http::assertSent(fn (HttpRequest $request): bool => $request->method() === 'POST'
+        && $request->hasHeader('X-API-KEY', 'serper-key')
+        && $request['q'] === 'Sorrento' && $request['num'] === 2 && $request['gl'] === 'it' && $request['hl'] === 'it'
+        && ! str_contains($request->url(), 'serper-key'));
+
+    expect(array_map(fn (WebSearchHit $hit): string => $hit->url, $result->hits))
+        ->toBe(['https://it.wikipedia.org/wiki/Sorrento', 'https://visit.example/sorrento'])
+        ->and($result->hits[0]->displayUrl)->toBe('it.wikipedia.org');
+});
+
+it('reports a serper error or a missing key as a failed search', function (): void {
+    expect(SerperSearchEngine::fromConfig()->search('x', 3)->failed)->toBeTrue();
+
+    config()->set('filament-ai.agent.web_search.serper.api_key', 'bad');
+    Http::fake(['google.serper.dev/*' => Http::response(['message' => 'Unauthorized.'], 403)]);
+
+    $result = SerperSearchEngine::fromConfig()->search('x', 3);
+
+    expect($result->failed)->toBeTrue()
+        ->and($result->toToolOutput())->toContain('Unauthorized.');
 });
 
 it('refuses to fetch an address inside this network, redirects included', function (): void {

@@ -520,15 +520,27 @@ Once a sandbox is configured, the rest is on the `Assistant settings` page: whet
 
 The knowledge base is closed; the web isn't. For anything current or simply outside the indexed corpus, the agent can be given two tools: `search_web`, which returns titles, urls and snippets, and `fetch_web_page`, which reads one page in full. Deliberately two calls, not one -- the agent reads snippets first and fetches the whole page only for the one or two results that actually deserve it, instead of paying for ten full pages on every query.
 
-It is off by default. The shipped driver is Google's [Programmable Search Engine](https://programmablesearchengine.google.com) (Custom Search JSON API): create an engine set to search the whole web, and an API key with the "Custom Search API" enabled at the [Google Cloud console](https://console.cloud.google.com/apis/credentials).
+It is off by default. Two drivers ship:
 
-```dotenv
-FILAMENT_AI_AGENT_WEB_SEARCH=true
-FILAMENT_AI_GOOGLE_SEARCH_API_KEY=...
-FILAMENT_AI_GOOGLE_SEARCH_CX=...          # the search engine id, not the key
-```
+- **`serper`** -- Google results through [Serper](https://serper.dev). The one to pick for a new setup: Google's own Custom Search JSON API takes no new customers and shuts down on 1 January 2027. Pin the country and language of the results when the questions are local.
 
-`search_web` caches identical `(query, limit)` pairs for `web_search.cache_ttl` seconds (an hour by default), so the same question asked twice in a conversation is not billed twice. Google's own cap of 10 results per request applies regardless of what is configured.
+  ```dotenv
+  FILAMENT_AI_AGENT_WEB_SEARCH=true
+  FILAMENT_AI_AGENT_WEB_SEARCH_DRIVER=serper
+  FILAMENT_AI_SERPER_API_KEY=...
+  FILAMENT_AI_SERPER_COUNTRY=it             # optional, Serper's "gl"
+  FILAMENT_AI_SERPER_LANGUAGE=it            # optional, Serper's "hl"
+  ```
+
+- **`google`** -- Google's [Programmable Search Engine](https://programmablesearchengine.google.com) (Custom Search JSON API), for existing customers until it closes: an engine set to search the whole web, and an API key with the "Custom Search API" enabled at the [Google Cloud console](https://console.cloud.google.com/apis/credentials).
+
+  ```dotenv
+  FILAMENT_AI_AGENT_WEB_SEARCH=true
+  FILAMENT_AI_GOOGLE_SEARCH_API_KEY=...
+  FILAMENT_AI_GOOGLE_SEARCH_CX=...          # the search engine id, not the key
+  ```
+
+`search_web` caches identical queries for `web_search.cache_ttl` seconds (an hour by default), so the same question asked twice in a conversation is not billed twice. At most 10 results per request, whatever is configured. The tool is only offered to the agent once its driver has the keys it needs.
 
 `fetch_web_page` is **off unless switched on** (`FILAMENT_AI_AGENT_WEB_FETCH=true`): it makes this server fetch a url the model chose. It only accepts plain `http`/`https` urls resolving to public addresses -- no loopback, private, carrier-grade NAT, link-local (cloud metadata) or IPv6 forms that embed them -- and connects to exactly the address it checked, so DNS cannot answer differently the second time. Every redirect is checked and pinned again, the body is read as a stream and abandoned at `max_bytes`, and the text comes back marked as untrusted content. Every search and fetch is logged with the user who asked.
 

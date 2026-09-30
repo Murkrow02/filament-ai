@@ -9,6 +9,17 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [5.3.0] - 2026-09-30
+
+### Added
+
+- **`serper` web search driver** (`FILAMENT_AI_AGENT_WEB_SEARCH_DRIVER=serper`,
+  `FILAMENT_AI_SERPER_API_KEY`): Google results through serper.dev, for new
+  setups now that Google's Custom Search JSON API takes no new customers and
+  shuts down on 2027-01-01. `FILAMENT_AI_SERPER_COUNTRY` / `_LANGUAGE` pin the
+  results page's country and language; Google's answer box, when present,
+  comes first. Cached like the Google driver; the key travels in a header.
+
 ## [5.2.2] - 2026-09-30
 
 ### Fixed

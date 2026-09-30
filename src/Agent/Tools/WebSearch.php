@@ -67,8 +67,8 @@ final class WebSearch implements Tool
     }
 
     /**
-     * On, and able to answer: a Google driver without its key or engine id
-     * would only ever say so, one billed turn at a time.
+     * On, and able to answer: a Google or Serper driver without its key (or
+     * engine id) would only ever say so, one billed turn at a time.
      */
     public static function enabled(): bool
     {
@@ -76,7 +76,10 @@ final class WebSearch implements Tool
             return false;
         }
 
-        return config('filament-ai.agent.web_search.driver', 'google') !== 'google'
-            || (filled(config('filament-ai.agent.web_search.google.api_key')) && filled(config('filament-ai.agent.web_search.google.cx')));
+        return match (config('filament-ai.agent.web_search.driver', 'google')) {
+            'google' => filled(config('filament-ai.agent.web_search.google.api_key')) && filled(config('filament-ai.agent.web_search.google.cx')),
+            'serper' => filled(config('filament-ai.agent.web_search.serper.api_key')),
+            default => true,
+        };
     }
 }

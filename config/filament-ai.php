@@ -509,7 +509,9 @@ return [
         'web_search' => [
             'enabled' => (bool) env('FILAMENT_AI_AGENT_WEB_SEARCH', false),
 
-            // google | fake, or a driver registered on WebSearchManager.
+            // google | serper | fake, or a driver registered on WebSearchManager.
+            // Google's Custom Search JSON API takes no new customers and
+            // shuts down on 2027-01-01; serper returns the same results.
             'driver' => env('FILAMENT_AI_AGENT_WEB_SEARCH_DRIVER', 'google'),
 
             'google' => [
@@ -517,6 +519,17 @@ return [
                 'cx' => env('FILAMENT_AI_GOOGLE_SEARCH_CX'),
                 'endpoint' => env('FILAMENT_AI_GOOGLE_SEARCH_ENDPOINT', 'https://www.googleapis.com/customsearch/v1'),
                 'timeout' => (int) env('FILAMENT_AI_GOOGLE_SEARCH_TIMEOUT', 8),
+            ],
+
+            'serper' => [
+                'api_key' => env('FILAMENT_AI_SERPER_API_KEY'),
+                'endpoint' => env('FILAMENT_AI_SERPER_ENDPOINT', 'https://google.serper.dev/search'),
+                // Country and language of the results page ("it", "it"):
+                // local questions rank differently depending on where they
+                // are asked from. null leaves Serper's default.
+                'gl' => env('FILAMENT_AI_SERPER_COUNTRY'),
+                'hl' => env('FILAMENT_AI_SERPER_LANGUAGE'),
+                'timeout' => (int) env('FILAMENT_AI_SERPER_TIMEOUT', 8),
             ],
 
             // Results per call when the model does not say how many; Google
