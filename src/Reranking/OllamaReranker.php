@@ -38,7 +38,8 @@ final class OllamaReranker implements Reranker
 
         $concurrency = max(1, (int) $this->option('concurrency', 4));
         $timeout = (int) $this->option('timeout', 60);
-        $maxChars = (int) config('filament-ai.retrieval.rerank.max_chars', 1200);
+        // Title plus the retriever's excerpt; a safety cap only.
+        $maxChars = (int) config('filament-ai.retrieval.rerank.max_chars', 1200) + 400;
         $scores = [];
 
         foreach (array_chunk($passages, $concurrency, true) as $batch) {

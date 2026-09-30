@@ -175,12 +175,29 @@ it('orders by the reranker and keeps the fused order when it fails', function ()
         }
     });
 
+    // Grades nothing apart: every passage 0.
+    $manager->register('flat', fn () => new class implements Reranker
+    {
+        public function score(string $question, array $passages): array
+        {
+            return array_fill(0, count($passages), 0.0);
+        }
+
+        public function isAvailable(): bool
+        {
+            return true;
+        }
+    });
+
     $options = fn (string $driver) => new RetrievalOptions(minScore: 0.0, hybridDriver: 'tsvector', rerankDriver: $driver, mmr: false);
 
     $reranked = app(Retriever::class)->retrieve('beccaio', $options('prefers-sea'));
     $fallback = app(Retriever::class)->retrieve('beccaio', $options('broken'));
+    $flat = app(Retriever::class)->retrieve('beccaio', $options('flat'));
 
     expect(titles($reranked)[0])->toBe('Cronaca del porto')
         ->and($reranked->chunks->first()->score)->toBe(0.9)
-        ->and(titles($fallback)[0])->toBe('Il conto di Giovanni');
+        ->and(titles($fallback)[0])->toBe('Il conto di Giovanni')
+        ->and(titles($flat)[0])->toBe('Il conto di Giovanni')
+        ->and($flat->chunks->first()->score)->not->toBe(0.0);
 });

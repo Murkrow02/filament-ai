@@ -274,7 +274,7 @@ return [
                 'num_ctx' => 2048,
             ],
             'llm_model' => env('FILAMENT_AI_RERANK_LLM_MODEL'), // null => llm.model
-            'llm_max_chars' => 700,
+            'llm_max_chars' => 1600,
         ],
 
         'log_queries' => true,

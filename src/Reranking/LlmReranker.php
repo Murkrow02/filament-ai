@@ -27,7 +27,9 @@ final class LlmReranker implements Reranker
             return [];
         }
 
-        $maxChars = (int) config('filament-ai.retrieval.rerank.llm_max_chars', 700);
+        // A safety cap only: the retriever already sends each passage as the
+        // excerpt around the question's words (rerank.max_chars).
+        $maxChars = (int) config('filament-ai.retrieval.rerank.llm_max_chars', 1600);
         $blocks = [];
 
         foreach (array_values($passages) as $index => $passage) {
@@ -36,7 +38,9 @@ final class LlmReranker implements Reranker
 
         $system = 'You grade search results. For each numbered passage, rate from 0 to 10 how well it answers '
             .'the question, including when it uses different words (names instead of roles, archaic or dialect '
-            .'terms, a paraphrase or a riddle-like question). 10 = contains the answer, 0 = unrelated. '
+            .'terms, a paraphrase or a riddle-like question). 10 = contains the answer; 6-8 = the same story, '
+            .'person, place or event, where the answer is likely nearby; 2-4 = the same subject in general; '
+            .'0 = unrelated. Grade relative to each other: the best passages must not all get the same score. '
             .'Reply with JSON only: {"scores": [n1, n2, ...]} with exactly one integer per passage, in order.';
 
         $model = config('filament-ai.retrieval.rerank.llm_model');

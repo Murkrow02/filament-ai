@@ -6,6 +6,7 @@ use Murkrow\FilamentAi\Llm\FakeLanguageModel;
 use Murkrow\FilamentAi\Reranking\OllamaReranker;
 use Murkrow\FilamentAi\Retrieval\QueryExpander;
 use Murkrow\FilamentAi\Retrieval\ReciprocalRankFusion;
+use Murkrow\FilamentAi\Support\Excerpt;
 
 it('scores yes against no from the answer log-probabilities', function (): void {
     $likely = OllamaReranker::yesProbability([
@@ -27,6 +28,18 @@ it('scores yes against no from the answer log-probabilities', function (): void 
     expect($likely)->toBeGreaterThan(0.6)
         ->and($closer)->toBeGreaterThan($farther)
         ->and(OllamaReranker::yesProbability([]))->toBe(0.5);
+});
+
+it('excerpts where the query words are, not the start of the passage', function (): void {
+    $content = str_repeat('Una lunga introduzione alla fiaba senza nulla di utile. ', 40)
+        .'Allora le sorelle dissero: va da Nicola il beccaio e fatti dare mezzo rotolo di trippa.';
+
+    $excerpt = Excerpt::around($content, 'beccaio trippa sorelle', 300);
+
+    expect(mb_strlen($excerpt))->toBeLessThanOrEqual(304)
+        ->and($excerpt)->toContain('beccaio')
+        ->and($excerpt)->toStartWith('… ')
+        ->and(Excerpt::around('breve', 'x', 300))->toBe('breve');
 });
 
 it('fuses any number of weighted lists by rank', function (): void {

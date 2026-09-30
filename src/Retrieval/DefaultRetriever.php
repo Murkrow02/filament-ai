@@ -19,6 +19,7 @@ use Murkrow\FilamentAi\Models\Document;
 use Murkrow\FilamentAi\Retrieval\Lexical\LexicalSearchManager;
 use Murkrow\FilamentAi\Reranking\RerankerManager;
 use Murkrow\FilamentAi\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Support\Excerpt;
 use Throwable;
 
 /**
@@ -154,7 +155,7 @@ final class DefaultRetriever implements Retriever
             $relevance = array_map(static fn (float $s): float => $max > 0 ? $s / $max : 0.0, $fused);
         }
 
-        $reranked = $this->rerank($question, $hits, $options, $timings);
+        $reranked = $this->rerank($question, implode(' ', $queries), $hits, $options, $timings);
 
         if ($reranked !== null) {
             [$hits, $relevance] = $reranked;
@@ -249,13 +250,15 @@ final class DefaultRetriever implements Retriever
 
     /**
      * Second-stage ranking of the head of the list. Returns null when no
-     * reranker is configured or it failed, so the fused order stands.
+     * reranker is configured, it failed, or it told nothing apart, so the
+     * fused order stands.
      *
+     * @param  string  $terms  the question and its rewrites, to pick each passage's excerpt
      * @param  Collection<int, ScoredChunk>  $hits
      * @param  array<string, int>  $timings
      * @return array{0: Collection<int, ScoredChunk>, 1: array<int, float>}|null
      */
-    private function rerank(string $question, Collection $hits, RetrievalOptions $options, array &$timings): ?array
+    private function rerank(string $question, string $terms, Collection $hits, RetrievalOptions $options, array &$timings): ?array
     {
         $driver = $options->rerankDriver ?? config('filament-ai.retrieval.rerank.driver');
 
@@ -273,7 +276,7 @@ final class DefaultRetriever implements Retriever
             }
 
             $head = $hits->take(max(2, (int) config('filament-ai.retrieval.rerank.candidates', 30)))->values();
-            $scores = $reranker->score($question, $head->map(fn (ScoredChunk $c): string => $this->rerankText($c))->all());
+            $scores = $reranker->score($question, $head->map(fn (ScoredChunk $c): string => $this->rerankText($c, $terms))->all());
         } catch (Throwable $exception) {
             report($exception);
 
@@ -282,7 +285,9 @@ final class DefaultRetriever implements Retriever
             $timings['cross_rerank_ms'] = $this->msSince($start);
         }
 
-        if (count($scores) !== $head->count()) {
+        // The same grade for every passage (all 0, typically) orders nothing
+        // and would only overwrite the scores with a constant.
+        if (count($scores) !== $head->count() || max($scores) - min($scores) < 1e-6) {
             return null;
         }
 
@@ -300,11 +305,16 @@ final class DefaultRetriever implements Retriever
         return [$ranked, $relevance];
     }
 
-    private function rerankText(ScoredChunk $chunk): string
+    /**
+     * What the reranker reads of a passage: the title and the window where
+     * the question's words (and its rewrites') cluster, not the start of
+     * the chunk, where the answer often is not.
+     */
+    private function rerankText(ScoredChunk $chunk, string $terms): string
     {
         $title = $chunk->documentTitle === null ? '' : $chunk->documentTitle."\n";
 
-        return $title.$chunk->content;
+        return $title.Excerpt::around($chunk->content, $terms, (int) config('filament-ai.retrieval.rerank.max_chars', 1200));
     }
 
     /**

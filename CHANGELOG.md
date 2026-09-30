@@ -9,6 +9,25 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [5.2.1] - 2026-09-30
+
+### Fixed
+
+- **The reranker read the wrong part of each passage.** It was shown the
+  first 700 characters of a chunk; when the answer sat at the end (a story's
+  opening, then the instruction that answers the question) every passage was
+  graded 0. Rerankers now get the excerpt where the question's words -- and
+  its rewrites' -- cluster (`Support\Excerpt`, shared with the agent's result
+  excerpts). On the 45-question set: MRR 0.686 -> 0.770, recall@1 0.62 -> 0.71.
+- A reranker that grades every passage the same no longer overwrites the
+  fused order's scores with that constant; the fused order stands.
+- The LLM reranker's prompt asks for graded, relative scores (same story or
+  place 6-8, same subject 2-4) instead of all-or-nothing.
+
+### Changed
+
+- `retrieval.rerank.llm_max_chars` 700 -> 1600, now only a safety cap.
+
 ## [5.2.0] - 2026-09-29
 
 Retrieval that finds paraphrased and riddle-like questions. Measured on a
