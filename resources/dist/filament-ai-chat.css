@@ -535,8 +535,8 @@ body.fai-body,
   background: var(--fai-bg-sunken); color: var(--fai-text-muted); font-size: 12px;
 }
 
-/* One chip per tool call, plus the wave counter of an iterative run: this is
-   where a worked answer stops looking like a guess. */
+/* One chip per tool call: this is where a worked answer stops looking like a
+   guess. */
 .fai-steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
 .fai-steps:empty { display: none; }
 .fai-step {
@@ -545,7 +545,7 @@ body.fai-body,
   background: var(--fai-bg-sunken); color: var(--fai-text-muted); font-size: 12px;
 }
 .fai-step svg { width: 14px; height: 14px; }
-.fai-step[data-status="running"], .fai-step[data-status="solving"] { color: var(--fai-fair); }
+.fai-step[data-status="running"] { color: var(--fai-fair); }
 .fai-step[data-status="denied"], .fai-step[data-status="failed"] { color: var(--fai-weak); }
 
 /* ------------------------------------------------------------- approvals */
@@ -586,15 +586,6 @@ body.fai-body,
 .fai-approval__actions [data-action="approve"] { border-color: var(--fai-good); color: var(--fai-good); }
 .fai-approval__actions [data-action="reject"] { border-color: var(--fai-weak); color: var(--fai-weak); }
 .fai-approval__decided { display: inline-block; margin-top: 10px; font-size: 12px; color: var(--fai-text-muted); }
-
-/* ------------------------------------------------------- iterative toggle */
-
-.fai-toggle {
-  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
-  margin-top: 8px; font-size: 12.5px; color: var(--fai-text-muted); cursor: pointer;
-}
-.fai-toggle__label { font-weight: 550; color: var(--fai-text); }
-.fai-toggle__hint { flex: 1; min-width: 0; }
 
 /* ------------------------------------------------------------- embedded */
 

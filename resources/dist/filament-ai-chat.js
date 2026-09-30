@@ -34,8 +34,7 @@
       tools: [],
       approvals: [],
       decisions: {},
-      passages: [],
-      solve: null
+      passages: []
     };
   }
 
@@ -89,7 +88,6 @@
     threads: payload.conversations || [],
     messages: payload.current ? turnsFromTranscript(payload.current.messages, payload.current.pending) : [],
     settings: { model: payload.currentModel },
-    solve: false,
     streaming: false,
     abort: null,
     filter: ''
@@ -592,9 +590,9 @@
   // --------------------------------------------------------------- messages
 
   /**
-   * What the assistant did on the way to the answer: one chip per tool call,
-   * plus the wave counter of an iterative run. A worked answer and a guess
-   * look different here, which is the point of showing it at all.
+   * What the assistant did on the way to the answer: one chip per tool call. A worked
+   * answer and a guess look different here, which is the point of showing it
+   * at all.
    */
   function stepsHtml(message) {
     var html = '';
@@ -612,27 +610,6 @@
         (title ? ' title="' + escapeHtml(title) + '"' : '') + '>' +
         icon('tool') + escapeHtml(String(template).replace(':tool', tool.label || tool.name || '')) + '</span>';
     });
-
-    if (message.solve) {
-      var parts = [
-        String(t.solveWave).replace(':wave', message.solve.wave).replace(':waves', message.solve.waves),
-        String(t.solveAttempts).replace(':done', message.solve.attempts).replace(':total', message.solve.attempts_total)
-      ];
-
-      if (message.solve.best_score) {
-        parts.push(String(t.solveBest).replace(':score', message.solve.best_score));
-      }
-
-      html += '<span class="fai-step" data-status="' + (message.pending ? 'solving' : 'done') + '">' + icon('waves') +
-        escapeHtml(parts.join(' · ')) + '</span>';
-
-      // The whole story -- every attempt, and why each was turned down --
-      // lives in the panel, for whoever may read it.
-      if (message.solve.url) {
-        html += '<a class="fai-step" href="' + escapeHtml(message.solve.url) + '" target="_blank" rel="noopener">' +
-          icon('link') + escapeHtml(t.solveOpen) + '</a>';
-      }
-    }
 
     return html;
   }
@@ -931,7 +908,6 @@
     var thread = conversationId();
     if (thread) body.conversation = thread;
     if (can.model && state.settings.model) body.model = state.settings.model;
-    if (state.solve) body.solve = true;
 
     // The record the user came from, so "this order" resolves. Checked again
     // server-side against the resource's own policies.
@@ -1061,9 +1037,6 @@
         } else if (event[1] === 'sources') {
           (parsed.passages || []).forEach(function (passage) { message.passages.push(passage); });
           paintTurn(index, true);
-        } else if (event[1] === 'solve') {
-          message.solve = parsed;
-          paintTurn(index, true);
         } else if (event[1] === 'done') {
           applyDone(parsed, message);
           paintTurn(index, false);
@@ -1094,7 +1067,6 @@
 
   function applyDone(data, message) {
     if (data.answer) message.answer = data.answer;
-    if (data.solve) message.solve = data.solve;
     if (data.passages && data.passages.length) message.passages = data.passages;
 
     message.model = data.model;
@@ -1297,12 +1269,6 @@
     try { localStorage.setItem('filament-ai-chat-sidebar', root.dataset.sidebar); } catch (error) { /* private mode */ }
   });
 
-  var solveBox = el('fai-solve');
-
-  if (solveBox) {
-    solveBox.addEventListener('change', function () { state.solve = this.checked; renderPills(); });
-  }
-
   var themeButton = el('fai-theme');
 
   if (themeButton) themeButton.addEventListener('click', function () {
@@ -1366,11 +1332,6 @@
     if (can.model && Object.keys(payload.models).length) {
       html += '<button type="button" class="fai-chip" data-action="settings">' +
         escapeHtml(payload.models[state.settings.model] || state.settings.model || t.defaultModel) + '</button>';
-    }
-
-    if (state.solve) {
-      html += '<button type="button" class="fai-chip" aria-pressed="true">' +
-        icon('waves') + escapeHtml(t.iterative) + '</button>';
     }
 
     pills.innerHTML = html;

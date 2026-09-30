@@ -18,8 +18,6 @@ use Laravel\Octane\Events\TickReceived;
 use Murkrow\FilamentAi\Agent\Chat\CitedPassages;
 use Murkrow\FilamentAi\Agent\Resources\ResourceToolRegistry;
 use Murkrow\FilamentAi\Agent\Sandbox\SandboxManager;
-use Murkrow\FilamentAi\Agent\Solving\JudgeVerifier;
-use Murkrow\FilamentAi\Agent\Solving\Solver;
 use Murkrow\FilamentAi\Agent\WebSearch\WebSearchManager;
 use Murkrow\FilamentAi\Answering\BladePromptRenderer;
 use Murkrow\FilamentAi\Answering\DefaultAnswerer;
@@ -34,7 +32,6 @@ use Murkrow\FilamentAi\Contracts\LanguageModel;
 use Murkrow\FilamentAi\Contracts\PromptRenderer;
 use Murkrow\FilamentAi\Contracts\Retriever;
 use Murkrow\FilamentAi\Contracts\VectorStore;
-use Murkrow\FilamentAi\Contracts\Verifier;
 use Murkrow\FilamentAi\Contracts\WebSearchEngine;
 use Murkrow\FilamentAi\Embeddings\EmbeddingManager;
 use Murkrow\FilamentAi\Embeddings\EmbeddingRateLimiter;
@@ -257,12 +254,6 @@ class FilamentAiServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(SandboxManager::class);
-
-        $this->app->singleton(Solver::class);
-
-        // The shipped verifier is a language model. An application that
-        // knows what correct means binds its own and pays nothing.
-        $this->app->bind(Verifier::class, JudgeVerifier::class);
 
         $this->app->singleton(
             CodeSandbox::class,

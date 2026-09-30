@@ -138,7 +138,6 @@ class AgentSettings extends Page
 
         $sections[] = $this->sandboxSection();
         $sections[] = $this->webSearchSection();
-        $sections[] = $this->solvingSection();
 
         foreach ($this->catalogue() as $index => $resource) {
             $sections[] = $this->resourceSection($index, $resource);
@@ -180,11 +179,6 @@ class AgentSettings extends Page
             'agent.web_search.cache_ttl' => (int) ($state['agent__web_search__cache_ttl'] ?? 3600),
             'agent.web_search.fetch_page.enabled' => (bool) ($state['agent__web_search__fetch_page'] ?? false),
             'agent.web_search.fetch_page.max_output_characters' => (int) ($state['agent__web_search__fetch_max_output'] ?? 6000),
-            'agent.solving.enabled' => (bool) ($state['agent__solving__enabled'] ?? false),
-            'agent.solving.attempts_per_wave' => (int) ($state['agent__solving__attempts'] ?? 4),
-            'agent.solving.max_waves' => (int) ($state['agent__solving__waves'] ?? 3),
-            'agent.solving.max_tokens' => (int) ($state['agent__solving__max_tokens'] ?? 300000),
-            'agent.solving.max_seconds' => (int) ($state['agent__solving__max_seconds'] ?? 300),
             'agent.max_steps' => blank($state['agent__max_steps'] ?? null) ? null : (int) $state['agent__max_steps'],
         ], auth()->id());
 
@@ -232,36 +226,6 @@ class AgentSettings extends Page
     protected function getViewData(): array
     {
         return ['hasResources' => $this->catalogue() !== []];
-    }
-
-    private function solvingSection(): Section
-    {
-        return Section::make(__('filament-ai::messages.assistant_settings.solving'))
-            ->description(__('filament-ai::messages.assistant_settings.solving_help'))
-            ->columns(2)
-            ->schema([
-                Toggle::make('agent__solving__enabled')
-                    ->label(__('filament-ai::messages.assistant_settings.solving_enabled')),
-                TextInput::make('agent__solving__attempts')
-                    ->label(__('filament-ai::messages.assistant_settings.solving_attempts'))
-                    ->numeric()
-                    ->minValue(1)
-                    ->maxValue(16)
-                    ->helperText(__('filament-ai::messages.assistant_settings.solving_attempts_help')),
-                TextInput::make('agent__solving__waves')
-                    ->label(__('filament-ai::messages.assistant_settings.solving_waves'))
-                    ->numeric()
-                    ->minValue(1)
-                    ->maxValue(10),
-                TextInput::make('agent__solving__max_tokens')
-                    ->label(__('filament-ai::messages.assistant_settings.solving_max_tokens'))
-                    ->numeric()
-                    ->minValue(1000),
-                TextInput::make('agent__solving__max_seconds')
-                    ->label(__('filament-ai::messages.assistant_settings.solving_max_seconds'))
-                    ->numeric()
-                    ->minValue(10),
-            ]);
     }
 
     private function sandboxSection(): Section
@@ -524,11 +488,6 @@ class AgentSettings extends Page
             'agent__web_search__cache_ttl' => (int) $settings->effective('agent.web_search.cache_ttl'),
             'agent__web_search__fetch_page' => (bool) $settings->effective('agent.web_search.fetch_page.enabled'),
             'agent__web_search__fetch_max_output' => (int) $settings->effective('agent.web_search.fetch_page.max_output_characters'),
-            'agent__solving__enabled' => (bool) $settings->effective('agent.solving.enabled'),
-            'agent__solving__attempts' => (int) $settings->effective('agent.solving.attempts_per_wave'),
-            'agent__solving__waves' => (int) $settings->effective('agent.solving.max_waves'),
-            'agent__solving__max_tokens' => (int) $settings->effective('agent.solving.max_tokens'),
-            'agent__solving__max_seconds' => (int) $settings->effective('agent.solving.max_seconds'),
             'agent__max_steps' => $settings->effective('agent.max_steps'),
             'resources' => $resources,
         ];

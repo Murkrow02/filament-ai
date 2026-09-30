@@ -20,7 +20,7 @@ it('drops the knowledge tools when no source is allowed', function (): void {
     expect($names)->toBe(['test_books_list', 'test_books_view', 'test_books_create', 'test_books_edit']);
 });
 
-it('narrows down to the tools a solving phase asked for', function (): void {
+it('narrows down to the tools a caller asked for', function (): void {
     $assistant = (new PanelAssistant)->onlyTools(['search_knowledge', 'test_books_list', 'no_such_tool']);
 
     $names = array_map(fn ($tool): string => $tool->name(), [...$assistant->tools()]);
@@ -119,4 +119,17 @@ it('anchors the reply language to the application\'s', function (): void {
     config()->set('filament-ai.agent.language', 'de');
 
     expect((new \Murkrow\FilamentAi\Agent\PanelAssistant)->instructions())->toContain('language is German');
+});
+
+it('answers with the provider and model a caller chose, then falls back', function (): void {
+    config()->set('filament-ai.llm.provider', 'deepseek');
+    config()->set('filament-ai.llm.model', 'deepseek-chat');
+
+    $assistant = new PanelAssistant;
+
+    expect($assistant->provider())->toBe('deepseek')
+        ->and($assistant->withProvider('anthropic')->withModel('claude-sonnet-5-5')->provider())->toBe('anthropic')
+        ->and($assistant->model())->toBe('claude-sonnet-5-5')
+        ->and($assistant->withProvider(null)->withModel(null)->provider())->toBe('deepseek')
+        ->and($assistant->model())->toBe('deepseek-chat');
 });

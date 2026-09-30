@@ -62,18 +62,13 @@ final class ChatAbilities
         // What each answer cost.
         'cost' => false,
 
-        // The "keep trying" toggle: waves of attempts instead of one answer.
-        // It multiplies what a question costs, which is why it is its own
-        // ability rather than a corner of `settings`.
-        'solve' => true,
-
         // Copying an answer out.
         'export' => true,
 
         // The technical side of a turn: the raw error behind a failure, the
         // tool names and arguments behind the plain-language steps and
-        // approval cards, the model, token counts, retrieval scores and the
-        // link to a solving run's attempts. Everyone else gets a sentence
+        // approval cards, the model, token counts, retrieval scores
+        // and setup hints. Everyone else gets a sentence
         // they can act on.
         'debug' => false,
     ];

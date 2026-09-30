@@ -13,8 +13,6 @@ use Murkrow\FilamentAi\Agent\Resources\AgentTools;
 use Murkrow\FilamentAi\Agent\Resources\RecordPresenter;
 use Murkrow\FilamentAi\Agent\Resources\ResourceInspector;
 use Murkrow\FilamentAi\Agent\Resources\ResourceToolRegistry;
-use Murkrow\FilamentAi\Agent\Solving\SolveScope;
-use Murkrow\FilamentAi\Models\SolveRun;
 use Murkrow\FilamentAi\Tests\Fixtures\Filament\TestArticleResource;
 use Murkrow\FilamentAi\Tests\Fixtures\Filament\TestBookResource;
 use Murkrow\FilamentAi\Tests\Fixtures\TestArticle;
@@ -141,22 +139,6 @@ it('searches for the text typed, not for a pattern', function (): void {
 
     expect($search('a_b'))->toBe(['a_b'])
         ->and($search('100%'))->toBe(['100%']);
-});
-
-it('puts a solving attempt back in the panel and user it was started by', function (): void {
-    PanelScope::enter(Filament::getPanel('testing'), auth()->user());
-
-    $scope = SolveScope::capture();
-    $user = auth()->user();
-
-    expect($scope)->toBe(['panel' => 'testing', 'tenant' => null, 'user' => $user->getKey()]);
-
-    auth()->forgetGuards();
-
-    SolveScope::restore(new SolveRun(['scope' => $scope]));
-
-    expect(auth()->id())->toBe($user->getKey())
-        ->and(app(ResourceToolRegistry::class)->tools())->not->toBe([]);
 });
 
 it('never presents what a related model hides', function (): void {

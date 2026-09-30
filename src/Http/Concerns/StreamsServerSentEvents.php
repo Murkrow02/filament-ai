@@ -9,7 +9,7 @@ namespace Murkrow\FilamentAi\Http\Concerns;
  *
  * One vocabulary for the knowledge pipeline and for the agent means the page
  * has one reader: `start`, `delta`, `done` and `error` are common, and the
- * agent adds `tool`, `approval` and `solve` on top. A mode that invented its
+ * agent adds `tool` and `approval` on top. A mode that invented its
  * own events would need its own front end, which is what this package just
  * stopped having.
  */

@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Route;
 use Murkrow\FilamentAi\Agent\Chat\AssistantTurn;
 use Murkrow\FilamentAi\Agent\Chat\PanelScope;
 use Murkrow\FilamentAi\Agent\Chat\ToolLabels;
-use Murkrow\FilamentAi\Data\SolveOptions;
 use Murkrow\FilamentAi\Http\Controllers\AssetController;
 
 /**
@@ -52,7 +51,6 @@ final class ChatPayload
             // tenant. See PanelScope.
             'scope' => $this->scope(),
             'version' => AssetController::version(),
-            'solving' => $this->solving($allowed),
             'endpoints' => $this->endpoints(),
             'csrf' => csrf_token(),
             'brand' => [
@@ -132,30 +130,6 @@ final class ChatPayload
             'title' => $thread['title'] !== '' ? $thread['title'] : (string) __('filament-ai::messages.chat.untitled'),
             'last_message_at' => $thread['updated_at'],
         ], $this->turn->threads($user));
-    }
-
-    /**
-     * The iterative search, when it is switched on and this user may use it.
-     * Null keeps the toggle off the page entirely.
-     *
-     * @param  array<string, bool>  $allowed
-     * @return array<string, mixed>|null
-     */
-    private function solving(array $allowed): ?array
-    {
-        if (! $allowed['solve'] || ! config('filament-ai.agent.solving.enabled', false)) {
-            return null;
-        }
-
-        $options = new SolveOptions;
-
-        return [
-            'attempts_per_wave' => $options->attemptsPerWave(),
-            'max_waves' => $options->maxWaves(),
-            // What the user is about to spend: one agent call per attempt,
-            // plus one judgement each.
-            'calls' => $options->maxAgentCalls(),
-        ];
     }
 
     /**

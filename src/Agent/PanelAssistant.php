@@ -62,6 +62,8 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
 
     protected ?int $maxSteps = null;
 
+    protected ?string $provider = null;
+
     protected ?string $model = null;
 
     /** @var list<string>|null */
@@ -106,9 +108,9 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
     /**
      * Answer this one with only these tools.
      *
-     * A solving phase that says "try the anagrams first" means nothing while
-     * the archive is one call away, so a phase can narrow the agent down to
-     * the tools its step is about. Null puts every tool back.
+     * A caller that says "try the anagrams first" means nothing while the
+     * archive is one call away, so it can narrow the agent down to the tools
+     * its step is about. Null puts every tool back.
      *
      * It only ever narrows: a name that is not among the agent's tools does
      * not add one.
@@ -180,7 +182,7 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
      */
     public function provider(): ?string
     {
-        $provider = config('filament-ai.agent.provider') ?? config('filament-ai.llm.provider');
+        $provider = $this->provider ?? config('filament-ai.agent.provider') ?? config('filament-ai.llm.provider');
 
         return blank($provider) ? null : (string) $provider;
     }
@@ -188,9 +190,9 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
     /**
      * Answer this one at a given temperature.
      *
-     * Iterative solving runs a wave of attempts side by side and spreads them
-     * apart with this: identical temperatures would produce near-identical
-     * answers, which is a waste of several model calls.
+     * A caller that runs several attempts side by side spreads them apart with
+     * this: identical temperatures would produce near-identical answers, which
+     * is a waste of several model calls.
      */
     public function withTemperature(?float $temperature): static
     {
@@ -242,6 +244,19 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
     public function withModel(?string $model): static
     {
         $this->model = blank($model) ? null : $model;
+
+        return $this;
+    }
+
+    /**
+     * Answer this one with a given provider, for a caller that runs a
+     * different model from the panel's own -- an application's own agentic
+     * mode, say. Pair it with `withModel()`. Null falls back to what is
+     * configured.
+     */
+    public function withProvider(?string $provider): static
+    {
+        $this->provider = blank($provider) ? null : $provider;
 
         return $this;
     }
@@ -360,8 +375,7 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
 
         $registry = app(ResourceToolRegistry::class);
 
-        // Only what this turn really has: a solving attempt or a narrowed
-        // phase has fewer tools than the resource declares.
+        // Only what this turn really has: a narrowed turn has fewer tools than the resource declares.
         $available = array_map(static fn (Tool $tool): string => $tool->name(), iterator_to_array($this->tools(), false));
 
         foreach ($registry->blueprints($this->panel()) as $blueprint) {

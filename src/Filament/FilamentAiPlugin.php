@@ -22,7 +22,6 @@ use Murkrow\FilamentAi\Filament\Resources\AssistantConversationResource;
 use Murkrow\FilamentAi\Filament\Resources\DocumentResource;
 use Murkrow\FilamentAi\Filament\Resources\IngestionRunResource;
 use Murkrow\FilamentAi\Filament\Resources\QueryResource;
-use Murkrow\FilamentAi\Filament\Resources\SolveRunResource;
 use Murkrow\FilamentAi\Filament\Widgets\IngestionThroughputChart;
 use Murkrow\FilamentAi\Filament\Widgets\KnowledgeStatsOverview;
 use Murkrow\FilamentAi\Filament\Widgets\LatestRunsTable;
@@ -144,8 +143,6 @@ class FilamentAiPlugin implements Plugin
             config('filament-ai.filament.resources.documents', true) ? DocumentResource::class : null,
             config('filament-ai.filament.resources.queries', true) ? QueryResource::class : null,
             config('filament-ai.agent.enabled', true) && config('filament-ai.filament.resources.conversations', true) ? AssistantConversationResource::class : null,
-            // Only worth a navigation entry where solving is switched on.
-            config('filament-ai.agent.solving.enabled', false) ? SolveRunResource::class : null,
         ]));
     }
 

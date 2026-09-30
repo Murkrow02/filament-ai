@@ -66,9 +66,6 @@ class AskRequest extends FormRequest
             'conversation' => ['sometimes', 'nullable', 'string', 'max:64'],
             'model' => ['sometimes', 'nullable', 'string', Rule::in($this->modelKeys())],
 
-            // Keep trying in waves instead of answering once.
-            'solve' => ['sometimes', 'boolean'],
-
             // The page the user is on, so "this order" resolves. Checked
             // against the resource's own policies before it is used, never
             // trusted as sent.
@@ -88,10 +85,6 @@ class AskRequest extends FormRequest
             $drop[] = 'model';
         }
 
-        if (! $this->allows('solve')) {
-            $drop[] = 'solve';
-        }
-
         if ($drop !== []) {
             $this->replace($this->except($drop));
         }
@@ -107,15 +100,6 @@ class AskRequest extends FormRequest
         $model = $this->validated('model');
 
         return is_string($model) && $model !== '' ? $model : null;
-    }
-
-    /**
-     * Whether this question should be answered by waves of attempts instead of
-     * one turn. Only ever true when solving is switched on for real.
-     */
-    public function solves(): bool
-    {
-        return (bool) $this->validated('solve', false) && (bool) config('filament-ai.agent.solving.enabled', false);
     }
 
     public function conversationId(): ?string

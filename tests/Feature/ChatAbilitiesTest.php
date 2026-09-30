@@ -14,7 +14,7 @@ use Murkrow\FilamentAi\Chat\ChatAbilities;
 
 it('answers from the defaults when nothing is configured', function (): void {
     expect(ChatAbilities::allows('view'))->toBeTrue()
-        ->and(ChatAbilities::allows('solve'))->toBeTrue()
+        ->and(ChatAbilities::allows('export'))->toBeTrue()
         // What only an administrator should see has to be granted.
         ->and(ChatAbilities::allows('cost'))->toBeFalse()
         ->and(ChatAbilities::allows('debug'))->toBeFalse();
@@ -25,10 +25,10 @@ it('configures exactly the abilities it knows', function (): void {
 });
 
 it('takes a plain boolean from config', function (): void {
-    config()->set('filament-ai.chat.abilities.solve', false);
+    config()->set('filament-ai.chat.abilities.export', false);
     config()->set('filament-ai.chat.abilities.settings', false);
 
-    expect(ChatAbilities::allows('solve'))->toBeFalse()
+    expect(ChatAbilities::allows('export'))->toBeFalse()
         ->and(ChatAbilities::allows('settings'))->toBeFalse()
         ->and(ChatAbilities::allows('model'))->toBeTrue();
 });
@@ -66,11 +66,11 @@ it('lets a host Gate definition win over config', function (): void {
 });
 
 it('resolves every ability at once for the page', function (): void {
-    config()->set('filament-ai.chat.abilities.solve', false);
+    config()->set('filament-ai.chat.abilities.export', false);
 
     $allowed = ChatAbilities::allowed();
 
     expect(array_keys($allowed))->toBe(ChatAbilities::names())
-        ->and($allowed['solve'])->toBeFalse()
+        ->and($allowed['export'])->toBeFalse()
         ->and($allowed['view'])->toBeTrue();
 });

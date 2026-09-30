@@ -9,6 +9,25 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.0.0] - 2026-09-30
+
+### Removed (breaking)
+
+- **Iterative solving ("Keep trying").** `Solver`, `SolveStrategy`, `Verifier`,
+  `Judge`, `SolveOptions`, `SolvePhase`, `Verdict`, the solve jobs, events,
+  enums and models, the `Solve runs` resource, the composer toggle and its
+  `solve` stream event, the `solve` chat ability, the `agent.solving.*`
+  configuration and settings, and the `solve_runs` / `solve_attempts` tables
+  (dropped by a new migration). A method for solving a specific problem
+  belongs to the application that has the problem; the parts to build one
+  from are still here.
+
+### Added
+
+- `PanelAssistant::withProvider()`, next to `withModel()`, so a caller can run
+  an agent on a different provider from the panel's.
+
+
 ## [5.4.0] - 2026-09-30
 
 ### Added

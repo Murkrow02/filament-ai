@@ -13,15 +13,9 @@ use Murkrow\FilamentAi\Agent\Chat\CitedPassages;
 use Murkrow\FilamentAi\Agent\Chat\TurnStream;
 use Murkrow\FilamentAi\Agent\Chat\TurnSummary;
 use Murkrow\FilamentAi\Agent\PanelAssistant;
-use Murkrow\FilamentAi\Agent\Solving\Solver;
-use Murkrow\FilamentAi\Agent\Solving\Strategies;
 use Murkrow\FilamentAi\Chat\ChatAbilities;
-use Murkrow\FilamentAi\Data\SolveOptions;
-use Murkrow\FilamentAi\Enums\SolveStatus;
-use Murkrow\FilamentAi\Filament\Resources\SolveRunResource;
 use Murkrow\FilamentAi\Http\Concerns\StreamsServerSentEvents;
 use Murkrow\FilamentAi\Http\Requests\AskRequest;
-use Murkrow\FilamentAi\Models\SolveRun;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -29,18 +23,11 @@ use Throwable;
  * Asking the assistant: one turn, streamed.
  *
  * Text as it is written, a `tool` event whenever it reaches for something, an
- * `approval` event when a change needs the user's word before it runs, and
- * `solve` events when the question was asked with "keep trying" on.
+ * `approval` event when a change needs the user's word before it runs.
  */
 class AssistantController
 {
     use StreamsServerSentEvents;
-
-    /** How often a followed run is read back. */
-    private const SOLVE_POLL_MICROSECONDS = 750_000;
-
-    /** Slack past the run's own time budget before the page stops waiting. */
-    private const SOLVE_GRACE_SECONDS = 60;
 
     public function __construct(
         private readonly AssistantTurn $turn,
@@ -51,10 +38,6 @@ class AssistantController
      */
     public function ask(AskRequest $request): StreamedResponse|JsonResponse
     {
-        if ($request->solves()) {
-            return $this->solve($request);
-        }
-
         if (! $this->turn->available()) {
             return $this->unavailable($request);
         }
@@ -86,134 +69,6 @@ class AssistantController
         )->withModel($request->model());
 
         return $this->stream($request, $assistant, $request->question(), $conversation, $lock ?: null);
-    }
-
-    /**
-     * Keep trying instead of answering once: start an iterative run and follow
-     * it until it ends.
-     *
-     * The run itself happens on the queue, in waves of parallel attempts; this
-     * request only reads it back and reports each change as a `solve` event.
-     * If the page goes away the run carries on and stays readable in the
-     * panel -- it has already spent the money, and the answer is still worth
-     * having.
-     */
-    public function solve(AskRequest $request): StreamedResponse|JsonResponse
-    {
-        if (! $this->turn->available() || ! $request->solves()) {
-            return response()->json(['message' => __('filament-ai::messages.chat.forbidden')], 403);
-        }
-
-        $context = $this->turn->resolvedContext($request->contextResource(), $request->contextRecord());
-        $user = $request->user();
-        $question = $request->question();
-        $allowed = ChatAbilities::allowed($user);
-
-        $request->session()?->save();
-
-        return response()->stream(function () use ($question, $context, $user, $allowed): void {
-            $this->send('start', ['conversation' => null, 'solving' => true]);
-
-            try {
-                $run = app(Solver::class)->solve($question, new SolveOptions(
-                    // The record on screen travels with every attempt, the
-                    // same way it reaches a single turn's instructions.
-                    context: array_filter(['page' => $context['label'], 'resource' => $context['resource'], 'record' => $context['record']]),
-                ), $user?->getAuthIdentifier());
-
-                $this->follow($run, $allowed);
-            } catch (Throwable $exception) {
-                report($exception);
-
-                $this->send('error', $this->failure($exception, $allowed['debug']));
-            }
-        }, 200, $this->eventStreamHeaders());
-    }
-
-    /**
-     * Report a run's progress until it ends, or until waiting stops making
-     * sense.
-     */
-    /**
-     * @param  array<string, bool>  $allowed
-     */
-    private function follow(SolveRun $run, array $allowed): void
-    {
-        $budget = (int) (($run->budgets['max_seconds'] ?? null) ?: config('filament-ai.agent.solving.max_seconds', 300));
-        $deadline = time() + $budget + self::SOLVE_GRACE_SECONDS;
-        $last = null;
-
-        while (true) {
-            $run->refresh();
-
-            $snapshot = $this->solveSnapshot($run, $allowed['debug']);
-
-            // Only what changed goes out: a poll every 750ms that repeated
-            // itself would be a stream of noise.
-            if ($snapshot !== $last) {
-                $this->send('solve', $snapshot);
-                $last = $snapshot;
-            }
-
-            if ($run->status->isTerminal()) {
-                break;
-            }
-
-            if (time() > $deadline || connection_aborted()) {
-                $this->send('error', ['message' => __('filament-ai::messages.solving.still_running', ['run' => substr($run->uuid, 0, 8)])]);
-
-                return;
-            }
-
-            usleep(self::SOLVE_POLL_MICROSECONDS);
-        }
-
-        $run->loadMissing('best');
-
-        $this->send('done', [
-            'conversation' => null,
-            'answer' => $run->status === SolveStatus::Solved
-                ? (string) ($run->best?->finalAnswer() ?? $run->message)
-                : (string) $run->message,
-            'pending' => [],
-            'solve' => $snapshot,
-            'tokens' => null,
-            'cost_usd' => $allowed['cost'] || $allowed['debug'] ? round($run->costUsd(), 6) : null,
-            'model' => null,
-        ]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function solveSnapshot(SolveRun $run, bool $debug): array
-    {
-        return [
-            'run' => $run->uuid,
-            'status' => $run->status->value,
-            'wave' => max(1, (int) $run->wave),
-            'waves' => (int) $run->waves_total,
-            'attempts' => (int) $run->attempts_total,
-            'attempts_total' => Strategies::plannedAttempts(
-                Strategies::for($run->strategy),
-                (int) $run->waves_total,
-                (int) $run->attempts_per_wave,
-            ),
-            'best_score' => (int) $run->best_score,
-            // A link to the whole story -- every attempt, and why each one was
-            // turned down -- for whoever may read it: it is a debugging view.
-            'url' => $debug ? $this->solveRunUrl($run) : null,
-        ];
-    }
-
-    private function solveRunUrl(SolveRun $run): ?string
-    {
-        try {
-            return SolveRunResource::canAccess() ? SolveRunResource::getUrl('view', ['record' => $run]) : null;
-        } catch (Throwable) {
-            // No panel in this request, or the resource is not on it.
-            return null;
-        }
     }
 
     /**

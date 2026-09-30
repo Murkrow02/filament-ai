@@ -558,73 +558,9 @@ $this->app->make(WebSearchManager::class)->register('bing', function ($app) {
 
 then `FILAMENT_AI_AGENT_WEB_SEARCH_DRIVER=bing`.
 
-### Keeping at it until it works
+### Building your own agentic mode
 
-Some questions are not answered in one turn: a riddle, a puzzle, anything where the first idea is usually wrong. `Solver` runs the assistant several times over, judges the answers and starts again from what was wrong.
-
-```php
-use Murkrow\FilamentAi\Agent\Solving\Solver;
-use Murkrow\FilamentAi\Data\SolveOptions;
-
-$run = app(Solver::class)->solve(
-    goal: 'Trova la parola chiave nascosta in questo indizio: ...',
-    options: new SolveOptions(
-        criteria: 'Una sola parola italiana, nome di una città, giustificata dall\'indizio.',
-        attemptsPerWave: 4,
-        maxWaves: 3,
-    ),
-);
-
-$run->status;        // solved | exhausted | failed
-$run->best?->answer; // the closest attempt, even when nothing was accepted
-$run->message;       // what to tell the user when it gave up
-```
-
-A wave is N attempts running in parallel on the queue, each a full turn with every tool the assistant has -- resources, knowledge, the sandbox. They are spread apart by temperature and never see each other: that is where the variety comes from. Then a judge grades each answer against your criteria and, if none passes, the next wave starts with the reasons the last one failed.
-
-It always stops. Waves, tokens, cost and seconds are four independent budgets, and the first to run out ends the run as `exhausted` -- keeping the best attempt and the reason it was rejected, which is what the user is told.
-
-Off by default (`filament-ai.agent.solving`), because it multiplies the cost of an answer by attempts × waves plus a judgement each; the panel's `Assistant settings` page carries the switches, and `Solve runs` shows every attempt with its score and the judge's reason. It needs a queue worker: the batch's completion is what starts the next wave.
-
-The judge is a `Verifier`. The shipped one is a language model; an application that already knows what correct means -- a treasure hunt holding the answer, a checksum, a test suite -- binds its own and pays nothing per attempt.
-
-#### Describing how a problem is solved
-
-The engine is generic; the method does not have to be. A `SolveStrategy` decides what each wave tries, how many attempts it gets and with which tools, so an application that knows how its own problems are usually cracked can say so:
-
-```php
-use Murkrow\FilamentAi\Agent\Solving\DefaultStrategy;
-use Murkrow\FilamentAi\Data\SolvePhase;
-
-final class HuntStrategy extends DefaultStrategy
-{
-    public function phases(): ?int
-    {
-        return 3; // the method has three steps, so the run has three waves
-    }
-
-    public function phaseFor(int $wave): SolvePhase
-    {
-        return match ($wave) {
-            1 => new SolvePhase(
-                label: 'Anagrams',
-                instructions: 'Generate the permutations of the odd words with run_code and keep the place names.',
-                attempts: 3,
-                tools: ['run_code'],
-                maxSteps: 8,
-            ),
-            2 => new SolvePhase(
-                label: 'Archive',
-                instructions: 'Look the candidates up in the documents and keep the one they mention.',
-                tools: ['search_knowledge', 'fetch_document'],
-            ),
-            default => new SolvePhase(label: 'Synthesis', temperature: 0.2, attempts: 1),
-        };
-    }
-}
-```
-
-Name it in `filament-ai.agent.solving.strategy`, or per run with `new SolveOptions(strategy: HuntStrategy::class)`. A phase only ever narrows the tools; one that names none gets all of them. The strategy may also sharpen the criteria (`criteriaFor()`) and bring its own verifier (`verifier()`), and it is stored on the run, so changing the config halfway through does not change the method of a run already going. `DefaultStrategy` is what every run did before this existed: one phase, repeated, every tool.
+The package has no iterative mode of its own (it had one until 6.0.0). What it gives an application that wants one are the parts: a `PanelAssistant` subclass with `withProvider()` / `withModel()` (a different model from the panel's), `withTemperature()`, `onlyTools()` (narrow a step to some tools), `withMaxSteps()` and `withoutWrites()` (nobody is there to approve a write on a queue), `additionalTools()` for the application's own, and `PanelScope::enter()` to put a queue worker back in a panel, tenant and user. Waves, judging, budgets and the interface are the application's, because they are about its problem.
 
 ### In the panel
 
@@ -639,7 +575,7 @@ The plugin adds an **Assistant** page to the panel. It is not a second chat: it 
 ],
 ```
 
-Answers stream, tool calls included. When iterative solving is on, the composer shows a **Keep trying** toggle: the question then starts a run instead of a turn, and the page follows it wave by wave until it ends, with a link to every attempt in `Solve runs` for the `debug` ability. The run lives on the queue, in the panel, tenant and user it was started by, and its attempts get read tools only -- nobody is there to approve a write, so closing the page does not stop it.
+Answers stream, tool calls included.
 
 The agent itself works with no class of your own:
 
@@ -793,17 +729,16 @@ technical side is for whoever debugs the assistant, behind its own ability.
 | `delete` | renaming and deleting one's own | on |
 | `model` | the model picker, when models are on offer | on |
 | `settings` | the settings panel | on |
-| `solve` | the **Keep trying** toggle | on |
 | `export` | copying an answer | on |
 | `cost` | what each answer cost | **off** |
-| `debug` | raw errors, tool names and arguments, model, tokens, cost, retrieval scores, the solve run link, setup hints | **off** |
+| `debug` | raw errors, tool names and arguments, model, tokens, cost, retrieval scores, setup hints | **off** |
 
 Each takes one of four shapes in `config/filament-ai.php`:
 
 ```php
 'chat' => [
     'abilities' => [
-        'solve' => false,                                  // a literal
+        'export' => false,                                 // a literal
         'cost' => 'see assistant costs',                   // a permission name, checked with $user->can()
         'debug' => [AssistantPolicy::class, 'debug'],      // any callable: fn (?Authenticatable $user): bool
         'model' => null,                                   // the package default
