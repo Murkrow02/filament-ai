@@ -9,6 +9,15 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [5.2.2] - 2026-09-30
+
+### Fixed
+
+- A number in a question or in one of its rewrites ("1754") broke the
+  assistant's search with `mb_strlen(): Argument #1 ($string) must be of type
+  string, int given`: query words were collected as array keys, and PHP turns
+  numeric keys into integers. They are strings again.
+
 ## [5.2.1] - 2026-09-30
 
 ### Fixed

@@ -272,7 +272,9 @@ final class TsVectorLexicalSearch implements LexicalSearch
             $terms[$word] = true;
         }
 
-        return array_slice(array_keys($terms), 0, self::MAX_TERMS);
+        // Keys that look like integers ("1754") come back as ints: cast, or a
+        // year in a question breaks every strict caller downstream.
+        return array_map(strval(...), array_slice(array_keys($terms), 0, self::MAX_TERMS));
     }
 
     /**

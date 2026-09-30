@@ -6,6 +6,7 @@ use Murkrow\FilamentAi\Llm\FakeLanguageModel;
 use Murkrow\FilamentAi\Reranking\OllamaReranker;
 use Murkrow\FilamentAi\Retrieval\QueryExpander;
 use Murkrow\FilamentAi\Retrieval\ReciprocalRankFusion;
+use Murkrow\FilamentAi\Retrieval\Lexical\TsVectorLexicalSearch;
 use Murkrow\FilamentAi\Support\Excerpt;
 
 it('scores yes against no from the answer log-probabilities', function (): void {
@@ -40,6 +41,12 @@ it('excerpts where the query words are, not the start of the passage', function 
         ->and($excerpt)->toContain('beccaio')
         ->and($excerpt)->toStartWith('… ')
         ->and(Excerpt::around('breve', 'x', 300))->toBe('breve');
+});
+
+it('keeps numbers in a query as strings, down to the excerpt', function (): void {
+    expect(TsVectorLexicalSearch::terms('Nel 1754 e nel 1799'))->toBe(['nel', '1754', '1799'])
+        ->and(Excerpt::around(str_repeat('testo di riempimento ', 40).'accadde nel 1754.', 'anno 1754', 200))
+        ->toContain('1754');
 });
 
 it('fuses any number of weighted lists by rank', function (): void {
