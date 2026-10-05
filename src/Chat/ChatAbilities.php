@@ -52,6 +52,10 @@ final class ChatAbilities
         // Renaming and deleting one's own conversations.
         'delete' => true,
 
+        // Sorting one's own conversations into folders. Needs `history`: the
+        // folders live in the sidebar it draws.
+        'folders' => true,
+
         // The model picker, when models are on offer.
         'model' => true,
 

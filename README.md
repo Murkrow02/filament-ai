@@ -710,6 +710,12 @@ standalone page acts in `filament-ai.chat.panel` (the default panel when null)
 - **Conversations are saved per user** in laravel/ai's tables and listed in the
   sidebar, renameable and deletable. A reload, a second tab and a turn paused
   for approval all show the same thing.
+- **Folders** sort them: create one with the folder button next to the search
+  box, then drag a chat onto it or use the chat's "Move to folder" menu.
+  Folders open and close (remembered in the browser); a filed chat shows in
+  its folder however old it is; deleting a folder keeps its chats. Folders
+  are per user, in `rag_chat_folders` and `rag_chat_folder_items` (laravel/ai's
+  conversation table is not altered).
 - **The answer streams**, with each step the assistant takes shown in plain
   words ("Search customers", "Edit a task") and citation markers that open the
   passage they point at.
@@ -727,6 +733,7 @@ technical side is for whoever debugs the assistant, behind its own ability.
 | `view` | reaching the standalone page at all | on |
 | `history` | the sidebar of saved conversations | on |
 | `delete` | renaming and deleting one's own | on |
+| `folders` | sorting one's own into folders (needs `history`) | on |
 | `model` | the model picker, when models are on offer | on |
 | `settings` | the settings panel | on |
 | `export` | copying an answer | on |

@@ -13,9 +13,19 @@
         </button>
 
         @if ($abilities['history'])
-            <input type="search" class="fai-search" id="fai-search"
-                   placeholder="{{ __('filament-ai::messages.chat.search_placeholder') }}"
-                   aria-label="{{ __('filament-ai::messages.chat.search_placeholder') }}">
+            <div class="fai-search-row">
+                <input type="search" class="fai-search" id="fai-search"
+                       placeholder="{{ __('filament-ai::messages.chat.search_placeholder') }}"
+                       aria-label="{{ __('filament-ai::messages.chat.search_placeholder') }}">
+
+                @if ($abilities['folders'] ?? false)
+                    <button type="button" class="fai-icon-btn fai-new-folder" id="fai-new-folder"
+                            title="{{ __('filament-ai::messages.chat.js.newFolder') }}"
+                            aria-label="{{ __('filament-ai::messages.chat.js.newFolder') }}">
+                        @include('filament-ai::chat.partials.icon', ['name' => 'folderPlus'])
+                    </button>
+                @endif
+            </div>
         @endif
     </div>
 

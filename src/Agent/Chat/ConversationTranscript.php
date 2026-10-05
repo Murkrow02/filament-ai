@@ -102,14 +102,29 @@ final class ConversationTranscript
     }
 
     /**
+     * The user's newest threads, plus those named in `$include` however old
+     * (the ones filed in a folder: a folder that showed only its recent chats
+     * would look emptied out).
+     *
+     * @param  list<string>  $include
      * @return list<array{id: string, title: string, updated_at: ?string}>
      */
-    public function recent(object $user, int $limit): array
+    public function recent(object $user, int $limit, array $include = []): array
     {
-        return $this->forUser($user)
+        $recent = $this->forUser($user)
             ->latest('updated_at')
             ->limit(max(1, $limit))
-            ->get(['id', 'title', 'updated_at'])
+            ->get(['id', 'title', 'updated_at']);
+
+        $missing = array_values(array_diff($include, $recent->pluck('id')->map(strval(...))->all()));
+
+        if ($missing !== []) {
+            $recent = $recent->concat(
+                $this->forUser($user)->whereIn('id', array_slice($missing, 0, 500))->get(['id', 'title', 'updated_at']),
+            )->sortByDesc(static fn (Conversation $conversation): int => $conversation->updated_at?->getTimestamp() ?? 0)->values();
+        }
+
+        return $recent
             ->map(static fn (Conversation $conversation): array => [
                 'id' => (string) $conversation->id,
                 'title' => (string) $conversation->title,

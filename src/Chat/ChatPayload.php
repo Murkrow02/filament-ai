@@ -38,6 +38,11 @@ final class ChatPayload
         $allowed = ChatAbilities::allowed($user);
         $conversation = $this->turn->ownedConversation($options['conversation'] ?? null, $user);
 
+        // Folders live in the history sidebar, and need their tables.
+        if (! $allowed['history'] || ! $this->turn->foldersAvailable()) {
+            $allowed['folders'] = false;
+        }
+
         // Being allowed to pick a model means nothing when none are on offer.
         if (empty(config('filament-ai.llm.available_models', []))) {
             $allowed['model'] = false;
@@ -62,6 +67,7 @@ final class ChatPayload
             'currentModel' => $allowed['model'] ? $this->currentModel() : null,
             'suggestions' => $this->suggestions(),
             'conversations' => $allowed['history'] ? $this->conversations($user) : [],
+            'folders' => $allowed['folders'] ? $this->turn->folders($user) : [],
             'current' => $conversation === null ? null : $this->conversation($conversation, $allowed['debug']),
         ];
     }
@@ -129,6 +135,7 @@ final class ChatPayload
             'uuid' => $thread['id'],
             'title' => $thread['title'] !== '' ? $thread['title'] : (string) __('filament-ai::messages.chat.untitled'),
             'last_message_at' => $thread['updated_at'],
+            'folder_id' => $thread['folder_id'] ?? null,
         ], $this->turn->threads($user));
     }
 
@@ -174,6 +181,10 @@ final class ChatPayload
             'update' => route('filament-ai.chat.update', ['conversation' => '__UUID__'], false),
             'destroy' => route('filament-ai.chat.destroy', ['conversation' => '__UUID__'], false),
             'decide' => route('filament-ai.chat.decide', ['conversation' => '__UUID__'], false),
+            // ":id" is substituted in the browser, like ":uuid".
+            'folders' => route('filament-ai.chat.folders.store', [], false),
+            'folder' => route('filament-ai.chat.folders.update', ['folder' => '__ID__'], false),
+            'file' => route('filament-ai.chat.file', ['conversation' => '__UUID__'], false),
             'ask' => route('filament-ai.chat.ask', [], false),
         ];
     }

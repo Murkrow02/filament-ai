@@ -35,6 +35,8 @@ return [
             'queries' => 'queries',
             'citations' => 'query_citations',
             'conversations' => 'conversations',
+            'chat_folders' => 'chat_folders',
+            'chat_folder_items' => 'chat_folder_items',
         ],
     ],
 
@@ -639,6 +641,7 @@ return [
             'view' => null,
             'history' => null,
             'delete' => null,
+            'folders' => null,
             'model' => null,
             'settings' => null,
             'cost' => null,

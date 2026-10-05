@@ -29,6 +29,7 @@ final class AssistantTurn
 {
     public function __construct(
         private readonly ConversationTranscript $transcript,
+        private readonly ConversationFolders $folders,
     ) {}
 
     public function available(): bool
@@ -123,11 +124,22 @@ final class AssistantTurn
      */
     public function delete(string $conversationId, ?Authenticatable $user): bool
     {
-        return $user !== null && $this->transcript->delete($conversationId, $user);
+        if ($user === null || ! $this->transcript->delete($conversationId, $user)) {
+            return false;
+        }
+
+        if ($this->folders->available()) {
+            $this->folders->forget($conversationId);
+        }
+
+        return true;
     }
 
     /**
-     * @return list<array{id: string, title: string, updated_at: ?string}>
+     * The newest threads and every filed one, each with its folder (null
+     * when it is in none).
+     *
+     * @return list<array{id: string, title: string, updated_at: ?string, folder_id: ?int}>
      */
     public function threads(?Authenticatable $user): array
     {
@@ -135,7 +147,23 @@ final class AssistantTurn
             return [];
         }
 
-        return $this->transcript->recent($user, (int) config('filament-ai.agent.chat.history', 20));
+        $filed = $this->folders->available() ? $this->folders->filed($user) : [];
+        $threads = $this->transcript->recent($user, (int) config('filament-ai.agent.chat.history', 20), array_map(strval(...), array_keys($filed)));
+
+        return array_map(static fn (array $thread): array => $thread + ['folder_id' => $filed[$thread['id']] ?? null], $threads);
+    }
+
+    public function foldersAvailable(): bool
+    {
+        return $this->folders->available();
+    }
+
+    /**
+     * @return list<array{id: int, name: string}>
+     */
+    public function folders(?Authenticatable $user): array
+    {
+        return $user === null || ! $this->folders->available() ? [] : $this->folders->folders($user);
     }
 
     /**

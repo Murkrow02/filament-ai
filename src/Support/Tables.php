@@ -69,6 +69,22 @@ final class Tables
         return self::name('conversations');
     }
 
+    /**
+     * The folders a person sorts their assistant chats into.
+     */
+    public static function chatFolders(): string
+    {
+        return self::name('chat_folders');
+    }
+
+    /**
+     * Which folder each chat is in: one row per filed conversation.
+     */
+    public static function chatFolderItems(): string
+    {
+        return self::name('chat_folder_items');
+    }
+
     public static function connection(): ?string
     {
         $connection = config('filament-ai.database.connection');

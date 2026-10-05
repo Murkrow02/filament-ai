@@ -25,6 +25,7 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use Murkrow\FilamentAi\Http\Controllers\AssetController;
 use Murkrow\FilamentAi\Http\Controllers\AssistantController;
+use Murkrow\FilamentAi\Http\Controllers\ChatFolderController;
 use Murkrow\FilamentAi\Http\Controllers\ChatController;
 
 // The standalone page. Both check filament-ai.chat.enabled when the request arrives,
@@ -41,6 +42,12 @@ Route::get('assets/{file}', AssetController::class)->name('asset');
 Route::get('c/{conversation}/messages', [ChatController::class, 'messages'])->name('messages');
 Route::patch('c/{conversation}', [ChatController::class, 'update'])->name('update');
 Route::delete('c/{conversation}', [ChatController::class, 'destroy'])->name('destroy');
+
+// Folders a person sorts their chats into, and filing a chat in one.
+Route::post('folders', [ChatFolderController::class, 'store'])->name('folders.store');
+Route::patch('folders/{folder}', [ChatFolderController::class, 'update'])->whereNumber('folder')->name('folders.update');
+Route::delete('folders/{folder}', [ChatFolderController::class, 'destroy'])->whereNumber('folder')->name('folders.destroy');
+Route::put('c/{conversation}/folder', [ChatFolderController::class, 'file'])->name('file');
 
 // Approving or rejecting what a paused turn is waiting on resumes it, and
 // streams what the assistant does next.

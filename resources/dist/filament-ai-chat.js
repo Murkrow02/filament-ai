@@ -86,6 +86,8 @@
     conversation: payload.current ? payload.current.uuid : null,
     title: payload.current ? payload.current.title : null,
     threads: payload.conversations || [],
+    folders: payload.folders || [],
+    collapsed: {},
     messages: payload.current ? turnsFromTranscript(payload.current.messages, payload.current.pending) : [],
     settings: { model: payload.currentModel },
     streaming: false,
@@ -112,6 +114,7 @@
   }
 
   function url(template, uuid) { return template.replace('__UUID__', encodeURIComponent(uuid)); }
+  function folderUrl(template, id) { return template.replace('__ID__', encodeURIComponent(String(id))); }
 
   var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -488,6 +491,9 @@
       down: '<path d="M17 14V3M10 21l2-7H4.5a2 2 0 0 1-2-2.4l1.4-6A2 2 0 0 1 6 4h11v10z"/>',
       book: '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/><path d="M4 17h16"/>',
       pin: '<path d="M12 17v5M9 3h6l-1 6 3 3v2H7v-2l3-3z"/>',
+      folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+      folderPlus: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 11v5M9.5 13.5h5"/>',
+      chevron: '<path d="M9 6l6 6-6 6"/>',
       pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
       trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
       close: '<path d="M18 6L6 18M6 6l12 12"/>',
@@ -519,6 +525,35 @@
   }
   // ---------------------------------------------------------------- sidebar
 
+  function folderOf(thread) {
+    if (!can.folders || thread.folder_id == null) return null;
+
+    return state.folders.filter(function (folder) { return folder.id === thread.folder_id; })[0] || null;
+  }
+
+  function threadHtml(thread) {
+    var actions = '';
+
+    if (can.folders) actions += '<button type="button" class="fai-icon-btn" data-action="move" title="' + escapeHtml(t.moveTo) + '">' + icon('folder') + '</button>';
+
+    if (can['delete']) {
+      actions += '<button type="button" class="fai-icon-btn" data-action="rename" title="' + escapeHtml(t.rename) + '">' + icon('pencil') + '</button>' +
+        '<button type="button" class="fai-icon-btn" data-action="delete" title="' + escapeHtml(t['delete']) + '">' + icon('trash') + '</button>';
+    }
+
+    return '<div class="fai-thread" role="button" tabindex="0" data-uuid="' + escapeHtml(thread.uuid) + '"' +
+      (can.folders ? ' draggable="true"' : '') +
+      ' aria-current="' + (thread.uuid === state.conversation) + '">' +
+      '<span class="fai-thread__title">' + escapeHtml(thread.title || t.untitled) + '</span>' +
+      (actions ? '<span class="fai-thread__actions">' + actions + '</span>' : '') +
+      '</div>';
+  }
+
+  /*
+   * Folders first, each with its chats (however old: the server sends every
+   * filed chat), then the chats in no folder, grouped by date. While
+   * searching, a folder shows only its matches and opens to show them.
+   */
   function renderThreads() {
     var list = el('fai-threads');
     if (!list) return;
@@ -528,33 +563,195 @@
       return !filter || (thread.title || '').toLowerCase().indexOf(filter) !== -1;
     });
 
-    if (!visible.length) {
+    var folders = can.folders ? state.folders : [];
+    var html = '';
+
+    folders.forEach(function (folder) {
+      var inside = visible.filter(function (thread) { return thread.folder_id === folder.id; });
+      if (filter && !inside.length) return;
+
+      var open = filter ? true : !state.collapsed[folder.id];
+
+      html += '<div class="fai-folder" data-folder="' + folder.id + '">' +
+        '<div class="fai-folder__head" role="button" tabindex="0" aria-expanded="' + open + '">' +
+        '<span class="fai-folder__chevron">' + icon('chevron') + '</span>' +
+        '<span class="fai-folder__icon">' + icon('folder') + '</span>' +
+        '<span class="fai-folder__name">' + escapeHtml(folder.name) + '</span>' +
+        '<span class="fai-folder__count">' + inside.length + '</span>' +
+        '<span class="fai-thread__actions">' +
+        '<button type="button" class="fai-icon-btn" data-folder-action="rename" title="' + escapeHtml(t.renameFolder) + '">' + icon('pencil') + '</button>' +
+        '<button type="button" class="fai-icon-btn" data-folder-action="delete" title="' + escapeHtml(t.deleteFolder) + '">' + icon('trash') + '</button>' +
+        '</span></div>';
+
+      if (open) {
+        html += '<div class="fai-folder__body">' +
+          (inside.length ? inside.map(threadHtml).join('') : '<p class="fai-folder__empty">' + escapeHtml(t.emptyFolder) + '</p>') +
+          '</div>';
+      }
+
+      html += '</div>';
+    });
+
+    var loose = visible.filter(function (thread) { return !folderOf(thread); });
+
+    if (!html && !loose.length) {
       list.innerHTML = '<p class="fai-threads__group">' + escapeHtml(filter ? t.noResults : t.noThreads) + '</p>';
       return;
     }
 
-    var html = '';
+    // Dropping a chat here takes it out of its folder.
+    html += '<div class="fai-loose" data-folder="">';
+
     var group = null;
 
-    visible.forEach(function (thread) {
+    if (html.indexOf('fai-folder"') !== -1 && loose.length) {
+      html += '<p class="fai-threads__group">' + escapeHtml(t.chats) + '</p>';
+    }
+
+    loose.forEach(function (thread) {
       var label = groupOf(thread.last_message_at);
 
       if (label !== group) {
         group = label;
-        html += '<p class="fai-threads__group">' + escapeHtml(label) + '</p>';
+        html += '<p class="fai-threads__group fai-threads__group--date">' + escapeHtml(label) + '</p>';
       }
 
-      html += '<div class="fai-thread" role="button" tabindex="0" data-uuid="' + escapeHtml(thread.uuid) + '"' +
-        ' aria-current="' + (thread.uuid === state.conversation) + '">' +
-        '<span class="fai-thread__title">' + escapeHtml(thread.title || t.untitled) + '</span>' +
-        (can['delete'] ? '<span class="fai-thread__actions">' +
-          '<button type="button" class="fai-icon-btn" data-action="rename" title="' + escapeHtml(t.rename) + '">' + icon('pencil') + '</button>' +
-          '<button type="button" class="fai-icon-btn" data-action="delete" title="' + escapeHtml(t['delete']) + '">' + icon('trash') + '</button>' +
-          '</span>' : '') +
-        '</div>';
+      html += threadHtml(thread);
     });
 
-    list.innerHTML = html;
+    list.innerHTML = html + '</div>';
+  }
+
+  // ---------------------------------------------------------------- folders
+
+  function storeCollapsed() {
+    try { localStorage.setItem('filament-ai-chat-folders', JSON.stringify(state.collapsed)); } catch (error) { /* private mode */ }
+  }
+
+  function createFolder() {
+    var name = window.prompt(t.folderName, '');
+    if (name === null || !name.trim()) return Promise.resolve(null);
+
+    return request('POST', payload.endpoints.folders, { name: name.trim() }).then(function (folder) {
+      state.folders.push(folder);
+      renderThreads();
+
+      return folder;
+    }).catch(function (error) { showFailure(error); return null; });
+  }
+
+  function fileThread(uuid, folderId) {
+    var thread = state.threads.filter(function (item) { return item.uuid === uuid; })[0];
+    if (!thread || thread.folder_id === folderId) return;
+
+    request('PUT', url(payload.endpoints.file, uuid), { folder: folderId }).then(function (data) {
+      thread.folder_id = data.folder_id;
+      if (folderId !== null) delete state.collapsed[folderId];
+      renderThreads();
+    }).catch(showFailure);
+  }
+
+  function closeMenu() {
+    var open = root.querySelector('.fai-menu');
+    if (open) open.remove();
+  }
+
+  /*
+   * "Move to folder": a small list under the button, every folder plus
+   * "no folder" and "new folder". Drag and drop does the same.
+   */
+  function openMoveMenu(button, uuid) {
+    closeMenu();
+
+    var thread = state.threads.filter(function (item) { return item.uuid === uuid; })[0];
+    if (!thread) return;
+
+    var menu = document.createElement('div');
+    menu.className = 'fai-menu';
+    menu.setAttribute('role', 'menu');
+    menu.dataset.uuid = uuid;
+
+    var html = '<p class="fai-menu__title">' + escapeHtml(t.moveTo) + '</p>';
+
+    state.folders.forEach(function (folder) {
+      html += '<button type="button" role="menuitem" data-move="' + folder.id + '"' + (thread.folder_id === folder.id ? ' aria-current="true"' : '') + '>' +
+        icon('folder') + '<span>' + escapeHtml(folder.name) + '</span></button>';
+    });
+
+    if (thread.folder_id != null) html += '<button type="button" role="menuitem" data-move="">' + icon('close') + '<span>' + escapeHtml(t.noFolder) + '</span></button>';
+
+    html += '<button type="button" role="menuitem" data-move="new">' + icon('folderPlus') + '<span>' + escapeHtml(t.newFolder) + '</span></button>';
+
+    menu.innerHTML = html;
+    root.appendChild(menu);
+
+    // Fixed to the viewport: the sidebar clips whatever overflows it.
+    var box = button.getBoundingClientRect();
+    menu.style.top = Math.min(box.bottom + 4, window.innerHeight - menu.offsetHeight - 8) + 'px';
+    menu.style.left = Math.max(8, Math.min(box.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+  }
+
+  function onFolderAction(button) {
+    var id = Number(button.closest('.fai-folder').dataset.folder);
+    var folder = state.folders.filter(function (item) { return item.id === id; })[0];
+    if (!folder) return;
+
+    if (button.dataset.folderAction === 'rename') {
+      var name = window.prompt(t.renameFolder, folder.name);
+      if (name === null || !name.trim()) return;
+
+      request('PATCH', folderUrl(payload.endpoints.folder, id), { name: name.trim() }).then(function (data) {
+        folder.name = data.name;
+        renderThreads();
+      }).catch(showFailure);
+    } else if (button.dataset.folderAction === 'delete') {
+      if (!window.confirm(t.confirmDeleteFolder)) return;
+
+      request('DELETE', folderUrl(payload.endpoints.folder, id)).then(function () {
+        state.folders = state.folders.filter(function (item) { return item.id !== id; });
+        state.threads.forEach(function (thread) { if (thread.folder_id === id) thread.folder_id = null; });
+        renderThreads();
+      }).catch(showFailure);
+    }
+  }
+
+  if (can.folders) {
+    var dragged = null;
+    var threadsList = el('fai-threads');
+
+    if (threadsList) {
+      threadsList.addEventListener('dragstart', function (event) {
+        var row = event.target.closest && event.target.closest('.fai-thread');
+        if (!row) return;
+
+        dragged = row.dataset.uuid;
+        event.dataTransfer.effectAllowed = 'move';
+        try { event.dataTransfer.setData('text/plain', dragged); } catch (error) { /* old browsers */ }
+      });
+
+      threadsList.addEventListener('dragend', function () {
+        dragged = null;
+        threadsList.querySelectorAll('.fai-drop').forEach(function (node) { node.classList.remove('fai-drop'); });
+      });
+
+      threadsList.addEventListener('dragover', function (event) {
+        var target = dragged && event.target.closest('[data-folder]');
+        if (!target) return;
+
+        event.preventDefault();
+        threadsList.querySelectorAll('.fai-drop').forEach(function (node) { if (node !== target) node.classList.remove('fai-drop'); });
+        target.classList.add('fai-drop');
+      });
+
+      threadsList.addEventListener('drop', function (event) {
+        var target = dragged && event.target.closest('[data-folder]');
+        if (!target) return;
+
+        event.preventDefault();
+        fileThread(dragged, target.dataset.folder === '' ? null : Number(target.dataset.folder));
+        dragged = null;
+      });
+    }
   }
 
   function threadTitle(uuid) {
@@ -580,7 +777,8 @@
       state.threads.unshift({
         uuid: state.conversation,
         title: state.title || t.untitled,
-        last_message_at: new Date().toISOString()
+        last_message_at: new Date().toISOString(),
+        folder_id: null
       });
     }
 
@@ -1189,6 +1387,47 @@
       return;
     }
 
+    var menuItem = event.target.closest('.fai-menu [data-move]');
+
+    if (menuItem) {
+      var movedUuid = menuItem.closest('.fai-menu').dataset.uuid;
+      var choice = menuItem.dataset.move;
+      closeMenu();
+
+      if (choice === 'new') {
+        createFolder().then(function (folder) { if (folder) fileThread(movedUuid, folder.id); });
+      } else {
+        fileThread(movedUuid, choice === '' ? null : Number(choice));
+      }
+
+      return;
+    }
+
+    if (!event.target.closest('.fai-menu')) closeMenu();
+
+    var folderAction = event.target.closest('[data-folder-action]');
+
+    if (folderAction) {
+      event.stopPropagation();
+      onFolderAction(folderAction);
+
+      return;
+    }
+
+    var folderHead = event.target.closest('.fai-folder__head');
+
+    if (folderHead) {
+      var folderId = Number(folderHead.closest('.fai-folder').dataset.folder);
+
+      if (state.collapsed[folderId]) delete state.collapsed[folderId];
+      else state.collapsed[folderId] = true;
+
+      storeCollapsed();
+      renderThreads();
+
+      return;
+    }
+
     var action = event.target.closest('.fai-thread__actions button');
 
     if (action) {
@@ -1197,7 +1436,9 @@
       var uuid = action.closest('.fai-thread').dataset.uuid;
       var thread = state.threads.filter(function (item) { return item.uuid === uuid; })[0];
 
-      if (action.dataset.action === 'delete') {
+      if (action.dataset.action === 'move') {
+        openMoveMenu(action, uuid);
+      } else if (action.dataset.action === 'delete') {
         if (!window.confirm(t.confirmDelete)) return;
 
         request('DELETE', url(payload.endpoints.destroy, uuid)).then(function () {
@@ -1282,8 +1523,11 @@
   });
 
   document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') closeSettings();
+    if (event.key === 'Escape') { closeSettings(); closeMenu(); }
   });
+
+  var newFolderButton = el('fai-new-folder');
+  if (newFolderButton) newFolderButton.addEventListener('click', function () { createFolder(); });
 
   // --------------------------------------------------------------- settings
 
@@ -1344,6 +1588,9 @@
     // it before first paint, so there is nothing to do here.
     var storedSidebar = localStorage.getItem('filament-ai-chat-sidebar');
     if (storedSidebar && !payload.embedded) root.dataset.sidebar = storedSidebar;
+
+    var storedFolders = JSON.parse(localStorage.getItem('filament-ai-chat-folders') || '{}');
+    if (storedFolders && typeof storedFolders === 'object') state.collapsed = storedFolders;
   } catch (error) { /* storage unavailable */ }
 
   renderThreads();

@@ -9,6 +9,19 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.1.0] - 2026-10-05
+
+### Added
+
+- **Chat folders.** A person can sort their assistant chats into folders: a
+  button next to the sidebar search creates one, a chat moves by drag and drop
+  or by its "Move to folder" menu, folders collapse (remembered per browser),
+  and deleting one keeps its chats. A filed chat is listed however old it is,
+  past `agent.chat.history`. New migration (`rag_chat_folders`,
+  `rag_chat_folder_items`; laravel/ai's tables are not altered), routes
+  `folders.store|update|destroy` and `file`, endpoints in the payload, and a
+  `folders` chat ability (on by default, off without `history`).
+
 ## [6.0.0] - 2026-09-30
 
 ### Removed (breaking)
