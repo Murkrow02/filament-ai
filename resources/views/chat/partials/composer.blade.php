@@ -9,11 +9,20 @@
                       placeholder="{{ __('filament-ai::messages.chat.placeholder') }}"
                       aria-label="{{ __('filament-ai::messages.chat.placeholder') }}"></textarea>
 
+            {{-- Dictation. Hidden until filament-ai-chat.js has checked the browser can
+                 record and the payload allows it, so it never shows up dead. --}}
+            <button type="button" class="fai-mic" id="fai-mic" hidden
+                    aria-label="{{ __('filament-ai::messages.chat.js.dictate') }}"
+                    title="{{ __('filament-ai::messages.chat.js.dictate') }}">
+                @include('filament-ai::chat.partials.icon', ['name' => 'mic'])
+                <span class="fai-mic__timer" id="fai-mic-timer" aria-live="polite"></span>
+            </button>
+
             <button type="button" class="fai-send" id="fai-send" aria-label="{{ __('filament-ai::messages.chat.send') }}">
                 @include('filament-ai::chat.partials.icon', ['name' => 'send'])
             </button>
         </div>
 
-        <p class="fai-hint">{{ __('filament-ai::messages.chat.hint') }}</p>
+        <p class="fai-hint">{{ __(\Murkrow\FilamentAi\Support\Knowledge::enabled() ? 'filament-ai::messages.chat.hint' : 'filament-ai::messages.chat.hint_records') }}</p>
     </div>
 </div>

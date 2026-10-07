@@ -1,6 +1,6 @@
 <div class="fai-empty" id="fai-empty" @if ($hasMessages) hidden @endif>
     <h1>{{ __('filament-ai::messages.chat.empty_title') }}</h1>
-    <p>{{ __('filament-ai::messages.chat.empty_body') }}</p>
+    <p>{{ __(\Murkrow\FilamentAi\Support\Knowledge::enabled() ? 'filament-ai::messages.chat.empty_body' : 'filament-ai::messages.chat.empty_body_records') }}</p>
 
     @if ($payload['suggestions'])
         <div class="fai-suggestions">

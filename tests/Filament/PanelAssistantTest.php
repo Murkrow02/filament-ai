@@ -133,3 +133,12 @@ it('answers with the provider and model a caller chose, then falls back', functi
         ->and($assistant->withProvider(null)->withModel(null)->provider())->toBe('deepseek')
         ->and($assistant->model())->toBe('deepseek-chat');
 });
+
+it('offers no knowledge tools when the knowledge base is off', function (): void {
+    config()->set('filament-ai.knowledge.enabled', false);
+
+    $names = array_map(fn ($tool): string => $tool->name(), [...(new PanelAssistant)->tools()]);
+
+    expect($names)->not->toContain('search_knowledge', 'fetch_document')
+        ->and($names)->toContain('test_books_list');
+});

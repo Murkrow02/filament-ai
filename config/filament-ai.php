@@ -126,13 +126,21 @@ return [
     | Vector store
     |--------------------------------------------------------------------------
     |
-    | Only the pgvector driver ships today. The VectorStore contract exists so
-    | another backend can be added as a single class without a refactor.
+    | `pgvector` stores and ranks the vectors. `null` stores nothing and turns
+    | the knowledge base off -- see `knowledge.enabled` below. The VectorStore
+    | contract exists so another backend can be added as a single class.
     |
     */
 
+    'knowledge' => [
+        // false => agent and chat only: no knowledge pages, tools, commands or
+        // MCP server, and the `null` vector driver, so no pgvector is needed
+        // and the migrations run on MySQL, MariaDB or SQLite.
+        'enabled' => env('FILAMENT_AI_KNOWLEDGE_ENABLED', true),
+    ],
+
     'vector' => [
-        'driver' => env('FILAMENT_AI_VECTOR_DRIVER', 'pgvector'),
+        'driver' => env('FILAMENT_AI_VECTOR_DRIVER', 'pgvector'), // pgvector | null
 
         'drivers' => [
             'pgvector' => [
@@ -632,6 +640,25 @@ return [
         // Shown on the empty state. Empty => the localised defaults.
         'suggestions' => [],
 
+        // Dictation: a microphone in the composer. The recording is
+        // transcribed by laravel/ai and lands in the text box, never sent
+        // on its own -- the person reads it and presses send.
+        'voice' => [
+            'enabled' => env('FILAMENT_AI_VOICE_ENABLED', false),
+            // Passed as-is to Transcription::generate(): null => laravel/ai's
+            // `default_for_transcription`; a provider name; or an ordered
+            // ['provider' => 'model'] list, tried in turn on connection errors,
+            // rate limits and outages (laravel/ai's failover).
+            'providers' => null,
+            // null => the application locale.
+            'language' => env('FILAMENT_AI_VOICE_LANGUAGE'),
+            // Per provider attempt, so a hung self-hosted server falls over
+            // to the next instead of keeping the person waiting.
+            'timeout' => (int) env('FILAMENT_AI_VOICE_TIMEOUT', 15),
+            'max_seconds' => (int) env('FILAMENT_AI_VOICE_MAX_SECONDS', 60),
+            'max_kilobytes' => (int) env('FILAMENT_AI_VOICE_MAX_KILOBYTES', 10240),
+        ],
+
         // Null keeps the default (see ChatAbilities::DEFAULTS): everything a
         // person needs is on, `cost` and `debug` are off. Each accepts a bool,
         // a permission name checked with $user->can(), or a [Class::class,
@@ -646,6 +673,7 @@ return [
             'settings' => null,
             'cost' => null,
             'export' => null,
+            'voice' => null,
             'debug' => null,
         ],
     ],

@@ -41,6 +41,11 @@ return new class extends Migration
         $store = app(VectorStore::class);
         $store->dropIndexes();
 
+        // The null driver installed no column.
+        if (! Schema::connection(Tables::connection())->hasColumn(Tables::chunks(), 'embedding')) {
+            return;
+        }
+
         Schema::table(Tables::chunks(), function (Blueprint $table): void {
             $table->dropColumn('embedding');
         });

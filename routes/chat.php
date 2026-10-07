@@ -27,6 +27,7 @@ use Murkrow\FilamentAi\Http\Controllers\AssetController;
 use Murkrow\FilamentAi\Http\Controllers\AssistantController;
 use Murkrow\FilamentAi\Http\Controllers\ChatFolderController;
 use Murkrow\FilamentAi\Http\Controllers\ChatController;
+use Murkrow\FilamentAi\Http\Controllers\TranscriptionController;
 
 // The standalone page. Both check filament-ai.chat.enabled when the request arrives,
 // not here: an application that flips the setting at runtime has already had
@@ -55,6 +56,11 @@ Route::post('c/{conversation}/decisions', [AssistantController::class, 'decide']
 
 $ask = Route::post('ask', [AssistantController::class, 'ask'])->name('ask');
 
+// A dictated message, returned as text for the composer. Same throttle as ask:
+// each call is a paid or self-hosted transcription.
+$transcribe = Route::post('transcribe', TranscriptionController::class)->name('transcribe');
+
 if (($throttle = config('filament-ai.chat.throttle')) !== null && $throttle !== '') {
     $ask->middleware('throttle:'.$throttle);
+    $transcribe->middleware('throttle:'.$throttle);
 }

@@ -433,6 +433,34 @@ body.fai-body,
 .fai-send[disabled] { background: var(--fai-border-strong); cursor: not-allowed; }
 .fai-send svg { height: 17px; width: 17px; }
 
+/* Dictation: idle is a quiet icon, recording pulses red with a timer,
+   transcribing dims while the server works. */
+.fai-mic {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 34px; min-width: 34px; padding: 0 8px; flex: none;
+  color: var(--fai-text-muted); background: none;
+  border: 0; border-radius: 17px; cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.fai-mic[hidden] { display: none; }
+.fai-mic:hover { color: var(--fai-text); background: var(--fai-bg-hover); }
+.fai-mic svg { height: 18px; width: 18px; }
+.fai-mic__timer { font-size: 12px; font-variant-numeric: tabular-nums; }
+.fai-mic__timer:empty { display: none; }
+.fai-mic[data-state="recording"] { color: #fff; background: var(--fai-weak); animation: fai-mic-pulse 1.4s ease-in-out infinite; }
+.fai-mic[data-state="transcribing"] { cursor: progress; opacity: 0.6; }
+.fai-mic[data-state="transcribing"] svg { animation: fai-mic-blink 1s ease-in-out infinite; }
+.fai-mic[data-flash="true"] { color: var(--fai-good); }
+@keyframes fai-mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--fai-weak) 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--fai-weak) 0%, transparent); }
+}
+@keyframes fai-mic-blink { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) {
+  .fai-mic[data-state="recording"], .fai-mic[data-state="transcribing"] svg { animation: none; }
+}
+
 .fai-hint { padding: 8px 4px 0; font-size: 11.5px; color: var(--fai-text-faint); text-align: center; }
 
 /* ----------------------------------------------------------------- drawer */

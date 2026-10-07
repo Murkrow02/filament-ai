@@ -233,11 +233,19 @@ return [
         'send' => 'Invia',
         'placeholder' => 'Chiedi all assistente, o digli cosa fare...',
         'hint' => 'L assistente puo leggere i documenti e i record, e proporre modifiche. Ogni modifica aspetta la tua approvazione.',
+        'hint_records' => 'L assistente legge i record e propone modifiche. Ogni modifica aspetta la tua approvazione.',
         'empty_title' => 'Cosa posso fare per te?',
         'empty_body' => 'Chiedi con parole tue: una domanda sui documenti, sui record, o una modifica da fare.',
+        'empty_body_records' => 'Chiedi con parole tue: una domanda sui record, o una modifica da fare.',
         'suggestions' => [],
 
         // Renderizzate nel browser da filament-ai-chat.js.
+        'voice' => [
+            'attribute' => 'registrazione',
+            'failed' => 'Non sono riuscito a trascrivere la registrazione. Riprova, o scrivi il messaggio.',
+            'empty' => 'Non ho sentito parole nella registrazione. Riprova parlando vicino al microfono.',
+        ],
+
         'js' => [
             'untitled' => 'Chat senza titolo',
             'newChat' => 'Nuova chat',
@@ -291,6 +299,13 @@ return [
                 'week' => 'Ultimi 7 giorni',
                 'older' => 'Più vecchie',
             ],
+            'dictate' => 'Detta un messaggio',
+            'stopDictation' => 'Ferma e trascrivi',
+            'listening' => 'In ascolto…',
+            'transcribing' => 'Trascrizione…',
+            'micDenied' => 'Il browser non ha concesso il microfono. Abilitalo dalle impostazioni del sito e riprova.',
+            'micUnavailable' => 'Nessun microfono disponibile.',
+            'dictationReady' => 'Testo trascritto: rileggilo e premi invio.',
         ],
     ],
 

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 use Murkrow\FilamentAi\Agent\Chat\AssistantTurn;
 use Murkrow\FilamentAi\Agent\Chat\PanelScope;
 use Murkrow\FilamentAi\Agent\Chat\ToolLabels;
+use Murkrow\FilamentAi\Agent\Chat\VoiceTranscriber;
 use Murkrow\FilamentAi\Http\Controllers\AssetController;
 
 /**
@@ -43,6 +44,11 @@ final class ChatPayload
             $allowed['folders'] = false;
         }
 
+        // Dictation needs the feature switched on, not only the ability.
+        if (! VoiceTranscriber::enabled()) {
+            $allowed['voice'] = false;
+        }
+
         // Being allowed to pick a model means nothing when none are on offer.
         if (empty(config('filament-ai.llm.available_models', []))) {
             $allowed['model'] = false;
@@ -66,6 +72,7 @@ final class ChatPayload
             'models' => $allowed['model'] ? (array) config('filament-ai.llm.available_models', []) : [],
             'currentModel' => $allowed['model'] ? $this->currentModel() : null,
             'suggestions' => $this->suggestions(),
+            'voice' => $allowed['voice'] ? ['maxSeconds' => max(1, (int) config('filament-ai.chat.voice.max_seconds', 60))] : null,
             'conversations' => $allowed['history'] ? $this->conversations($user) : [],
             'folders' => $allowed['folders'] ? $this->turn->folders($user) : [],
             'current' => $conversation === null ? null : $this->conversation($conversation, $allowed['debug']),
@@ -186,6 +193,7 @@ final class ChatPayload
             'folder' => route('filament-ai.chat.folders.update', ['folder' => '__ID__'], false),
             'file' => route('filament-ai.chat.file', ['conversation' => '__UUID__'], false),
             'ask' => route('filament-ai.chat.ask', [], false),
+            'transcribe' => $this->routeOrNull('filament-ai.chat.transcribe'),
         ];
     }
 

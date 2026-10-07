@@ -69,6 +69,9 @@ final class ChatAbilities
         // Copying an answer out.
         'export' => true,
 
+        // Dictating a message. Only offered while `filament-ai.chat.voice.enabled`.
+        'voice' => true,
+
         // The technical side of a turn: the raw error behind a failure, the
         // tool names and arguments behind the plain-language steps and
         // approval cards, the model, token counts, retrieval scores

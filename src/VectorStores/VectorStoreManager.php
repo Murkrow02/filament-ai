@@ -15,12 +15,22 @@ final class VectorStoreManager extends Manager
 {
     public function getDefaultDriver(): string
     {
+        // With the knowledge base off there is nothing to store vectors for.
+        if (! $this->config->get('filament-ai.knowledge.enabled', true)) {
+            return 'null';
+        }
+
         return (string) $this->config->get('filament-ai.vector.driver', 'pgvector');
     }
 
     public function createPgvectorDriver(): VectorStore
     {
         return new PgVectorStore;
+    }
+
+    public function createNullDriver(): VectorStore
+    {
+        return new NullVectorStore;
     }
 
     /**

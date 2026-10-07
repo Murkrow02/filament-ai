@@ -24,6 +24,7 @@ use Murkrow\FilamentAi\Agent\Tools\RunCode;
 use Murkrow\FilamentAi\Agent\Tools\SearchKnowledge;
 use Murkrow\FilamentAi\Agent\Tools\WebSearch;
 use Murkrow\FilamentAi\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Support\Knowledge;
 use Throwable;
 
 /**
@@ -310,7 +311,7 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
      */
     protected function knowledgeSources(): array
     {
-        if (! config('filament-ai.enabled', true) || ! config('filament-ai.agent.knowledge.enabled', true)) {
+        if (! config('filament-ai.enabled', true) || ! config('filament-ai.agent.knowledge.enabled', true) || ! Knowledge::enabled()) {
             return [];
         }
 

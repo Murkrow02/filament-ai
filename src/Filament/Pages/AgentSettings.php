@@ -23,6 +23,7 @@ use Murkrow\FilamentAi\Contracts\ListsRuntimes;
 use Murkrow\FilamentAi\Filament\Concerns\HasAiNavigation;
 use Murkrow\FilamentAi\Settings\SettingsRepository;
 use Murkrow\FilamentAi\Sources\SourceRegistry;
+use Murkrow\FilamentAi\Support\Knowledge;
 use UnitEnum;
 
 /**
@@ -111,6 +112,7 @@ class AgentSettings extends Page
                 ]),
 
             Section::make(__('filament-ai::messages.assistant_settings.knowledge'))
+                ->visible(fn (): bool => Knowledge::enabled())
                 ->columns(2)
                 ->schema([
                     Toggle::make('agent__knowledge__enabled')->label(__('filament-ai::messages.assistant_settings.knowledge_enabled')),

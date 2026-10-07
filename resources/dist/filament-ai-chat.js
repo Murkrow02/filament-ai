@@ -501,6 +501,7 @@
       link: '<path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>',
       tool: '<path d="M14.7 6.3a4 4 0 0 1-5 5L4 17v3h3l5.7-5.7a4 4 0 0 0 5-5z"/>',
       shield: '<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M12 9v4"/><path d="M12 16h.01"/>',
+      mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/>',
       waves: '<path d="M3 8c2.5-2 4.5-2 7 0s4.5 2 7 0"/><path d="M3 14c2.5-2 4.5-2 7 0s4.5 2 7 0"/><path d="M3 20c2.5-2 4.5-2 7 0s4.5 2 7 0"/>'
     };
 
@@ -1592,6 +1593,132 @@
     var storedFolders = JSON.parse(localStorage.getItem('filament-ai-chat-folders') || '{}');
     if (storedFolders && typeof storedFolders === 'object') state.collapsed = storedFolders;
   } catch (error) { /* storage unavailable */ }
+
+  // -------------------------------------------------------------- dictation
+
+  /*
+   * The microphone records, the server transcribes, and the text lands in the
+   * input box -- never sent on its own. The person reads it, fixes a word if
+   * the transcription misheard, and presses enter like any other message.
+   */
+  var mic = el('fai-mic');
+  var dictation = { recorder: null, stream: null, chunks: [], started: 0, timer: null };
+
+  function canDictate() {
+    return !!(mic && can.voice && payload.voice && payload.endpoints.transcribe &&
+      navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  }
+
+  // The first container the browser can record: Chrome and Firefox do webm,
+  // Safari only mp4.
+  function recordingType() {
+    var types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+    for (var i = 0; i < types.length; i++) {
+      if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(types[i])) return types[i];
+    }
+    return '';
+  }
+
+  // Transcription APIs read the format from the file name.
+  function extensionFor(type) {
+    if (/mp4|aac|m4a/.test(type)) return 'm4a';
+    if (/ogg/.test(type)) return 'ogg';
+    return 'webm';
+  }
+
+  function setMicState(state) {
+    mic.dataset.state = state;
+    mic.disabled = state === 'transcribing';
+    var label = state === 'recording' ? t.stopDictation : (state === 'transcribing' ? t.transcribing : t.dictate);
+    mic.setAttribute('aria-label', label);
+    mic.title = label;
+    mic.setAttribute('aria-pressed', state === 'recording' ? 'true' : 'false');
+    el('fai-input').placeholder = state === 'recording' ? t.listening : (state === 'transcribing' ? t.transcribing : inputPlaceholder);
+    if (state !== 'recording') el('fai-mic-timer').textContent = '';
+  }
+
+  function showNotice(text) {
+    var node = document.createElement('div');
+    node.className = 'fai-error';
+    node.textContent = text;
+    el('fai-stream').appendChild(node);
+    scrollDown();
+  }
+
+  function tickDictation() {
+    var seconds = Math.floor((Date.now() - dictation.started) / 1000);
+    var left = payload.voice.maxSeconds - seconds;
+    el('fai-mic-timer').textContent = Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+    if (left <= 0) stopDictation();
+  }
+
+  function startDictation() {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      var type = recordingType();
+      var recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+
+      dictation = { recorder: recorder, stream: stream, chunks: [], started: Date.now(), timer: setInterval(tickDictation, 250) };
+      recorder.addEventListener('dataavailable', function (event) { if (event.data && event.data.size) dictation.chunks.push(event.data); });
+      recorder.addEventListener('stop', finishDictation);
+      recorder.start();
+
+      setMicState('recording');
+      tickDictation();
+    }).catch(function (error) {
+      showNotice(error && error.name === 'NotAllowedError' ? t.micDenied : t.micUnavailable);
+    });
+  }
+
+  function stopDictation() {
+    if (dictation.recorder && dictation.recorder.state !== 'inactive') dictation.recorder.stop();
+  }
+
+  function finishDictation() {
+    clearInterval(dictation.timer);
+    dictation.stream.getTracks().forEach(function (track) { track.stop(); });
+
+    var type = (dictation.recorder.mimeType || 'audio/webm').split(';')[0];
+    var audio = new Blob(dictation.chunks, { type: type });
+    dictation.recorder = null;
+
+    if (!audio.size) { setMicState('idle'); return; }
+
+    setMicState('transcribing');
+
+    var form = new FormData();
+    form.append('audio', audio, 'dictation.' + extensionFor(type));
+
+    fetch(scoped(payload.endpoints.transcribe), {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': payload.csrf },
+      credentials: 'same-origin',
+      body: form
+    }).then(function (response) {
+      checkVersion(response);
+      if (!response.ok) return failureFrom(response);
+      return response.json();
+    }).then(function (data) {
+      var input = el('fai-input');
+      var before = input.value.trim();
+      input.value = (before ? before + ' ' : '') + data.text;
+      autosize(input);
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+      el('fai-mic-timer').textContent = '';
+      mic.dataset.flash = 'true';
+      setTimeout(function () { delete mic.dataset.flash; }, 1200);
+    }).catch(showFailure).then(function () { setMicState('idle'); });
+  }
+
+  var inputPlaceholder = el('fai-input').placeholder;
+
+  if (canDictate()) {
+    mic.hidden = false;
+    setMicState('idle');
+    mic.addEventListener('click', function () {
+      if (dictation.recorder) stopDictation(); else startDictation();
+    });
+  }
 
   renderThreads();
   renderMessages();

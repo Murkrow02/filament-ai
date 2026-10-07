@@ -42,6 +42,7 @@ use Murkrow\FilamentAi\Jobs\RefreshLexicalStatisticsJob;
 use Murkrow\FilamentAi\Llm\LanguageModelManager;
 use Murkrow\FilamentAi\Reranking\RerankerManager;
 use Murkrow\FilamentAi\Mcp\KnowledgeServer;
+use Murkrow\FilamentAi\Support\Knowledge;
 use Murkrow\FilamentAi\Retrieval\DefaultRetriever;
 use Murkrow\FilamentAi\Retrieval\Lexical\LexicalSearchManager;
 use Murkrow\FilamentAi\Settings\SettingsRepository;
@@ -102,20 +103,24 @@ class FilamentAiServiceProvider extends ServiceProvider
         $this->registerPublishing();
 
         if ($this->app->runningInConsole()) {
-            $this->commands([
-                Console\InstallCommand::class,
-                Console\MakeSourceCommand::class,
-                Console\IngestCommand::class,
-                Console\SearchCommand::class,
-                Console\EvalCommand::class,
-                Console\FullTextCommand::class,
-                Console\AskCommand::class,
-                Console\StatusCommand::class,
-                Console\PurgeCommand::class,
-                Console\SourcesCommand::class,
-                Console\VectorInstallCommand::class,
-                Console\VectorReindexCommand::class,
-            ]);
+            $this->commands([Console\InstallCommand::class]);
+
+            // Every other command reads or writes the knowledge base.
+            if (Knowledge::enabled()) {
+                $this->commands([
+                    Console\MakeSourceCommand::class,
+                    Console\IngestCommand::class,
+                    Console\SearchCommand::class,
+                    Console\EvalCommand::class,
+                    Console\FullTextCommand::class,
+                    Console\AskCommand::class,
+                    Console\StatusCommand::class,
+                    Console\PurgeCommand::class,
+                    Console\SourcesCommand::class,
+                    Console\VectorInstallCommand::class,
+                    Console\VectorReindexCommand::class,
+                ]);
+            }
         }
 
         $this->registerVectorSchemaMacros();
@@ -337,7 +342,7 @@ class FilamentAiServiceProvider extends ServiceProvider
      */
     private function registerMcpServer(): void
     {
-        if (! config('filament-ai.enabled', true) || ! config('filament-ai.mcp.enabled', true)) {
+        if (! config('filament-ai.enabled', true) || ! config('filament-ai.mcp.enabled', true) || ! Knowledge::enabled()) {
             return;
         }
 

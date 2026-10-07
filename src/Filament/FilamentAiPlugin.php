@@ -26,6 +26,7 @@ use Murkrow\FilamentAi\Filament\Widgets\IngestionThroughputChart;
 use Murkrow\FilamentAi\Filament\Widgets\KnowledgeStatsOverview;
 use Murkrow\FilamentAi\Filament\Widgets\LatestRunsTable;
 use Murkrow\FilamentAi\Filament\Widgets\SourceCoverageChart;
+use Murkrow\FilamentAi\Support\Knowledge;
 
 /**
  * The control panel.
@@ -139,9 +140,9 @@ class FilamentAiPlugin implements Plugin
     protected function resources(): array
     {
         return array_values(array_filter([
-            config('filament-ai.filament.resources.runs', true) ? IngestionRunResource::class : null,
-            config('filament-ai.filament.resources.documents', true) ? DocumentResource::class : null,
-            config('filament-ai.filament.resources.queries', true) ? QueryResource::class : null,
+            Knowledge::enabled() && config('filament-ai.filament.resources.runs', true) ? IngestionRunResource::class : null,
+            Knowledge::enabled() && config('filament-ai.filament.resources.documents', true) ? DocumentResource::class : null,
+            Knowledge::enabled() && config('filament-ai.filament.resources.queries', true) ? QueryResource::class : null,
             config('filament-ai.agent.enabled', true) && config('filament-ai.filament.resources.conversations', true) ? AssistantConversationResource::class : null,
         ]));
     }
@@ -152,10 +153,10 @@ class FilamentAiPlugin implements Plugin
     protected function pages(): array
     {
         return array_values(array_filter([
-            config('filament-ai.filament.pages.dashboard', true) ? KnowledgeDashboard::class : null,
-            config('filament-ai.filament.pages.ingest', true) ? IngestKnowledge::class : null,
-            config('filament-ai.filament.pages.playground', true) ? KnowledgePlayground::class : null,
-            config('filament-ai.filament.pages.settings', true) ? KnowledgeSettings::class : null,
+            Knowledge::enabled() && config('filament-ai.filament.pages.dashboard', true) ? KnowledgeDashboard::class : null,
+            Knowledge::enabled() && config('filament-ai.filament.pages.ingest', true) ? IngestKnowledge::class : null,
+            Knowledge::enabled() && config('filament-ai.filament.pages.playground', true) ? KnowledgePlayground::class : null,
+            Knowledge::enabled() && config('filament-ai.filament.pages.settings', true) ? KnowledgeSettings::class : null,
             AssistantAccess::enabled() ? AssistantChat::class : null,
             // Registered even when the chat is off: switching it back on
             // is one of the things this page is for.
@@ -170,7 +171,7 @@ class FilamentAiPlugin implements Plugin
      */
     protected function widgets(): array
     {
-        if (! config('filament-ai.filament.pages.dashboard', true)) {
+        if (! Knowledge::enabled() || ! config('filament-ai.filament.pages.dashboard', true)) {
             return [];
         }
 

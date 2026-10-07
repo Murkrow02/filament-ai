@@ -324,3 +324,14 @@ it('renders the chunk-card component from the package view namespace', function 
 
     expect($html)->toContain('passage text')->toContain('[#1]');
 });
+
+it('registers no knowledge surface when the knowledge base is off', function (): void {
+    config()->set('filament-ai.knowledge.enabled', false);
+
+    $panel = Panel::make()->id('agent-only');
+    FilamentAiPlugin::make()->register($panel);
+
+    expect($panel->getPages())->not->toContain(KnowledgeDashboard::class, IngestKnowledge::class, KnowledgePlayground::class, KnowledgeSettings::class)
+        ->and($panel->getResources())->not->toContain(IngestionRunResource::class, DocumentResource::class, QueryResource::class)
+        ->and($panel->getWidgets())->not->toContain(KnowledgeStatsOverview::class);
+});

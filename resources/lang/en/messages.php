@@ -233,11 +233,19 @@ return [
         'send' => 'Send',
         'placeholder' => 'Ask the assistant, or tell it what to do...',
         'hint' => 'The assistant reads your documents and records, and proposes changes. Every change waits for your approval.',
+        'hint_records' => 'The assistant reads your records and proposes changes. Every change waits for your approval.',
         'empty_title' => 'What can I do for you?',
         'empty_body' => 'Ask in your own words: about the documents, about your records, or for a change to make.',
+        'empty_body_records' => 'Ask in your own words: about your records, or for a change to make.',
         'suggestions' => [],
 
         // Rendered in the browser by filament-ai-chat.js.
+        'voice' => [
+            'attribute' => 'recording',
+            'failed' => 'The recording could not be transcribed. Try again, or type the message.',
+            'empty' => 'No words were heard in the recording. Try again closer to the microphone.',
+        ],
+
         'js' => [
             'untitled' => 'Untitled chat',
             'newChat' => 'New chat',
@@ -291,6 +299,13 @@ return [
                 'week' => 'Last 7 days',
                 'older' => 'Older',
             ],
+            'dictate' => 'Dictate a message',
+            'stopDictation' => 'Stop and transcribe',
+            'listening' => 'Listening…',
+            'transcribing' => 'Transcribing…',
+            'micDenied' => 'The browser did not grant the microphone. Allow it in the site settings and try again.',
+            'micUnavailable' => 'No microphone available.',
+            'dictationReady' => 'Transcribed: read it over and press enter.',
         ],
     ],
 
