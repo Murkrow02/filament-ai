@@ -27,11 +27,15 @@ final class VoiceTranscriber
 
     public function transcribe(UploadedFile $audio): string
     {
-        $text = Transcription::of($audio)
+        $pending = Transcription::of($audio)
             ->language($this->language())
-            ->timeout(max(1, (int) config('filament-ai.chat.voice.timeout', 15)))
-            ->generate(config('filament-ai.chat.voice.providers'))
-            ->text;
+            ->timeout(max(1, (int) config('filament-ai.chat.voice.timeout', 15)));
+
+        if (filled($prompt = config('filament-ai.chat.voice.prompt'))) {
+            $pending->withProviderOptions(['prompt' => (string) $prompt]);
+        }
+
+        $text = $pending->generate(config('filament-ai.chat.voice.providers'))->text;
 
         return trim(Str::squish($text));
     }

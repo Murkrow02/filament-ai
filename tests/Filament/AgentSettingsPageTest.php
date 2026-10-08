@@ -209,3 +209,12 @@ it('writes every assistant setting it is allowed to write', function (): void {
 
     expect(array_values(array_diff($expected, $stored)))->toBe([]);
 });
+
+it('can live in its own navigation group', function (): void {
+    expect(\Murkrow\FilamentAi\Filament\Pages\AgentSettings::getNavigationGroup())->toBe(config('filament-ai.agent.chat.navigation_group'));
+
+    config()->set('filament-ai.agent.settings.navigation_group', 'Sistema');
+
+    expect(\Murkrow\FilamentAi\Filament\Pages\AgentSettings::getNavigationGroup())->toBe('Sistema')
+        ->and(\Murkrow\FilamentAi\Filament\Pages\AgentSettings::getNavigationSort())->toBeNull();
+});

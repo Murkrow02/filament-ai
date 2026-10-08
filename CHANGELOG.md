@@ -9,6 +9,36 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.2.0] - 2026-10-08
+
+### Added
+
+- **Agent only, without pgvector.** `FILAMENT_AI_KNOWLEDGE_ENABLED=false` (or
+  `FILAMENT_AI_VECTOR_DRIVER=null`) turns the knowledge base off: a new
+  `NullVectorStore` installs no vector column, so the migrations run on MySQL,
+  MariaDB and SQLite, and the knowledge pages, resources, widgets, tools, MCP
+  server and commands (all but `ai:install`) are not registered. One answer to
+  "is it on?": `Support\Knowledge::enabled()`.
+- **Dictation in the chat.** A microphone in the composer
+  (`filament-ai.chat.voice.*`, off by default): the recording is transcribed by
+  laravel/ai -- with its provider failover, e.g. self-hosted Whisper then
+  OpenAI -- and the text is put in the input box, never sent on its own. New
+  `voice` chat ability, `POST transcribe` route (throttled like `ask`),
+  `Agent\Chat\VoiceTranscriber`, optional `prompt` vocabulary.
+- `agent.settings.navigation_group` puts the assistant settings page in its own
+  navigation group.
+
+### Fixed
+
+- Italian strings without apostrophes or accents in the chat and the
+  assistant settings page.
+- The composer hint and empty state no longer mention documents when there is
+  no knowledge base.
+- Chats open with one tap on a phone. The sidebar revealed its action buttons on
+  `:hover`, and iOS Safari spends the first tap on a hover that changes what is
+  shown: the buttons appeared and the chat did not open. Hover effects now apply
+  only where the device can hover.
+
 ## [6.1.0] - 2026-10-05
 
 ### Added

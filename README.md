@@ -19,7 +19,7 @@ FilamentAi::ask('Who convened the council, and when?')->answer;
 |---|---|
 | PHP | 8.3+ |
 | Laravel | 12 or 13 |
-| Database | **PostgreSQL with the `vector` extension** (pgvector 0.5+) |
+| Database | **PostgreSQL with the `vector` extension** (pgvector 0.5+) **for the knowledge base only**. The panel agent and chat alone run on MySQL, MariaDB or SQLite: see [Agent only, without a knowledge base](#agent-only-without-a-knowledge-base) |
 | Embeddings & generation | [laravel/ai](https://laravel.com/docs/ai-sdk) **^1.0** and any provider it supports — OpenAI, Anthropic, Gemini, Ollama, VoyageAI, Mistral… (Bedrock needs `aws/aws-sdk-php`) |
 | Panel | `filament/filament` ^5 |
 | Optional | `laravel/mcp` ^1 for the MCP server, `laravel/scout` for hybrid retrieval |
@@ -688,6 +688,32 @@ not exist unless every host application built a theme for it.
 
 ---
 
+### Agent only, without a knowledge base
+
+A panel that wants the assistant over its resources -- list, read, create and
+edit with approval cards, the chat, dictation -- but no document search, needs
+no pgvector at all:
+
+```dotenv
+FILAMENT_AI_KNOWLEDGE_ENABLED=false
+```
+
+The vector store becomes the `null` driver (`FILAMENT_AI_VECTOR_DRIVER=null`
+says the same), so the migrations install no vector column and run on MySQL,
+MariaDB or SQLite. The knowledge pages, resources and widgets, the
+`search_knowledge` / `fetch_document` tools, the MCP server and every command
+except `ai:install` are not registered. The tables are still created, empty, so
+switching the knowledge base on later is `FILAMENT_AI_KNOWLEDGE_ENABLED=true`
+on a PostgreSQL connection plus `php artisan ai:vector:install`.
+
+`pgvector/pgvector`'s own service provider ships a `CREATE EXTENSION` migration
+that fails outside PostgreSQL. The package registers the Blueprint macros
+itself, so a host without pgvector keeps that provider out of discovery:
+
+```json
+"extra": { "laravel": { "dont-discover": ["pgvector/pgvector"] } }
+```
+
 ## Chat page
 
 A standalone chat UI, served by the package and independent of Filament: its
@@ -721,6 +747,39 @@ standalone page acts in `filament-ai.chat.panel` (the default panel when null)
   passage they point at.
 - **Changes wait on a card** that shows the record and each field's current and
   new value, with Approve and Reject.
+
+### Dictation
+
+A microphone in the composer records a message, laravel/ai transcribes it, and
+the text lands in the input box -- never sent on its own: the person reads it,
+fixes what was misheard and presses enter. Off by default:
+
+```dotenv
+FILAMENT_AI_VOICE_ENABLED=true
+```
+
+```php
+// config/filament-ai.php
+'chat' => ['voice' => [
+    // null => laravel/ai's default_for_transcription. An ordered list is tried
+    // in turn on connection errors, rate limits and outages (laravel/ai's
+    // failover): here a self-hosted Whisper first, OpenAI only as a fallback.
+    'providers' => ['whisper' => 'Systran/faster-whisper-small', 'openai' => 'gpt-4o-mini-transcribe'],
+    'language' => 'it',          // null => the application locale
+    'prompt' => 'Fascia tariffaria A, soggiorno minimo, ...', // domain words the model would mishear
+    'timeout' => 15,             // per provider, so a hung server falls over quickly
+    'max_seconds' => 60,
+    'max_kilobytes' => 10240,
+]],
+```
+
+A self-hosted server with an OpenAI-compatible API (for example
+[speaches](https://speaches.ai), faster-whisper) is an `openai-compatible`
+provider in `config/ai.php` with its `url`. The button appears only where the
+browser can record (`MediaRecorder`), the `voice` ability allows it, and the
+feature is on; the recording is posted to `POST {chat.path}/transcribe`
+(same throttle as `ask`) and not kept. A failed transcription is a sentence for
+the person; the provider's error is shown only with the `debug` ability.
 
 ### Who sees what
 

@@ -584,6 +584,8 @@ return [
         'settings' => [
             'enabled' => true,
             'slug' => 'assistant-settings',
+            // null => next to the chat page (agent.chat.navigation_group).
+            'navigation_group' => null,
         ],
     ],
 
@@ -652,6 +654,9 @@ return [
             'providers' => null,
             // null => the application locale.
             'language' => env('FILAMENT_AI_VOICE_LANGUAGE'),
+            // Vocabulary that steers Whisper-style models (OpenAI's `prompt`
+            // parameter): domain terms and names it would otherwise mishear.
+            'prompt' => env('FILAMENT_AI_VOICE_PROMPT'),
             // Per provider attempt, so a hung self-hosted server falls over
             // to the next instead of keeping the person waiting.
             'timeout' => (int) env('FILAMENT_AI_VOICE_TIMEOUT', 15),

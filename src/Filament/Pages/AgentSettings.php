@@ -64,14 +64,17 @@ class AgentSettings extends Page
 
     public static function getNavigationGroup(): string|UnitEnum|null
     {
-        $group = config('filament-ai.agent.chat.navigation_group');
+        $group = config('filament-ai.agent.settings.navigation_group') ?? config('filament-ai.agent.chat.navigation_group');
 
         return $group === null || $group === '' ? null : (string) $group;
     }
 
     public static function getNavigationSort(): ?int
     {
-        return (int) config('filament-ai.agent.chat.navigation_sort', -1) + 1;
+        // In its own group it keeps the group's order; next to the chat it follows it.
+        return config('filament-ai.agent.settings.navigation_group') === null
+            ? (int) config('filament-ai.agent.chat.navigation_sort', -1) + 1
+            : null;
     }
 
     public function mount(SettingsRepository $settings): void

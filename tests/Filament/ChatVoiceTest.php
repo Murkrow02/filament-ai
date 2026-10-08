@@ -99,3 +99,12 @@ it('offers the microphone only when dictation is on', function (): void {
     $this->get('/ai/chat')->assertOk()
         ->assertSee('"voice":null', escape: false);
 });
+
+it('steers the model with the configured vocabulary', function (): void {
+    config()->set('filament-ai.chat.voice.prompt', 'fascia tariffaria A, soggiorno minimo');
+    Transcription::fake(['ok']);
+
+    $this->post('/ai/chat/transcribe', ['audio' => dictationWav()], ['Accept' => 'application/json'])->assertOk();
+
+    Transcription::assertGenerated(fn (TranscriptionPrompt $prompt): bool => ($prompt->providerOptions['prompt'] ?? null) === 'fascia tariffaria A, soggiorno minimo');
+});

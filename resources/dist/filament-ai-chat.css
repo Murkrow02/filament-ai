@@ -150,8 +150,13 @@ body.fai-body,
   padding: 6px 8px; border-radius: 8px; cursor: pointer;
   font-size: 14px; font-weight: 550; color: var(--fai-text);
 }
-.fai-folder__head:hover { background: var(--fai-bg-hover); }
-.fai-folder__head:hover .fai-thread__actions { display: flex; }
+/* Hover reveals only where hover exists. On a touch screen iOS Safari treats a
+   tap that changes what :hover shows as a hover, not a click: the first tap
+   only revealed the action buttons and the chat never opened. */
+@media (hover: hover) {
+  .fai-folder__head:hover { background: var(--fai-bg-hover); }
+  .fai-folder__head:hover .fai-thread__actions { display: flex; }
+}
 .fai-folder__chevron, .fai-folder__icon { display: inline-flex; flex: none; color: var(--fai-text-faint); }
 .fai-folder__chevron svg { width: 13px; height: 13px; transition: transform .15s; }
 .fai-folder__head[aria-expanded="true"] .fai-folder__chevron svg { transform: rotate(90deg); }
@@ -198,7 +203,10 @@ body.fai-body,
   border-radius: 8px; cursor: pointer;
   color: inherit; text-decoration: none;
 }
-.fai-thread:hover { background: var(--fai-bg-hover); }
+@media (hover: hover) {
+  .fai-thread:hover { background: var(--fai-bg-hover); }
+  .fai-thread:hover .fai-thread__actions { display: flex; }
+}
 .fai-thread[aria-current="true"] { background: var(--fai-bg-active); font-weight: 550; }
 .fai-thread__title {
   flex: 1; min-width: 0;
@@ -208,7 +216,6 @@ body.fai-body,
 .fai-thread__pin { color: var(--fai-text-faint); flex: none; display: inline-flex; }
 .fai-thread__pin svg { width: 13px; height: 13px; }
 .fai-thread__actions { display: none; gap: 2px; flex: none; }
-.fai-thread:hover .fai-thread__actions,
 .fai-thread[aria-current="true"] .fai-thread__actions { display: flex; }
 
 .fai-icon-btn {
