@@ -208,14 +208,19 @@ final class ChatPayload
     {
         $local = VoiceTranscriber::engine() === VoiceTranscriber::ENGINE_LOCAL;
 
+        $maxSeconds = max(1, (int) config('filament-ai.chat.voice.max_seconds', 60));
+
         return [
-            'maxSeconds' => max(1, (int) config('filament-ai.chat.voice.max_seconds', 60)),
+            // Whisper hears 30 seconds at a time; the local engine runs one window.
+            'maxSeconds' => $local ? min($maxSeconds, 30) : $maxSeconds,
             'engine' => VoiceTranscriber::engine(),
             // Whisper's language token: "it", not "it_IT".
             'language' => VoiceTranscriber::language(),
             'vocabulary' => VoiceVocabulary::for($user),
             'local' => $local ? [
-                'model' => (string) config('filament-ai.chat.voice.local.model', 'onnx-community/whisper-base'),
+                'model' => (string) config('filament-ai.chat.voice.local.model', 'onnx-community/whisper-small'),
+                // A string for every file, or a per-file map.
+                'dtype' => is_array($dtype = config('filament-ai.chat.voice.local.dtype', 'q4')) ? $dtype : (string) $dtype,
                 'library' => (string) config('filament-ai.chat.voice.local.library'),
             ] : null,
         ];

@@ -767,10 +767,11 @@ Two engines turn the recording into text:
   [transformers.js](https://huggingface.co/docs/transformers.js) (WebGPU where
   the browser has an adapter, WASM otherwise). Nothing is uploaded and the
   server needs no speech model; it behaves the same in every browser (Chrome,
-  Firefox, Safari). The model (`whisper-base`, ~77 MB at 8 bits) downloads on
-  the first dictation -- starting with the recording, with a progress bar
-  above the composer -- and stays in the browser's cache; a short sentence
-  then takes ~3 s on a laptop CPU.
+  Firefox, Safari). The model (`whisper-small` at 4 bits, ~300 MB, the same
+  weights on WebGPU and WASM) downloads on the first dictation -- starting
+  with the recording, with a progress bar above the composer -- and stays in
+  the browser's cache. A sentence then takes ~2-3 s on WebGPU, ~15 s on WASM.
+  One dictation lasts at most 30 s (Whisper's window).
 - **server** -- the recording is posted to `POST {chat.path}/transcribe`
   (same throttle as `ask`) and transcribed by laravel/ai, with its provider
   failover (e.g. self-hosted Whisper, then OpenAI). Not kept.
@@ -788,7 +789,8 @@ towards it. Whisper reads the last ~220 tokens.
 'chat' => ['voice' => [
     'engine' => 'local',
     'local' => [
-        'model' => 'onnx-community/whisper-base',
+        'model' => 'onnx-community/whisper-small',
+        'dtype' => 'q4',               // same weights on WebGPU and WASM
         // 3.x on purpose: 4.x cannot load Whisper's 8-bit decoder on WASM.
         // Self-host it to keep the page off third-party CDNs.
         'library' => 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.5',

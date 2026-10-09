@@ -654,12 +654,16 @@ return [
             //             browser, nothing uploaded and no server-side model.
             'engine' => env('FILAMENT_AI_VOICE_ENGINE', 'server'),
             'local' => [
-                // An ONNX Whisper model on the Hugging Face hub, run 8-bit on
-                // WASM (WebGPU where the browser has an adapter), downloaded
-                // once and kept in the browser's cache. `whisper-base`: ~77 MB,
-                // a short sentence in ~3 s on a laptop CPU. `whisper-small`:
-                // ~250 MB and ~4x slower; `whisper-tiny` weak outside English.
-                'model' => env('FILAMENT_AI_VOICE_LOCAL_MODEL', 'onnx-community/whisper-base'),
+                // An ONNX Whisper model on the Hugging Face hub, downloaded once
+                // and kept in the browser's cache. `whisper-small` at 4 bits:
+                // ~300 MB, a sentence in ~2-3 s on WebGPU, ~15 s on WASM (CPU).
+                // `whisper-base`: ~140 MB at 4 bits, faster, clearly weaker in
+                // Italian. `whisper-large-v3-turbo` (q4f16): ~560 MB, WebGPU only.
+                'model' => env('FILAMENT_AI_VOICE_LOCAL_MODEL', 'onnx-community/whisper-small'),
+                // Weights, the same on WebGPU and WASM so one download serves
+                // both: 'q4' (default), 'q8' (WASM only), 'fp16', 'fp32', or a
+                // per-file map like ['encoder_model' => 'fp16', ...].
+                'dtype' => env('FILAMENT_AI_VOICE_LOCAL_DTYPE', 'q4'),
                 // The transformers.js ES module. 3.x on purpose: 4.x's ONNX
                 // runtime cannot load Whisper's 8-bit decoder on WASM. Self-host
                 // it to keep the page off third-party CDNs.
@@ -682,6 +686,7 @@ return [
             // Per provider attempt, so a hung self-hosted server falls over
             // to the next instead of keeping the person waiting.
             'timeout' => (int) env('FILAMENT_AI_VOICE_TIMEOUT', 15),
+            // The local engine stops at 30: Whisper hears one 30-second window.
             'max_seconds' => (int) env('FILAMENT_AI_VOICE_MAX_SECONDS', 60),
             'max_kilobytes' => (int) env('FILAMENT_AI_VOICE_MAX_KILOBYTES', 10240),
         ],

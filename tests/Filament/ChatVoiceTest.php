@@ -113,19 +113,20 @@ it('steers the model with the configured vocabulary', function (): void {
 
 it('runs Whisper in the page with the local engine, and never takes a recording', function (): void {
     config()->set('filament-ai.chat.voice.engine', 'local');
-    config()->set('filament-ai.chat.voice.local.model', 'onnx-community/whisper-small');
     config()->set('filament-ai.chat.voice.phrases', ['fascia A', 'Hotel Luca di Bacco']);
     Transcription::fake(['never']);
 
     $payload = $this->get('/ai/chat')->assertOk()->viewData('payload');
 
     expect($payload['voice'])->toBe([
-        'maxSeconds' => 60,
+        // Whisper hears one 30-second window: the local engine stops there.
+        'maxSeconds' => 30,
         'engine' => 'local',
         'language' => 'it',
         'vocabulary' => 'fascia A, Hotel Luca di Bacco.',
         'local' => [
             'model' => 'onnx-community/whisper-small',
+            'dtype' => 'q4',
             'library' => 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.5',
         ],
     ])
@@ -160,3 +161,14 @@ final class VoicePhrasesFixture
         return ['Hotel Luca di Bacco', ['phrase' => 'user '.$user?->getAuthIdentifier()]];
     }
 }
+
+it('passes a per-file weights map through, and keeps a shorter limit', function (): void {
+    config()->set('filament-ai.chat.voice.engine', 'local');
+    config()->set('filament-ai.chat.voice.max_seconds', 20);
+    config()->set('filament-ai.chat.voice.local.dtype', ['encoder_model' => 'fp16', 'decoder_model_merged' => 'q4']);
+
+    $voice = $this->get('/ai/chat')->assertOk()->viewData('payload')['voice'];
+
+    expect($voice['maxSeconds'])->toBe(20)
+        ->and($voice['local']['dtype'])->toBe(['encoder_model' => 'fp16', 'decoder_model_merged' => 'q4']);
+});

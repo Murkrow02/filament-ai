@@ -1843,14 +1843,15 @@
         options.progress_callback = onModelProgress;
         return library.pipeline('automatic-speech-recognition', voice.local.model, options);
       };
+      // The same weights on both devices: one download, whichever runs it.
+      var dtype = voice.local.dtype || 'q4';
       var wasm = function () {
-        // Other files than the WebGPU attempt: count afresh.
         modelLoad.files = {};
-        return load({ device: 'wasm', dtype: 'q8' });
+        return load({ device: 'wasm', dtype: dtype });
       };
 
       if (!both[1]) return wasm();
-      return load({ device: 'webgpu', dtype: { encoder_model: 'fp32', decoder_model_merged: 'q4' } }).catch(wasm);
+      return load({ device: 'webgpu', dtype: dtype }).catch(wasm);
     });
     localModel.then(function () { finishModelLoad(true); }, function () {
       finishModelLoad(false);
@@ -1905,6 +1906,9 @@
       el('fai-input').placeholder = t.transcribing;
 
       var options = prompted ? { decoder_input_ids: prompted.ids } : { language: voice.language, task: 'transcribe' };
+      // On audio it cannot make out Whisper can loop on a phrase until it runs
+      // out of tokens; a repeated 4-gram is never what was dictated.
+      options.no_repeat_ngram_size = 4;
       return recogniser(both[1], options).then(function (output) {
         var text = String((output && output.text) || '').trim();
         // The decoded sequence starts with the prompt it was given.

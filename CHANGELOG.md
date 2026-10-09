@@ -9,6 +9,22 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.3.1] - 2026-10-09
+
+### Changed
+
+- The local engine's default model is `onnx-community/whisper-small` at 4 bits
+  (~300 MB), the same weights on WebGPU and WASM so one download serves both:
+  a sentence in ~2-3 s on WebGPU, ~15 s on WASM. `whisper-base` misheard too
+  much Italian. New `chat.voice.local.dtype` (`q4` by default, or a per-file map).
+
+### Fixed
+
+- Whisper in the page could loop on a phrase it could not make out ("In Sarasiun
+  In Sarasiun ..."): a repeated 4-gram is no longer generated.
+- The local engine stops recording at 30 seconds, the one window Whisper hears;
+  longer audio was silently cut.
+
 ## [6.3.0] - 2026-10-09
 
 ### Added
