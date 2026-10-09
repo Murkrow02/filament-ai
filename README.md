@@ -746,28 +746,61 @@ standalone page acts in `filament-ai.chat.panel` (the default panel when null)
   words ("Search customers", "Edit a task") and citation markers that open the
   passage they point at.
 - **Changes wait on a card** that shows the record and each field's current and
-  new value, with Approve and Reject.
+  new value, with Approve and Reject. On a new record the fields the request
+  left empty are listed too, flagged "Not given", so a gap is seen before it is
+  approved.
 
 ### Dictation
 
-A microphone in the composer records a message, laravel/ai transcribes it, and
-the text lands in the input box -- never sent on its own: the person reads it,
-fixes what was misheard and presses enter. Off by default:
+A microphone in the composer records a message and the text lands in the input
+box -- never sent on its own: the person reads it, fixes what was misheard and
+presses enter. Off by default:
 
 ```dotenv
 FILAMENT_AI_VOICE_ENABLED=true
+FILAMENT_AI_VOICE_ENGINE=local   # local | server
 ```
+
+Two engines turn the recording into text:
+
+- **local** -- a Whisper model runs in the page with
+  [transformers.js](https://huggingface.co/docs/transformers.js) (WebGPU where
+  the browser has an adapter, WASM otherwise). Nothing is uploaded and the
+  server needs no speech model; it behaves the same in every browser (Chrome,
+  Firefox, Safari). The model (`whisper-base`, ~77 MB at 8 bits) downloads on
+  the first dictation -- starting with the recording, with a progress bar
+  above the composer -- and stays in the browser's cache; a short sentence
+  then takes ~3 s on a laptop CPU.
+- **server** -- the recording is posted to `POST {chat.path}/transcribe`
+  (same throttle as `ask`) and transcribed by laravel/ai, with its provider
+  failover (e.g. self-hosted Whisper, then OpenAI). Not kept.
+
+Both are steered by one **vocabulary** -- Whisper's prompt: `prompt` (a
+sentence) followed by `phrases` (a list, or a `[Class::class, 'method']`
+callable given the user, for words only the application knows, like the names
+of their customers). With it Whisper writes "fascia A" and "Hotel Luca di
+Bacco" instead of "Fasha" and "Bakco". Keep it short and in the spoken
+language: a long list, or one in another language, drags the transcription
+towards it. Whisper reads the last ~220 tokens.
 
 ```php
 // config/filament-ai.php
 'chat' => ['voice' => [
-    // null => laravel/ai's default_for_transcription. An ordered list is tried
-    // in turn on connection errors, rate limits and outages (laravel/ai's
-    // failover): here a self-hosted Whisper first, OpenAI only as a fallback.
-    'providers' => ['whisper' => 'Systran/faster-whisper-small', 'openai' => 'gpt-4o-mini-transcribe'],
+    'engine' => 'local',
+    'local' => [
+        'model' => 'onnx-community/whisper-base',
+        // 3.x on purpose: 4.x cannot load Whisper's 8-bit decoder on WASM.
+        // Self-host it to keep the page off third-party CDNs.
+        'library' => 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.5',
+    ],
     'language' => 'it',          // null => the application locale
-    'prompt' => 'Fascia tariffaria A, soggiorno minimo, ...', // domain words the model would mishear
-    'timeout' => 15,             // per provider, so a hung server falls over quickly
+    'prompt' => 'Strategie tariffarie di un hotel, in italiano.',
+    'phrases' => ['fascia tariffaria', 'fascia A', 'soggiorno minimo'], // or [App\Ai\VoicePhrases::class, 'forUser']
+    // Server engine only. null => laravel/ai's default_for_transcription; an
+    // ordered ['provider' => 'model'] list is tried in turn on connection
+    // errors, rate limits and outages.
+    'providers' => ['whisper' => 'Systran/faster-whisper-small', 'openai' => 'gpt-4o-mini-transcribe'],
+    'timeout' => 15,             // per provider
     'max_seconds' => 60,
     'max_kilobytes' => 10240,
 ]],
@@ -776,10 +809,13 @@ FILAMENT_AI_VOICE_ENABLED=true
 A self-hosted server with an OpenAI-compatible API (for example
 [speaches](https://speaches.ai), faster-whisper) is an `openai-compatible`
 provider in `config/ai.php` with its `url`. The button appears only where the
-browser can record (`MediaRecorder`), the `voice` ability allows it, and the
-feature is on; the recording is posted to `POST {chat.path}/transcribe`
-(same throttle as `ask`) and not kept. A failed transcription is a sentence for
-the person; the provider's error is shown only with the `debug` ability.
+browser can record (`MediaRecorder`, and `AudioContext` for the local engine),
+the `voice` ability allows it, and the feature is on; the microphone needs a
+secure context (HTTPS or `localhost`). With the local engine the transcribe
+route answers 403 and its endpoint is not sent to the page. Whisper's
+non-speech markers (`[Musica]`, `*sospiro*`) are dropped; a failure is a
+sentence for the person (the error goes to the browser console), and for the
+server engine the provider's error is shown only with the `debug` ability.
 
 ### Who sees what
 

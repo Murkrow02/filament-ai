@@ -72,7 +72,7 @@ final class ChatPayload
             'models' => $allowed['model'] ? (array) config('filament-ai.llm.available_models', []) : [],
             'currentModel' => $allowed['model'] ? $this->currentModel() : null,
             'suggestions' => $this->suggestions(),
-            'voice' => $allowed['voice'] ? ['maxSeconds' => max(1, (int) config('filament-ai.chat.voice.max_seconds', 60))] : null,
+            'voice' => $allowed['voice'] ? $this->voice($user) : null,
             'conversations' => $allowed['history'] ? $this->conversations($user) : [],
             'folders' => $allowed['folders'] ? $this->turn->folders($user) : [],
             'current' => $conversation === null ? null : $this->conversation($conversation, $allowed['debug']),
@@ -193,7 +193,31 @@ final class ChatPayload
             'folder' => route('filament-ai.chat.folders.update', ['folder' => '__ID__'], false),
             'file' => route('filament-ai.chat.file', ['conversation' => '__UUID__'], false),
             'ask' => route('filament-ai.chat.ask', [], false),
-            'transcribe' => $this->routeOrNull('filament-ai.chat.transcribe'),
+            'transcribe' => VoiceTranscriber::transcribesOnServer() ? $this->routeOrNull('filament-ai.chat.transcribe') : null,
+        ];
+    }
+
+    /**
+     * How dictation runs in the browser: which engine, the language, the
+     * vocabulary that steers Whisper and, for the local engine, which model
+     * and library to load.
+     *
+     * @return array<string, mixed>
+     */
+    private function voice(?Authenticatable $user): array
+    {
+        $local = VoiceTranscriber::engine() === VoiceTranscriber::ENGINE_LOCAL;
+
+        return [
+            'maxSeconds' => max(1, (int) config('filament-ai.chat.voice.max_seconds', 60)),
+            'engine' => VoiceTranscriber::engine(),
+            // Whisper's language token: "it", not "it_IT".
+            'language' => VoiceTranscriber::language(),
+            'vocabulary' => VoiceVocabulary::for($user),
+            'local' => $local ? [
+                'model' => (string) config('filament-ai.chat.voice.local.model', 'onnx-community/whisper-base'),
+                'library' => (string) config('filament-ai.chat.voice.local.library'),
+            ] : null,
         ];
     }
 

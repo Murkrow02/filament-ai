@@ -642,21 +642,43 @@ return [
         // Shown on the empty state. Empty => the localised defaults.
         'suggestions' => [],
 
-        // Dictation: a microphone in the composer. The recording is
-        // transcribed by laravel/ai and lands in the text box, never sent
-        // on its own -- the person reads it and presses send.
+        // Dictation: a microphone in the composer. MediaRecorder records and
+        // the words land in the text box, never sent on its own -- the person
+        // reads them and presses send.
         'voice' => [
             'enabled' => env('FILAMENT_AI_VOICE_ENABLED', false),
-            // Passed as-is to Transcription::generate(): null => laravel/ai's
-            // `default_for_transcription`; a provider name; or an ordered
-            // ['provider' => 'model'] list, tried in turn on connection errors,
-            // rate limits and outages (laravel/ai's failover).
+            // Who turns the recording into text:
+            // 'server' -- uploaded and transcribed by laravel/ai (`providers`);
+            // 'local'  -- a Whisper model run in the page (transformers.js,
+            //             WebGPU or WASM): on the device, the same in every
+            //             browser, nothing uploaded and no server-side model.
+            'engine' => env('FILAMENT_AI_VOICE_ENGINE', 'server'),
+            'local' => [
+                // An ONNX Whisper model on the Hugging Face hub, run 8-bit on
+                // WASM (WebGPU where the browser has an adapter), downloaded
+                // once and kept in the browser's cache. `whisper-base`: ~77 MB,
+                // a short sentence in ~3 s on a laptop CPU. `whisper-small`:
+                // ~250 MB and ~4x slower; `whisper-tiny` weak outside English.
+                'model' => env('FILAMENT_AI_VOICE_LOCAL_MODEL', 'onnx-community/whisper-base'),
+                // The transformers.js ES module. 3.x on purpose: 4.x's ONNX
+                // runtime cannot load Whisper's 8-bit decoder on WASM. Self-host
+                // it to keep the page off third-party CDNs.
+                'library' => env('FILAMENT_AI_VOICE_LOCAL_LIBRARY', 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.5'),
+            ],
+            // Server engine. Passed as-is to Transcription::generate(): null =>
+            // laravel/ai's `default_for_transcription`; a provider name; or an
+            // ordered ['provider' => 'model'] list, tried in turn on connection
+            // errors, rate limits and outages (laravel/ai's failover).
             'providers' => null,
             // null => the application locale.
             'language' => env('FILAMENT_AI_VOICE_LANGUAGE'),
-            // Vocabulary that steers Whisper-style models (OpenAI's `prompt`
-            // parameter): domain terms and names it would otherwise mishear.
+            // The vocabulary that steers Whisper (its prompt, for both engines):
+            // domain terms and names it would otherwise mishear. `prompt` is a
+            // sentence; `phrases` a list of words, or a [Class::class, 'method']
+            // callable given the user that returns one (names only the
+            // application knows). Whisper reads the last ~220 tokens of it.
             'prompt' => env('FILAMENT_AI_VOICE_PROMPT'),
+            'phrases' => [],
             // Per provider attempt, so a hung self-hosted server falls over
             // to the next instead of keeping the person waiting.
             'timeout' => (int) env('FILAMENT_AI_VOICE_TIMEOUT', 15),

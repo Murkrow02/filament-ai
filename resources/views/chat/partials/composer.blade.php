@@ -4,6 +4,15 @@
              it stays in step with the settings modal. --}}
         <div class="fai-pills" id="fai-pills"></div>
 
+        {{-- Dictation, local engine: the speech model downloading (first time) or loading.
+             Filled by filament-ai-chat.js. --}}
+        <div class="fai-model" id="fai-model" hidden aria-live="polite">
+            <span class="fai-model__text" id="fai-model-text"></span>
+            <span class="fai-model__track" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="fai-model-bar">
+                <span class="fai-model__fill" id="fai-model-fill"></span>
+            </span>
+        </div>
+
         <div class="fai-box">
             <textarea class="fai-input" id="fai-input" rows="1" autocomplete="off"
                       placeholder="{{ __('filament-ai::messages.chat.placeholder') }}"

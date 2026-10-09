@@ -62,8 +62,12 @@ it('asks for approval before a write and applies it once approved', function ():
         'title' => 'Create test book',
         'record' => null,
         // What is being approved, in the form's own words; without it the
-        // button asks for a blank cheque.
-        'changes' => [['label' => 'Title', 'before' => null, 'after' => 'Statuti del comune']],
+        // button asks for a blank cheque. A field the request left empty is
+        // listed and flagged, so it is noticed before approving.
+        'changes' => [
+            ['label' => 'Title', 'before' => null, 'after' => 'Statuti del comune'],
+            ['label' => 'Author', 'before' => null, 'after' => 'Not given', 'missing' => true],
+        ],
         'summary' => null,
         'id' => 'call_1',
     ];

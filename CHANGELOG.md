@@ -9,6 +9,38 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.3.0] - 2026-10-09
+
+### Added
+
+- **Dictation on the device.** `chat.voice.engine` = `server` (as before, the
+  default) | `local`: a Whisper model run in the page with transformers.js
+  (WebGPU or WASM), the same in every browser, nothing uploaded, no server-side
+  model. `chat.voice.local.model` (default `onnx-community/whisper-base`) and
+  `chat.voice.local.library` (default transformers.js 3.7.5 from jsDelivr).
+- While the local engine's model downloads (first dictation) or loads, a bar
+  above the composer shows the share of megabytes fetched, then "model ready".
+  It starts with the recording, so the download overlaps the speaking; a load
+  from the browser's cache is too quick to show it.
+- **One vocabulary for both engines**: `chat.voice.prompt` plus the new
+  `chat.voice.phrases` (a list, or a `[Class::class, 'method']` callable given
+  the user), built by `Chat\VoiceVocabulary`. The local engine passes it as
+  Whisper's decoder prompt (`<|startofprev|>`, which transformers.js has no
+  option for), the server engine as the API's `prompt`.
+- The approval card of a new record lists the fields the request left empty,
+  flagged "Not given" (`approval.missing`), so a gap is seen before approving.
+
+### Changed
+
+- `POST transcribe` is refused, and its endpoint not sent to the page, with the
+  local engine. `VoiceTranscriber::transcribe()` takes the vocabulary as its
+  second argument.
+
+### Fixed
+
+- An error or dictation notice (microphone denied, transcription failed) in a
+  new chat was appended to the hidden message stream and never seen.
+
 ## [6.2.0] - 2026-10-08
 
 ### Added

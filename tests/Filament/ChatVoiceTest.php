@@ -92,7 +92,7 @@ it('offers the microphone only when dictation is on', function (): void {
     $this->get('/ai/chat')->assertOk()
         ->assertSee('id="fai-mic"', escape: false)
         ->assertSee('"transcribe":"\/ai\/chat\/transcribe"', escape: false)
-        ->assertSee('"voice":{"maxSeconds":60}', escape: false);
+        ->assertSee('"voice":{"maxSeconds":60,"engine":"server","language":"it","vocabulary":"","local":null}', escape: false);
 
     config()->set('filament-ai.chat.voice.enabled', false);
 
@@ -101,10 +101,62 @@ it('offers the microphone only when dictation is on', function (): void {
 });
 
 it('steers the model with the configured vocabulary', function (): void {
-    config()->set('filament-ai.chat.voice.prompt', 'fascia tariffaria A, soggiorno minimo');
+    config()->set('filament-ai.chat.voice.prompt', 'Revenue management.');
+    config()->set('filament-ai.chat.voice.phrases', ['fascia tariffaria A', 'soggiorno minimo', 'Fascia tariffaria A', ' ']);
     Transcription::fake(['ok']);
 
     $this->post('/ai/chat/transcribe', ['audio' => dictationWav()], ['Accept' => 'application/json'])->assertOk();
 
-    Transcription::assertGenerated(fn (TranscriptionPrompt $prompt): bool => ($prompt->providerOptions['prompt'] ?? null) === 'fascia tariffaria A, soggiorno minimo');
+    Transcription::assertGenerated(fn (TranscriptionPrompt $prompt): bool => ($prompt->providerOptions['prompt'] ?? null) === 'Revenue management. fascia tariffaria A, soggiorno minimo.');
 });
+
+
+it('runs Whisper in the page with the local engine, and never takes a recording', function (): void {
+    config()->set('filament-ai.chat.voice.engine', 'local');
+    config()->set('filament-ai.chat.voice.local.model', 'onnx-community/whisper-small');
+    config()->set('filament-ai.chat.voice.phrases', ['fascia A', 'Hotel Luca di Bacco']);
+    Transcription::fake(['never']);
+
+    $payload = $this->get('/ai/chat')->assertOk()->viewData('payload');
+
+    expect($payload['voice'])->toBe([
+        'maxSeconds' => 60,
+        'engine' => 'local',
+        'language' => 'it',
+        'vocabulary' => 'fascia A, Hotel Luca di Bacco.',
+        'local' => [
+            'model' => 'onnx-community/whisper-small',
+            'library' => 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.5',
+        ],
+    ])
+        // The audio never leaves the device: there is nowhere to send it.
+        ->and($payload['endpoints']['transcribe'])->toBeNull();
+
+    $this->post('/ai/chat/transcribe', ['audio' => dictationWav()], ['Accept' => 'application/json'])->assertForbidden();
+    Transcription::assertNothingGenerated();
+});
+
+it('reads an unknown engine as the server', function (): void {
+    config()->set('filament-ai.chat.voice.engine', 'browser');
+
+    expect($this->get('/ai/chat')->assertOk()->viewData('payload')['voice']['engine'])->toBe('server');
+});
+
+it('asks the host for the words of the person dictating', function (): void {
+    config()->set('filament-ai.chat.voice.engine', 'local');
+    config()->set('filament-ai.chat.voice.prompt', 'Alberghi.');
+    config()->set('filament-ai.chat.voice.phrases', [VoicePhrasesFixture::class, 'for']);
+
+    $voice = $this->get('/ai/chat')->assertOk()->viewData('payload')['voice'];
+
+    expect($voice['vocabulary'])->toBe('Alberghi. Hotel Luca di Bacco, user '.auth()->id().'.');
+});
+
+final class VoicePhrasesFixture
+{
+    /** @return list<string|array{phrase: string}> */
+    public function for(mixed $user): array
+    {
+        return ['Hotel Luca di Bacco', ['phrase' => 'user '.$user?->getAuthIdentifier()]];
+    }
+}

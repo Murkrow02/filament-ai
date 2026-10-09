@@ -102,6 +102,10 @@ final class ApprovalCards
                 ];
             }
 
+            if ($action === AgentTools::CREATE) {
+                $card['changes'] = [...$card['changes'], ...$this->missing($blueprint, $preview->data, $preview->changes, $model)];
+            }
+
             return $card;
         } catch (Throwable $exception) {
             report($exception);
@@ -126,6 +130,44 @@ final class ApprovalCards
         }
 
         return ['title' => $this->labels->label($tool), 'record' => null, 'changes' => $changes, 'summary' => $reason];
+    }
+
+    /**
+     * The fields of a new record the request left empty: listed, flagged and
+     * left empty, so the person sees what was not understood before approving
+     * rather than finding a hole after. Only fields the form would save --
+     * a field that is not dehydrated is not in the state at all.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $changes
+     * @param  class-string<Model>  $model
+     * @return list<array<string, mixed>>
+     */
+    private function missing(ResourceBlueprint $blueprint, array $data, array $changes, string $model): array
+    {
+        $instance = new $model;
+        $missing = [];
+
+        foreach ($data as $name => $value) {
+            if (! is_string($name) || array_key_exists($name, $changes) || ! ($value === null || $value === '' || $value === [])) {
+                continue;
+            }
+
+            $field = $blueprint->field($name);
+
+            if ($field === null || ! $instance->isFillable($name)) {
+                continue;
+            }
+
+            $missing[] = [
+                'label' => $field->label,
+                'before' => null,
+                'after' => (string) __('filament-ai::messages.approval.missing'),
+                'missing' => true,
+            ];
+        }
+
+        return $missing;
     }
 
     private function record(ResourceBlueprint $blueprint, mixed $id): ?Model

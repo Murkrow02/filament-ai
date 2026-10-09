@@ -856,7 +856,8 @@
           '<th>' + escapeHtml(editing ? t.after : t.value) + '</th></tr></thead><tbody>';
 
         changes.forEach(function (change) {
-          html += '<tr><th scope="row">' + escapeHtml(change.label) + '</th>' +
+          // A field the request left empty: flagged, so it is noticed before approving.
+          html += '<tr' + (change.missing ? ' class="fai-approval__missing"' : '') + '><th scope="row">' + escapeHtml(change.label) + '</th>' +
             (editing ? '<td class="fai-approval__before">' + escapeHtml(change.before == null ? '' : change.before) + '</td>' : '') +
             '<td class="fai-approval__after">' + escapeHtml(change.after == null ? '' : change.after) + '</td></tr>';
         });
@@ -1071,7 +1072,9 @@
     node.className = 'fai-error';
     node.textContent = t.failed + ' ' + (error && error.message ? error.message : '');
 
+    // A new chat has its stream hidden behind the empty state.
     el('fai-stream').appendChild(node);
+    el('fai-stream').hidden = false;
     scrollDown();
   }
 
@@ -1597,16 +1600,26 @@
   // -------------------------------------------------------------- dictation
 
   /*
-   * The microphone records, the server transcribes, and the text lands in the
-   * input box -- never sent on its own. The person reads it, fixes a word if
-   * the transcription misheard, and presses enter like any other message.
+   * MediaRecorder records; `voice.engine` decides who turns it into text:
+   *
+   * - local: a Whisper model runs in the page (transformers.js, WebGPU or
+   *   WASM). On the device, the same in every browser; the model is
+   *   downloaded once and kept in the browser's cache.
+   * - server: the recording is posted and transcribed by laravel/ai.
+   *
+   * Both are steered by `voice.vocabulary`, the domain words and names Whisper
+   * would otherwise mishear. Either way the text lands in the input box --
+   * never sent on its own. The person reads it, fixes a word if it was
+   * misheard, and presses enter like any other message.
    */
   var mic = el('fai-mic');
-  var dictation = { recorder: null, stream: null, chunks: [], started: 0, timer: null };
+  var voice = payload.voice || {};
+  var dictation = { mode: null, recorder: null, stream: null, chunks: [], started: 0, timer: null };
 
   function canDictate() {
-    return !!(mic && can.voice && payload.voice && payload.endpoints.transcribe &&
-      navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+    if (!(mic && can.voice && payload.voice && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)) return false;
+    if (voice.engine === 'local') return !!(voice.local && voice.local.library && voice.local.model && (window.AudioContext || window.webkitAudioContext));
+    return !!payload.endpoints.transcribe;
   }
 
   // The first container the browser can record: Chrome and Firefox do webm,
@@ -1641,23 +1654,28 @@
     var node = document.createElement('div');
     node.className = 'fai-error';
     node.textContent = text;
+    // A new chat has its stream hidden behind the empty state.
     el('fai-stream').appendChild(node);
+    el('fai-stream').hidden = false;
     scrollDown();
   }
 
   function tickDictation() {
     var seconds = Math.floor((Date.now() - dictation.started) / 1000);
-    var left = payload.voice.maxSeconds - seconds;
+    var left = voice.maxSeconds - seconds;
     el('fai-mic-timer').textContent = Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
     if (left <= 0) stopDictation();
   }
 
   function startDictation() {
+    // The model downloads while the person speaks, not after.
+    if (voice.engine === 'local') localRecogniser().catch(function () { /* reported when it is needed */ });
+
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
       var type = recordingType();
       var recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
 
-      dictation = { recorder: recorder, stream: stream, chunks: [], started: Date.now(), timer: setInterval(tickDictation, 250) };
+      dictation = { mode: voice.engine, recorder: recorder, stream: stream, chunks: [], started: Date.now(), timer: setInterval(tickDictation, 250) };
       recorder.addEventListener('dataavailable', function (event) { if (event.data && event.data.size) dictation.chunks.push(event.data); });
       recorder.addEventListener('stop', finishDictation);
       recorder.start();
@@ -1665,6 +1683,7 @@
       setMicState('recording');
       tickDictation();
     }).catch(function (error) {
+      setMicState('idle');
       showNotice(error && error.name === 'NotAllowedError' ? t.micDenied : t.micUnavailable);
     });
   }
@@ -1679,11 +1698,14 @@
 
     var type = (dictation.recorder.mimeType || 'audio/webm').split(';')[0];
     var audio = new Blob(dictation.chunks, { type: type });
-    dictation.recorder = null;
+    var engine = dictation.mode;
+    dictation = { mode: null, recorder: null, stream: null, chunks: [], started: 0, timer: null };
 
     if (!audio.size) { setMicState('idle'); return; }
 
     setMicState('transcribing');
+
+    if (engine === 'local') { transcribeLocally(audio); return; }
 
     var form = new FormData();
     form.append('audio', audio, 'dictation.' + extensionFor(type));
@@ -1698,16 +1720,210 @@
       if (!response.ok) return failureFrom(response);
       return response.json();
     }).then(function (data) {
-      var input = el('fai-input');
-      var before = input.value.trim();
-      input.value = (before ? before + ' ' : '') + data.text;
-      autosize(input);
-      input.focus();
-      input.setSelectionRange(input.value.length, input.value.length);
-      el('fai-mic-timer').textContent = '';
-      mic.dataset.flash = 'true';
-      setTimeout(function () { delete mic.dataset.flash; }, 1200);
+      putDictation(data.text);
     }).catch(showFailure).then(function () { setMicState('idle'); });
+  }
+
+  function putDictation(text) {
+    var input = el('fai-input');
+    var before = input.value.trim();
+    input.value = (before ? before + ' ' : '') + text;
+    autosize(input);
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+    el('fai-mic-timer').textContent = '';
+    mic.dataset.flash = 'true';
+    setTimeout(function () { delete mic.dataset.flash; }, 1200);
+  }
+
+  // ---- local engine: Whisper in the page
+
+  var localModel = null;
+
+  /*
+   * What the person sees while the model loads: a bar with the share of bytes
+   * fetched across the model's files and, the first time, why it takes a
+   * while. A load from the browser's cache is over before the bar would show.
+   */
+  var modelLoad = { files: {}, shown: false, timer: null };
+  var modelKey = 'filament-ai-voice-model:' + ((voice.local && voice.local.model) || '');
+
+  function megabytes(bytes) {
+    return (bytes / 1048576).toFixed(bytes < 10485760 ? 1 : 0);
+  }
+
+  function modelSeenBefore() {
+    try { return localStorage.getItem(modelKey) === '1'; } catch (error) { return false; }
+  }
+
+  function renderModelLoad() {
+    if (!modelLoad.shown) return;
+
+    var loaded = 0;
+    var total = 0;
+    var weights = false;
+    Object.keys(modelLoad.files).forEach(function (file) {
+      loaded += modelLoad.files[file].loaded;
+      total += modelLoad.files[file].total;
+      if (/\.onnx$/.test(file)) weights = true;
+    });
+
+    // The small config files come first: a percentage before the weights
+    // start would read 100% and then fall back.
+    var percent = weights && total ? Math.min(100, Math.floor(loaded / total * 100)) : 0;
+    var text = !weights
+      ? (modelSeenBefore() ? t.loadingModel : t.preparingModel)
+      : (modelSeenBefore() ? t.loadingModelProgress : t.downloadingModel)
+        .replace(':percent', percent + '%')
+        .replace(':loaded', megabytes(loaded))
+        .replace(':total', megabytes(total));
+
+    el('fai-model').hidden = false;
+    el('fai-model').dataset.state = 'loading';
+    el('fai-model-text').textContent = text;
+    el('fai-model-fill').style.width = percent + '%';
+    el('fai-model-bar').setAttribute('aria-valuenow', String(percent));
+  }
+
+  function onModelProgress(event) {
+    if (!event || !event.file) return;
+    var file = modelLoad.files[event.file];
+
+    if (event.status === 'progress' && event.total) {
+      modelLoad.files[event.file] = { loaded: event.loaded || 0, total: event.total };
+    } else if (event.status === 'done' && file) {
+      file.loaded = file.total;
+    }
+
+    renderModelLoad();
+  }
+
+  function startModelLoad() {
+    modelLoad = { files: {}, shown: false, timer: setTimeout(function () {
+      modelLoad.shown = true;
+      renderModelLoad();
+    }, 600) };
+  }
+
+  function finishModelLoad(ready) {
+    clearTimeout(modelLoad.timer);
+    var wasShown = modelLoad.shown;
+    modelLoad.shown = false;
+
+    if (ready) {
+      try { localStorage.setItem(modelKey, '1'); } catch (error) { /* storage unavailable */ }
+    }
+
+    if (!wasShown || !ready) { el('fai-model').hidden = true; return; }
+
+    el('fai-model').dataset.state = 'ready';
+    el('fai-model-text').textContent = t.modelReady;
+    el('fai-model-fill').style.width = '100%';
+    setTimeout(function () { if (!modelLoad.shown) el('fai-model').hidden = true; }, 4000);
+  }
+
+  /*
+   * The speech-recognition pipeline, loaded once per page: the library from
+   * `voice.local.library`, the model from the Hugging Face hub (then the
+   * browser's cache). WebGPU where the browser has an adapter, WASM otherwise.
+   */
+  function localRecogniser() {
+    if (localModel) return localModel;
+
+    // `navigator.gpu` alone is no promise of a GPU: ask for an adapter.
+    var gpu = navigator.gpu && navigator.gpu.requestAdapter
+      ? navigator.gpu.requestAdapter().then(function (adapter) { return !!adapter; }, function () { return false; })
+      : Promise.resolve(false);
+
+    startModelLoad();
+
+    localModel = Promise.all([import(voice.local.library), gpu]).then(function (both) {
+      var library = both[0];
+      var load = function (options) {
+        options.progress_callback = onModelProgress;
+        return library.pipeline('automatic-speech-recognition', voice.local.model, options);
+      };
+      var wasm = function () {
+        // Other files than the WebGPU attempt: count afresh.
+        modelLoad.files = {};
+        return load({ device: 'wasm', dtype: 'q8' });
+      };
+
+      if (!both[1]) return wasm();
+      return load({ device: 'webgpu', dtype: { encoder_model: 'fp32', decoder_model_merged: 'q4' } }).catch(wasm);
+    });
+    localModel.then(function () { finishModelLoad(true); }, function () {
+      finishModelLoad(false);
+      localModel = null;
+    });
+
+    return localModel;
+  }
+
+  // Whisper wants 16 kHz mono samples; the browser decodes the recording.
+  function samplesOf(audio) {
+    var Context = window.AudioContext || window.webkitAudioContext;
+    var context = new Context({ sampleRate: 16000 });
+
+    return audio.arrayBuffer().then(function (buffer) {
+      return context.decodeAudioData(buffer);
+    }).then(function (decoded) {
+      context.close();
+      return decoded.getChannelData(0);
+    });
+  }
+
+  /*
+   * Whisper's prompt, which transformers.js has no option for: the decoder
+   * starts from <|startofprev|> + the vocabulary, then the usual task tokens.
+   * The model then favours those spellings ("fascia A", a hotel's name).
+   * Whisper reads at most 223 prompt tokens and keeps the last ones.
+   */
+  function promptedStart(recogniser) {
+    var tokenizer = recogniser.tokenizer;
+    var vocabulary = String(voice.vocabulary || '').trim();
+    if (!vocabulary || !tokenizer || !tokenizer.model || !tokenizer.model.tokens_to_ids) return null;
+
+    var id = function (token) { return tokenizer.model.tokens_to_ids.get(token); };
+    var start = [id('<|startoftranscript|>'), id('<|' + voice.language + '|>'), id('<|transcribe|>'), id('<|notimestamps|>')];
+    var previous = id('<|startofprev|>');
+    if (previous === undefined || start.some(function (token) { return token === undefined; })) return null;
+
+    var prompt = tokenizer.encode(' ' + vocabulary, { add_special_tokens: false }).slice(-223);
+    return { ids: [previous].concat(prompt, start), text: tokenizer.decode(prompt, { skip_special_tokens: true }).trim() };
+  }
+
+  function transcribeLocally(audio) {
+    var ready = false;
+    // First time only: the model is still downloading.
+    var slow = setTimeout(function () { if (!ready) el('fai-input').placeholder = t.loadingModel; }, 800);
+
+    Promise.all([localRecogniser(), samplesOf(audio)]).then(function (both) {
+      var recogniser = both[0];
+      var prompted = promptedStart(recogniser);
+      ready = true;
+      el('fai-input').placeholder = t.transcribing;
+
+      var options = prompted ? { decoder_input_ids: prompted.ids } : { language: voice.language, task: 'transcribe' };
+      return recogniser(both[1], options).then(function (output) {
+        var text = String((output && output.text) || '').trim();
+        // The decoded sequence starts with the prompt it was given.
+        if (prompted && text.indexOf(prompted.text) === 0) text = text.slice(prompted.text.length);
+        return text;
+      });
+    }).then(function (text) {
+      // Whisper writes non-speech as "[Musica]", "*sospiro*", "(applausi)": not words.
+      text = text.replace(/\[[^\]]*\]|\*[^*]*\*|\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+
+      if (!text) { showNotice(t.noSpeech); return; }
+      putDictation(text);
+    }).catch(function (error) {
+      if (window.console) console.warn('filament-ai: on-device transcription failed', error);
+      showNotice(t.localFailed);
+    }).then(function () {
+      clearTimeout(slow);
+      setMicState('idle');
+    });
   }
 
   var inputPlaceholder = el('fai-input').placeholder;

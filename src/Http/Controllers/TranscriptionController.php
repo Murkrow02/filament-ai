@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Murkrow\FilamentAi\Agent\Chat\VoiceTranscriber;
 use Murkrow\FilamentAi\Chat\ChatAbilities;
+use Murkrow\FilamentAi\Chat\VoiceVocabulary;
 use Throwable;
 
 /**
@@ -36,7 +37,7 @@ final class TranscriptionController
     {
         $user = $request->user();
 
-        if (! VoiceTranscriber::enabled() || ! ChatAbilities::canUseChat($user) || ! ChatAbilities::allows('voice', $user)) {
+        if (! VoiceTranscriber::transcribesOnServer() || ! ChatAbilities::canUseChat($user) || ! ChatAbilities::allows('voice', $user)) {
             return response()->json(['message' => __('filament-ai::messages.chat.forbidden')], 403);
         }
 
@@ -60,7 +61,7 @@ final class TranscriptionController
         $audio = $request->file('audio');
 
         try {
-            $text = $transcriber->transcribe($audio);
+            $text = $transcriber->transcribe($audio, VoiceVocabulary::for($user));
         } catch (Throwable $exception) {
             $reference = (string) Str::uuid();
 
