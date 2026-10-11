@@ -1671,7 +1671,10 @@
     // The model downloads while the person speaks, not after.
     if (voice.engine === 'local') localRecogniser().catch(function () { /* reported when it is needed */ });
 
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+    // The browser's noise suppression and gain control clip the first
+    // syllable ("Serisci" for "Inserisci"); Whisper wants the raw signal.
+    var raw = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+    navigator.mediaDevices.getUserMedia({ audio: raw }).then(function (stream) {
       var type = recordingType();
       var recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
 
@@ -1841,6 +1844,8 @@
       var library = both[0];
       var load = function (options) {
         options.progress_callback = onModelProgress;
+        // onnxruntime warns that it runs shape ops on the CPU: by design, harmless.
+        options.session_options = { logSeverityLevel: 3 };
         return library.pipeline('automatic-speech-recognition', voice.local.model, options);
       };
       // The same weights on both devices: one download, whichever runs it.
@@ -1870,7 +1875,13 @@
       return context.decodeAudioData(buffer);
     }).then(function (decoded) {
       context.close();
-      return decoded.getChannelData(0);
+      // Up to half a second of silence on both sides, so a word said right
+      // at the click is not at the very edge; never past Whisper's 30 s.
+      var samples = decoded.getChannelData(0);
+      var pad = Math.max(0, Math.min(8000, Math.floor((480000 - samples.length) / 2)));
+      var padded = new Float32Array(samples.length + 2 * pad);
+      padded.set(samples, pad);
+      return padded;
     });
   }
 

@@ -9,6 +9,18 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.3.2] - 2026-10-11
+
+### Fixed
+
+- Dictation could lose the first syllable ("Serisci" for "Inserisci"): the
+  microphone is recorded without the browser's noise suppression, gain control
+  and echo cancellation, and the local engine pads the audio with up to half a
+  second of silence on each side (never past 30 s).
+- The local engine no longer fills the console with onnxruntime's "Some nodes
+  were not assigned to the preferred execution providers" warnings (harmless:
+  shape ops run on the CPU by design).
+
 ## [6.3.1] - 2026-10-09
 
 ### Changed
