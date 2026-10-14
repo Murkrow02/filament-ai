@@ -1737,6 +1737,10 @@
     el('fai-mic-timer').textContent = '';
     mic.dataset.flash = 'true';
     setTimeout(function () { delete mic.dataset.flash; }, 1200);
+
+    // Opt-in (`chat.voice.auto_send`): send what was dictated. send() leaves
+    // the text in the box when a turn is streaming or waits for an approval.
+    if (voice.autoSend) send();
   }
 
   // ---- local engine: Whisper in the page

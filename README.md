@@ -753,13 +753,18 @@ standalone page acts in `filament-ai.chat.panel` (the default panel when null)
 ### Dictation
 
 A microphone in the composer records a message and the text lands in the input
-box -- never sent on its own: the person reads it, fixes what was misheard and
-presses enter. Off by default:
+box -- not sent on its own by default: the person reads it, fixes what was
+misheard and presses enter. Off by default:
 
 ```dotenv
 FILAMENT_AI_VOICE_ENABLED=true
 FILAMENT_AI_VOICE_ENGINE=local   # local | server
+FILAMENT_AI_VOICE_AUTO_SEND=true # optional: send the text as soon as it is transcribed
 ```
+
+With `auto_send` the transcription is sent right away, so a misheard word is
+not caught before the question goes out. A turn that is still streaming, or
+waiting for an approval, keeps the text in the box instead.
 
 Two engines turn the recording into text:
 

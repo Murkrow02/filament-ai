@@ -643,10 +643,14 @@ return [
         'suggestions' => [],
 
         // Dictation: a microphone in the composer. MediaRecorder records and
-        // the words land in the text box, never sent on its own -- the person
-        // reads them and presses send.
+        // the words land in the text box; by default they are not sent on
+        // their own -- the person reads them and presses send (`auto_send`).
         'voice' => [
             'enabled' => env('FILAMENT_AI_VOICE_ENABLED', false),
+            // true => the transcribed text is sent as soon as it lands, with no
+            // chance to fix a misheard word first. A turn already streaming or
+            // waiting for an approval still holds the text in the box.
+            'auto_send' => (bool) env('FILAMENT_AI_VOICE_AUTO_SEND', false),
             // Who turns the recording into text:
             // 'server' -- uploaded and transcribed by laravel/ai (`providers`);
             // 'local'  -- a Whisper model run in the page (transformers.js,

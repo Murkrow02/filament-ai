@@ -92,7 +92,7 @@ it('offers the microphone only when dictation is on', function (): void {
     $this->get('/ai/chat')->assertOk()
         ->assertSee('id="fai-mic"', escape: false)
         ->assertSee('"transcribe":"\/ai\/chat\/transcribe"', escape: false)
-        ->assertSee('"voice":{"maxSeconds":60,"engine":"server","language":"it","vocabulary":"","local":null}', escape: false);
+        ->assertSee('"voice":{"maxSeconds":60,"engine":"server","language":"it","vocabulary":"","autoSend":false,"local":null}', escape: false);
 
     config()->set('filament-ai.chat.voice.enabled', false);
 
@@ -124,6 +124,7 @@ it('runs Whisper in the page with the local engine, and never takes a recording'
         'engine' => 'local',
         'language' => 'it',
         'vocabulary' => 'fascia A, Hotel Luca di Bacco.',
+        'autoSend' => false,
         'local' => [
             'model' => 'onnx-community/whisper-small',
             'dtype' => 'q4',
@@ -171,4 +172,12 @@ it('passes a per-file weights map through, and keeps a shorter limit', function 
 
     expect($voice['maxSeconds'])->toBe(20)
         ->and($voice['local']['dtype'])->toBe(['encoder_model' => 'fp16', 'decoder_model_merged' => 'q4']);
+});
+
+it('sends the dictated text on its own only when auto_send is on', function (): void {
+    expect($this->get('/ai/chat')->assertOk()->viewData('payload')['voice']['autoSend'])->toBeFalse();
+
+    config()->set('filament-ai.chat.voice.auto_send', true);
+
+    expect($this->get('/ai/chat')->assertOk()->viewData('payload')['voice']['autoSend'])->toBeTrue();
 });

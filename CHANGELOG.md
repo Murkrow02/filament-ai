@@ -9,6 +9,14 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.4.0] - 2026-10-14
+
+### Added
+
+- `chat.voice.auto_send` (`FILAMENT_AI_VOICE_AUTO_SEND`, off by default): send the
+  dictated text as soon as it is transcribed, instead of leaving it in the box for
+  review.
+
 ## [6.3.2] - 2026-10-11
 
 ### Fixed

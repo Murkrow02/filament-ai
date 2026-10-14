@@ -217,6 +217,8 @@ final class ChatPayload
             // Whisper's language token: "it", not "it_IT".
             'language' => VoiceTranscriber::language(),
             'vocabulary' => VoiceVocabulary::for($user),
+            // Send the text as soon as it is transcribed, instead of leaving it for review.
+            'autoSend' => (bool) config('filament-ai.chat.voice.auto_send', false),
             'local' => $local ? [
                 'model' => (string) config('filament-ai.chat.voice.local.model', 'onnx-community/whisper-small'),
                 // A string for every file, or a per-file map.
