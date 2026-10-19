@@ -35,6 +35,8 @@ use Murkrow\FilamentAi\Contracts\VectorStore;
 use Murkrow\FilamentAi\Contracts\WebSearchEngine;
 use Murkrow\FilamentAi\Embeddings\EmbeddingManager;
 use Murkrow\FilamentAi\Embeddings\EmbeddingRateLimiter;
+use Murkrow\FilamentAi\Http\Middleware\AcceptsJson;
+use Murkrow\FilamentAi\Http\Middleware\AuthorizeApi;
 use Murkrow\FilamentAi\Http\Middleware\AuthorizeChat;
 use Murkrow\FilamentAi\Http\Middleware\BootAssistantPanel;
 use Murkrow\FilamentAi\Events\DocumentIngested;
@@ -135,6 +137,7 @@ class FilamentAiServiceProvider extends ServiceProvider
 
         $this->registerMcpServer();
         $this->registerChat();
+        $this->registerApi();
     }
 
     /**
@@ -214,6 +217,47 @@ class FilamentAiServiceProvider extends ServiceProvider
 
         Route::group($group, function (): void {
             $this->loadRoutesFrom(__DIR__.'/../routes/chat.php');
+        });
+    }
+
+    /**
+     * The token API: the panel assistant for clients that are not a browser
+     * page. Off by default, and nothing is registered while it is off.
+     *
+     * `AcceptsJson` goes in front of the host's middleware so an expired token
+     * is answered with a 401, not a redirect to a login page; `AuthorizeApi`
+     * after it, once the user is known. No panel is booted unless
+     * `filament-ai.api.resources` asks for the resource tools.
+     */
+    private function registerApi(): void
+    {
+        if (! config('filament-ai.enabled', true) || ! config('filament-ai.api.enabled', false)) {
+            return;
+        }
+
+        ChatAbilities::register();
+
+        if ($this->app->routesAreCached() || ! config('filament-ai.api.register', true)) {
+            return;
+        }
+
+        $group = [
+            'prefix' => trim((string) config('filament-ai.api.prefix', 'api/ai'), '/'),
+            'as' => 'filament-ai.api.',
+            'middleware' => [
+                AcceptsJson::class,
+                ...(array) config('filament-ai.api.middleware', ['api', 'auth:sanctum']),
+                AuthorizeApi::class,
+                ...(config('filament-ai.api.resources', false) ? [BootAssistantPanel::class] : []),
+            ],
+        ];
+
+        if (($domain = config('filament-ai.api.domain')) !== null && $domain !== '') {
+            $group['domain'] = (string) $domain;
+        }
+
+        Route::group($group, function (): void {
+            $this->loadRoutesFrom(__DIR__.'/../routes/api.php');
         });
     }
 
@@ -323,6 +367,10 @@ class FilamentAiServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../routes/chat.php' => base_path('routes/fai-chat.php'),
         ], 'filament-ai-chat-routes');
+
+        $this->publishes([
+            __DIR__.'/../routes/api.php' => base_path('routes/fai-api.php'),
+        ], 'filament-ai-api-routes');
 
         // Optional: the chat serves these from the package by default.
         $this->publishes([

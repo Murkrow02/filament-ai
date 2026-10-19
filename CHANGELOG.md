@@ -9,6 +9,23 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+### Added
+
+- Token API for non-browser clients (`filament-ai.api.*`, off by default): `GET config`,
+  conversations list/read/rename/delete, `POST ask` and decisions (event stream, or JSON with
+  `?stream=0`), transcribe. Stateless (`['api', 'auth:sanctum']` by default), its own assistant class,
+  resource tools only with `api.resources`. Contract in `docs/api.md`.
+- `PanelAssistant::withoutResources()`.
+
+### Fixed
+
+- Asking or deciding on a request with no session threw (`$request->session()` on a stateless
+  middleware stack); the session is now saved only when there is one.
+
+### Changed
+
+- The turn logic moved from `AssistantController` to `Http\ChatTurnResponder`, shared by the chat and the API.
+
 ## [6.4.2] - 2026-10-19
 
 ### Fixed

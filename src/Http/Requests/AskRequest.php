@@ -21,6 +21,12 @@ use Murkrow\FilamentAi\Chat\ChatAbilities;
 class AskRequest extends FormRequest
 {
     /**
+     * The longest question accepted, in characters. Published to API clients
+     * so their composer stops where the server would refuse.
+     */
+    public const MAX_QUESTION_LENGTH = 4000;
+
+    /**
      * @var array<string, bool>|null
      */
     private ?array $allowed = null;
@@ -59,7 +65,7 @@ class AskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'question' => ['required', 'string', 'min:2', 'max:4000'],
+            'question' => ['required', 'string', 'min:2', 'max:'.self::MAX_QUESTION_LENGTH],
             // Not validated as a uuid: an unusable thread id means "this
             // thread is gone", which is a reason to start a new one, never a
             // reason to refuse to answer the question.

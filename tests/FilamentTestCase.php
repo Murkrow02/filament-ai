@@ -78,6 +78,12 @@ abstract class FilamentTestCase extends TestCase
         parent::defineEnvironment($app);
 
         $app['config']->set('filament-ai.filament.enabled', true);
+
+        // The token API, behind the framework's own `auth` instead of Sanctum
+        // (which the package does not require). The `api` group starts no
+        // session, which is what these tests need to prove works.
+        $app['config']->set('filament-ai.api.enabled', true);
+        $app['config']->set('filament-ai.api.middleware', ['api', 'auth']);
         $app['config']->set('auth.providers.users.model', TestUser::class);
         $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
     }

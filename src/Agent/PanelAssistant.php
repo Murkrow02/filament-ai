@@ -72,6 +72,8 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
 
     protected bool $withoutWrites = false;
 
+    protected bool $withoutResources = false;
+
     public function inPanel(?Panel $panel): static
     {
         $this->panel = $panel;
@@ -138,6 +140,18 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
     }
 
     /**
+     * Answer this one without the panel's resource tools. The token API does
+     * this unless it boots a panel: outside one, nothing scopes the records a
+     * resource tool would read to the panel and tenant they belong to.
+     */
+    public function withoutResources(bool $without = true): static
+    {
+        $this->withoutResources = $without;
+
+        return $this;
+    }
+
+    /**
      * @return iterable<Tool>
      */
     public function tools(): iterable
@@ -146,7 +160,7 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
 
         $tools = [
             ...($sources === [] ? [] : [new SearchKnowledge($sources), new FetchDocument($sources)]),
-            ...app(ResourceToolRegistry::class)->tools($this->panel()),
+            ...($this->withoutResources ? [] : app(ResourceToolRegistry::class)->tools($this->panel())),
             ...(RunCode::enabled() ? [new RunCode] : []),
             ...(WebSearch::enabled() ? [new WebSearch] : []),
             ...(FetchWebPage::enabled() ? [new FetchWebPage] : []),
@@ -379,7 +393,7 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
         // Only what this turn really has: a narrowed turn has fewer tools than the resource declares.
         $available = array_map(static fn (Tool $tool): string => $tool->name(), iterator_to_array($this->tools(), false));
 
-        foreach ($registry->blueprints($this->panel()) as $blueprint) {
+        foreach ($this->withoutResources ? [] : $registry->blueprints($this->panel()) as $blueprint) {
             $names = array_values(array_intersect(
                 array_map(static fn (Tool $tool): string => $tool->name(), $registry->toolsFor($blueprint)),
                 $available,

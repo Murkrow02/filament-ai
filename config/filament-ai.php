@@ -716,6 +716,54 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Token API
+    |--------------------------------------------------------------------------
+    |
+    | The panel assistant for clients that are not a browser page -- a mobile
+    | or desktop app -- authenticated by a token instead of a session. Same
+    | turn, same events, same approvals and abilities as the chat; the full
+    | contract is in docs/api.md. It answers to the agent's switches too
+    | (`agent.enabled`, `agent.chat.enabled`, `agent.authorize`).
+    |
+    | Off by default: nothing is registered until it is switched on.
+    |
+    */
+
+    'api' => [
+        'enabled' => env('FILAMENT_AI_API_ENABLED', false),
+
+        // False when the host registers routes/api.php itself (publish tag
+        // filament-ai-api-routes); everything else here still applies.
+        'register' => env('FILAMENT_AI_API_REGISTER', true),
+
+        'prefix' => env('FILAMENT_AI_API_PREFIX', 'api/ai'),
+        'domain' => env('FILAMENT_AI_API_DOMAIN'),
+
+        // Stateless: no session, no CSRF. Sanctum's `auth:sanctum` is the usual
+        // choice; the package itself does not require Sanctum.
+        'middleware' => ['api', 'auth:sanctum'],
+
+        // Applied to ask and transcribe: "max,minutes", or null to disable.
+        'throttle' => env('FILAMENT_AI_API_THROTTLE', '30,1'),
+
+        // The agent that answers API clients. Null: `agent.assistant`.
+        'assistant' => null,
+
+        // Whether API turns may use the panel's resource tools. They need a
+        // panel booted around the request (`panel` / `tenant` parameters, as
+        // the chat sends) and a user who can open it; off, the assistant has
+        // its knowledge and host tools only, and any user the gates admit
+        // can use it.
+        'resources' => env('FILAMENT_AI_API_RESOURCES', false),
+
+        // Who may use the API, on top of `agent.authorize` and the chat
+        // abilities: a [Class::class, 'method'] callable taking the user.
+        // Null admits everyone those let through.
+        'authorize' => null,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Filament panel
     |--------------------------------------------------------------------------
     */

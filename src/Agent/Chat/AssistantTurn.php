@@ -56,15 +56,26 @@ final class AssistantTurn
     /**
      * The assistant, pointed at the conversation and at the page the user is
      * looking at.
+     *
+     * The token API passes its own assistant class, and leaves the panel's
+     * resources out unless it was configured to boot a panel: its users need
+     * not be able to open one, and the resource tools must never run outside
+     * the panel and tenant that scope them.
+     *
+     * @param  class-string<PanelAssistant>|null  $class  null: `filament-ai.agent.assistant`
      */
-    public function assistant(?Authenticatable $user, ?string $conversationId, ?string $resourceSlug = null, ?string $recordKey = null): PanelAssistant
+    public function assistant(?Authenticatable $user, ?string $conversationId, ?string $resourceSlug = null, ?string $recordKey = null, ?string $class = null, bool $resources = true): PanelAssistant
     {
         /** @var PanelAssistant $assistant */
-        $assistant = app((string) config('filament-ai.agent.assistant', PanelAssistant::class));
+        $assistant = app($class ?? (string) config('filament-ai.agent.assistant', PanelAssistant::class));
 
         $assistant = $conversationId === null
             ? $assistant->forUser($user)
             : $assistant->continue($conversationId, as: $user);
+
+        if (! $resources) {
+            return $assistant->withoutResources();
+        }
 
         [$resource, $record] = $this->context($resourceSlug, $recordKey);
 
@@ -141,14 +152,14 @@ final class AssistantTurn
      *
      * @return list<array{id: string, title: string, updated_at: ?string, folder_id: ?int}>
      */
-    public function threads(?Authenticatable $user): array
+    public function threads(?Authenticatable $user, ?int $limit = null): array
     {
         if ($user === null || ! $this->transcript->available()) {
             return [];
         }
 
         $filed = $this->folders->available() ? $this->folders->filed($user) : [];
-        $threads = $this->transcript->recent($user, (int) config('filament-ai.agent.chat.history', 20), array_map(strval(...), array_keys($filed)));
+        $threads = $this->transcript->recent($user, $limit ?? (int) config('filament-ai.agent.chat.history', 20), array_map(strval(...), array_keys($filed)));
 
         return array_map(static fn (array $thread): array => $thread + ['folder_id' => $filed[$thread['id']] ?? null], $threads);
     }

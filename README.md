@@ -875,6 +875,30 @@ what an ability denies is never put in the payload or the stream at all.
   published, so they can never be a stale copy in `public/`. Publish them with
   `--tag=filament-ai-chat-assets` if you would rather serve them yourself.
 
+## Token API (mobile and desktop clients)
+
+The same assistant for a client that is not a browser page, authenticated with a
+token instead of a session. Off by default:
+
+```dotenv
+FILAMENT_AI_API_ENABLED=true
+```
+
+```php
+// config/filament-ai.php
+'api' => [
+    'middleware' => ['api', 'auth:sanctum'],
+    'assistant' => App\Ai\Assistant::class, // null: agent.assistant
+],
+```
+
+Routes live under `/api/ai`: `GET config`, `GET conversations`,
+`GET|PATCH|DELETE conversations/{uuid}`, `POST ask` (event stream, or JSON with
+`?stream=0`), `POST conversations/{uuid}/decisions`, `POST transcribe`. Same
+events, approvals and abilities as the chat; the panel's resource tools are left
+out unless `api.resources` is on, so users who cannot open the panel can still
+use it. The full contract is in [docs/api.md](docs/api.md).
+
 ---
 
 ## Operating it

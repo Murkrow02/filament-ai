@@ -12,6 +12,7 @@ use Murkrow\FilamentAi\Agent\Chat\PanelScope;
 use Murkrow\FilamentAi\Agent\Chat\ToolLabels;
 use Murkrow\FilamentAi\Agent\Chat\VoiceTranscriber;
 use Murkrow\FilamentAi\Http\Controllers\AssetController;
+use Murkrow\FilamentAi\Http\Requests\AskRequest;
 
 /**
  * Everything the chat hands to the browser, in one object.
@@ -36,23 +37,8 @@ final class ChatPayload
      */
     public function build(?Authenticatable $user, array $options = []): array
     {
-        $allowed = ChatAbilities::allowed($user);
+        $allowed = $this->abilities($user);
         $conversation = $this->turn->ownedConversation($options['conversation'] ?? null, $user);
-
-        // Folders live in the history sidebar, and need their tables.
-        if (! $allowed['history'] || ! $this->turn->foldersAvailable()) {
-            $allowed['folders'] = false;
-        }
-
-        // Dictation needs the feature switched on, not only the ability.
-        if (! VoiceTranscriber::enabled()) {
-            $allowed['voice'] = false;
-        }
-
-        // Being allowed to pick a model means nothing when none are on offer.
-        if (empty(config('filament-ai.llm.available_models', []))) {
-            $allowed['model'] = false;
-        }
 
         return [
             'abilities' => $allowed,
@@ -77,6 +63,62 @@ final class ChatPayload
             'folders' => $allowed['folders'] ? $this->turn->folders($user) : [],
             'current' => $conversation === null ? null : $this->conversation($conversation, $allowed['debug']),
         ];
+    }
+
+    /**
+     * What a client of the token API needs before its first question: the
+     * same abilities, choices, suggestions and dictation settings the page
+     * bootstraps from, without anything that only makes sense in a browser
+     * page (CSRF token, endpoints, panel scope, the conversation list).
+     *
+     * @return array<string, mixed>
+     */
+    public function client(?Authenticatable $user): array
+    {
+        $allowed = $this->abilities($user);
+
+        return [
+            'abilities' => $allowed,
+            'installed' => $this->turn->available(),
+            'brand' => [
+                'name' => config('filament-ai.chat.brand.name') ?: config('app.name'),
+                'logo' => config('filament-ai.chat.brand.logo'),
+                'accent' => (string) config('filament-ai.chat.brand.accent', '#2f6f4f'),
+            ],
+            'models' => $allowed['model'] ? (array) config('filament-ai.llm.available_models', []) : [],
+            'currentModel' => $allowed['model'] ? $this->currentModel() : null,
+            'suggestions' => $this->suggestions(),
+            'voice' => $allowed['voice'] ? $this->voice($user) : null,
+            'transcribe' => $allowed['voice'] && VoiceTranscriber::transcribesOnServer(),
+            'maxQuestionLength' => AskRequest::MAX_QUESTION_LENGTH,
+        ];
+    }
+
+    /**
+     * Every ability, narrowed to what this installation can actually offer.
+     *
+     * @return array<string, bool>
+     */
+    private function abilities(?Authenticatable $user): array
+    {
+        $allowed = ChatAbilities::allowed($user);
+
+        // Folders live in the history sidebar, and need their tables.
+        if (! $allowed['history'] || ! $this->turn->foldersAvailable()) {
+            $allowed['folders'] = false;
+        }
+
+        // Dictation needs the feature switched on, not only the ability.
+        if (! VoiceTranscriber::enabled()) {
+            $allowed['voice'] = false;
+        }
+
+        // Being allowed to pick a model means nothing when none are on offer.
+        if (empty(config('filament-ai.llm.available_models', []))) {
+            $allowed['model'] = false;
+        }
+
+        return $allowed;
     }
 
     /**
@@ -136,14 +178,14 @@ final class ChatPayload
      *
      * @return array<int, array<string, mixed>>
      */
-    public function conversations(?Authenticatable $user): array
+    public function conversations(?Authenticatable $user, ?int $limit = null): array
     {
         return array_map(static fn (array $thread): array => [
             'uuid' => $thread['id'],
             'title' => $thread['title'] !== '' ? $thread['title'] : (string) __('filament-ai::messages.chat.untitled'),
             'last_message_at' => $thread['updated_at'],
             'folder_id' => $thread['folder_id'] ?? null,
-        ], $this->turn->threads($user));
+        ], $this->turn->threads($user, $limit));
     }
 
     /**
