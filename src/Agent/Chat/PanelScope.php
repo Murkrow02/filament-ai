@@ -42,15 +42,17 @@ final class PanelScope
         // that the panel's own user, as the panel's routes do.
         $guard = $panel->getAuthGuard();
 
-        if (auth()->guard($guard)->check()) {
+        if ($user !== null && AuthorizeApi::current()) {
+            // A token request is authenticated on its own guard (Sanctum), and
+            // that user is the only one it speaks for. Filament checks resource
+            // policies against the panel's guard, so the token's user becomes the
+            // panel guard's user for this request -- always, never the other way
+            // round: whatever that guard held before must not answer for it.
+            // Nothing is written to a session.
+            auth()->guard($guard)->setUser($user);
+        } elseif (auth()->guard($guard)->check()) {
             auth()->shouldUse($guard);
             $user = auth()->guard($guard)->user();
-        } elseif ($user !== null && AuthorizeApi::current()) {
-            // A token request authenticated on another guard (Sanctum): Filament
-            // checks resource policies against the panel's guard, which would
-            // be empty and deny everything. For this request only, the token's
-            // user is the panel's user; nothing is written to a session.
-            auth()->guard($guard)->setUser($user);
         }
 
         if (! $panel->hasTenancy() || ! $user instanceof HasTenants) {

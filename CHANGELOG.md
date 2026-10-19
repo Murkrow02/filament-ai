@@ -9,6 +9,13 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.6.2] - 2026-10-19
+
+### Fixed
+
+- Token API with `api.resources`: when the panel's guard already held a user (a long-lived worker, a
+  test), it answered for the request instead of the token's user. The token's user now always wins.
+
 ## [6.6.1] - 2026-10-19
 
 ### Fixed

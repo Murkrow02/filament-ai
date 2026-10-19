@@ -70,3 +70,27 @@ it('runs resource tools for a user authenticated on a token guard', function ():
     $results = json_encode(\Laravel\Ai\Models\ConversationMessage::query()->get()->pluck('tool_results'));
     expect($results)->toContain('Statuti del comune');
 });
+
+it('acts for the token user even when the panel guard holds someone else', function (): void {
+    $other = Auth::user();
+    $tokenUser = TestUser::query()->forceCreate(['name' => 'Token', 'email' => 'token@example.test', 'password' => 'x']);
+
+    $route = collect(app('router')->getRoutes())->first(fn ($r) => $r->getName() === 'filament-ai.api.conversations.index');
+    $route->action['middleware'] = [
+        ...array_map(static fn ($m) => $m === 'auth' ? 'auth:token' : $m, (array) $route->action['middleware']),
+        \Murkrow\FilamentAi\Http\Middleware\BootAssistantPanel::class,
+    ];
+
+    // A thread of the user the panel guard (web) still holds.
+    \Laravel\Ai\Models\Conversation::query()->create([
+        'id' => (string) \Illuminate\Support\Str::uuid7(),
+        'participant_type' => $other->getMorphClass(),
+        'participant_id' => $other->getKey(),
+        'title' => 'Not yours',
+    ]);
+
+    $this->withHeader('Authorization', 'Bearer '.$tokenUser->getKey())
+        ->getJson('/api/ai/conversations')
+        ->assertOk()
+        ->assertJsonPath('data', []);
+});
