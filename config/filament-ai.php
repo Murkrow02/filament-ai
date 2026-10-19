@@ -756,6 +756,12 @@ return [
         // can use it.
         'resources' => env('FILAMENT_AI_API_RESOURCES', false),
 
+        // With `resources` on: whether API users must be able to open the
+        // panel (Filament's canAccessPanel) to get the resource tools. False
+        // lets the resources' own policies decide alone -- for app users who
+        // have no panel login. The tenant checks still apply.
+        'require_panel_access' => env('FILAMENT_AI_API_REQUIRE_PANEL_ACCESS', true),
+
         // Who may use the API, on top of `agent.authorize` and the chat
         // abilities: a [Class::class, 'method'] callable taking the user.
         // Null admits everyone those let through.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Murkrow\FilamentAi\Tests\Fixtures\Filament;
 
+use Closure;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -11,6 +12,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Murkrow\FilamentAi\Agent\Resources\AgentResource;
 use Murkrow\FilamentAi\Agent\Resources\InteractsWithAgent;
 use Murkrow\FilamentAi\Tests\Fixtures\Filament\Pages\ListTestBooks;
@@ -29,6 +31,18 @@ class TestBookResource extends Resource implements AgentResource
     protected static ?string $model = TestBook::class;
 
     protected static ?string $recordTitleAttribute = 'title';
+
+    /**
+     * What a test hides from the agent (see `agentQuery()`); null hides nothing.
+     *
+     * @var (Closure(Builder): Builder)|null
+     */
+    public static ?Closure $agentQueryUsing = null;
+
+    public static function agentQuery(Builder $query): Builder
+    {
+        return static::$agentQueryUsing === null ? $query : (static::$agentQueryUsing)($query);
+    }
 
     public static function form(Schema $schema): Schema
     {

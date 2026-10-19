@@ -19,6 +19,16 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class AuthorizeApi
 {
+    /**
+     * Request attribute marking a token API request, read by `PanelScope`.
+     */
+    public const ATTRIBUTE = 'filament-ai.api';
+
+    public static function current(): bool
+    {
+        return app()->bound('request') && request()->attributes->get(self::ATTRIBUTE) === true;
+    }
+
     public function handle(Request $request, Closure $next): Response
     {
         abort_unless(config('filament-ai.enabled', true) && config('filament-ai.api.enabled', false), 404);
@@ -29,6 +39,8 @@ final class AuthorizeApi
         if (! AssistantAccess::allows($user) || (is_callable($callback) && ! $callback($user))) {
             return response()->json(['message' => __('filament-ai::messages.chat.forbidden')], 403);
         }
+
+        $request->attributes->set(self::ATTRIBUTE, true);
 
         return $next($request);
     }

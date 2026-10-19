@@ -403,6 +403,17 @@ What the agent can and cannot reach:
 - Everything a tool returns is treated as data, not instructions: the agent's rules say so, record titles are quoted into its instructions, and web pages come back marked as untrusted.
 - Resources without `AgentResource` are invisible to it.
 
+### Keeping records from the agent
+
+Every agent read and write starts from `Resource::getEloquentQuery()`. When the panel shows records the assistant must not see -- soft-deleted rows a table includes on purpose, rows that must stay out of a language model's context -- narrow them in an optional static method on the resource; it applies to listing, viewing, writes, approval cards and the record on the page:
+
+```php
+public static function agentQuery(Builder $query): Builder
+{
+    return $query->whereNull('deleted_at')->where('confidential', false);
+}
+```
+
 ### Changing data
 
 An opted-in resource also gets `orders_create` and `orders_edit`, and `orders_delete` when it asks for it with `->with(AgentTools::DELETE)`.

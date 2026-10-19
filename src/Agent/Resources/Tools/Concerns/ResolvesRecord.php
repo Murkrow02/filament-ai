@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Laravel\Ai\Tools\Request;
 use Murkrow\FilamentAi\Agent\Resources\RecordKey;
 use Murkrow\FilamentAi\Agent\Resources\ResourceBlueprint;
+use Murkrow\FilamentAi\Agent\Resources\AgentQuery;
 
 /**
  * Finds the record a tool call names, through the resource's own query.
@@ -40,7 +41,7 @@ trait ResolvesRecord
             return "Error: [{$this->shown($id)}] is not a valid {$this->blueprint->label} id. Use an id returned by {$this->blueprint->toolPrefix}_list.";
         }
 
-        $record = $resource::getEloquentQuery()->whereKey($id)->first();
+        $record = AgentQuery::for($resource)->whereKey($id)->first();
 
         return $record ?? "Error: no {$this->blueprint->label} with id [{$id}].";
     }

@@ -25,6 +25,16 @@ namespace Murkrow\FilamentAi\Agent\Resources;
  *     }
  *
  *     public static function agentMutateBeforeSave(Model $record, array $data): array
+ *
+ * Records the panel shows but the agent must not see (soft-deleted rows the
+ * table includes, rows that must stay out of a model's context) are dropped by
+ * an optional `agentQuery()`, applied on top of `getEloquentQuery()` to every
+ * agent read and write (see `AgentQuery`):
+ *
+ *     public static function agentQuery(Builder $query): Builder
+ *     {
+ *         return $query->whereNull('deleted_at')->where('internal', false);
+ *     }
  */
 trait InteractsWithAgent
 {

@@ -14,6 +14,7 @@ use Murkrow\FilamentAi\Agent\Resources\RecordPresenter;
 use Murkrow\FilamentAi\Agent\Resources\ResourceBlueprint;
 use Murkrow\FilamentAi\Agent\Tools\Concerns\GuardsToolFailures;
 use Throwable;
+use Murkrow\FilamentAi\Agent\Resources\AgentQuery;
 
 /**
  * Lists or searches the records of one resource, as the current panel user.
@@ -100,7 +101,7 @@ final class ListRecordsTool implements Tool
         $perPage = max(1, min($this->blueprint->maxRecords, (int) ($arguments['per_page'] ?? $this->blueprint->maxRecords)));
         $page = max(1, (int) ($arguments['page'] ?? 1));
 
-        $query = $resource::getEloquentQuery();
+        $query = AgentQuery::for($resource);
         $search = is_scalar($arguments['search'] ?? null) ? trim((string) $arguments['search']) : '';
         $this->applySearch($query, mb_substr($search, 0, self::MAX_SEARCH));
 

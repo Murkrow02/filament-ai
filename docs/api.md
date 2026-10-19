@@ -28,7 +28,10 @@ middleware that authenticates the request works.
 host's own tools (`PanelAssistant::additionalTools()`), never the panel's resource tools, and any
 user the gates admit may use the API — they need not be able to open the panel. With it on,
 `BootAssistantPanel` runs on every API request (send `panel` and `tenant` as the chat does) and
-the resource tools are offered only to users who can open that panel.
+the resource tools are offered only to users who can open that panel. Set
+`require_panel_access` to `false` (`FILAMENT_AI_API_REQUIRE_PANEL_ACCESS`) for app users with no panel
+login: the resources' own policies (`viewAny`, `view`, ...) then decide alone, as they already do on
+every tool call; tenancy checks still apply.
 
 ## Conventions
 

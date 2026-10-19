@@ -13,6 +13,7 @@ use Murkrow\FilamentAi\Agent\Resources\RecordPresenter;
 use Murkrow\FilamentAi\Agent\Resources\ResourceBlueprint;
 use Murkrow\FilamentAi\Agent\Resources\ValueFormatter;
 use Throwable;
+use Murkrow\FilamentAi\Agent\Resources\AgentQuery;
 
 /**
  * The card a person approves or rejects a change on.
@@ -178,7 +179,7 @@ final class ApprovalCards
             return null;
         }
 
-        $record = $resource::getEloquentQuery()->whereKey(trim((string) $id))->first();
+        $record = AgentQuery::for($resource)->whereKey(trim((string) $id))->first();
 
         return $record !== null && $resource::canView($record) ? $record : null;
     }

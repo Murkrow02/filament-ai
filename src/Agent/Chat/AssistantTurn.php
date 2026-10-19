@@ -12,6 +12,7 @@ use Laravel\Ai\Approvals\Decision;
 use Laravel\Ai\Approvals\Decisions;
 use Murkrow\FilamentAi\Agent\PanelAssistant;
 use Murkrow\FilamentAi\Agent\Resources\RecordPresenter;
+use Murkrow\FilamentAi\Agent\Resources\AgentQuery;
 
 /**
  * One turn of the panel assistant, without a Livewire component around it.
@@ -263,7 +264,7 @@ final class AssistantTurn
             return [$resource, null];
         }
 
-        $record = $resource::getEloquentQuery()->whereKey($recordKey)->first();
+        $record = AgentQuery::for($resource)->whereKey($recordKey)->first();
 
         return [$resource, $record !== null && $resource::canView($record) ? $record : null];
     }

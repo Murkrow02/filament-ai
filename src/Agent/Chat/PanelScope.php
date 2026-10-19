@@ -10,6 +10,7 @@ use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
+use Murkrow\FilamentAi\Http\Middleware\AuthorizeApi;
 use Throwable;
 
 /**
@@ -97,8 +98,12 @@ final class PanelScope
             return false;
         }
 
-        // Exactly Filament's own panel gate (`Authenticate` middleware).
-        if ($user instanceof FilamentUser ? ! $user->canAccessPanel($panel) : ! app()->isLocal()) {
+        // Exactly Filament's own panel gate (`Authenticate` middleware), unless
+        // the token API was told its users need not open the panel: the
+        // resource policies then decide alone, as they still do per tool call.
+        $panelGate = ! (AuthorizeApi::current() && ! config('filament-ai.api.require_panel_access', true));
+
+        if ($panelGate && ($user instanceof FilamentUser ? ! $user->canAccessPanel($panel) : ! app()->isLocal())) {
             return false;
         }
 

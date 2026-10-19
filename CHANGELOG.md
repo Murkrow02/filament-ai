@@ -9,6 +9,16 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.6.0] - 2026-10-19
+
+### Added
+
+- Optional `agentQuery(Builder $query): Builder` on an agent resource, applied on top of
+  `getEloquentQuery()` to every agent read and write (list, view, edit, delete, approval cards, page
+  context): keeps soft-deleted or confidential rows the panel shows away from the agent.
+- `filament-ai.api.require_panel_access` (default `true`): with `api.resources` on, `false` gives the
+  resource tools to API users without a panel login, under the resources' own policies.
+
 ## [6.5.0] - 2026-10-19
 
 ### Added
