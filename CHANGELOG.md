@@ -9,6 +9,13 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.4.1] - 2026-10-19
+
+### Changed
+
+- Agent rules: the model writes nothing about the outcome of a write before the tool answers,
+  and never asks the user to confirm a change the tool already reported as saved.
+
 ## [6.4.0] - 2026-10-14
 
 ### Added

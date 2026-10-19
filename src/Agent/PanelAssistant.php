@@ -453,7 +453,7 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
         }
 
         if ($writes) {
-            $rules[] = '- You change data only through the _create, _edit and _delete tools, and only when the user asked for the change. The user confirms each change in the interface before it runs: call the tool directly with complete arguments instead of asking for confirmation in text. If a change is rejected, do not try it again.';
+            $rules[] = '- You change data only through the _create, _edit and _delete tools, and only when the user asked for the change. The user confirms each change in the interface before it runs: call the tool directly with complete arguments instead of asking for confirmation in text. If a change is rejected, do not try it again. Write nothing about the outcome before the tool answers: a change is saved only once the tool\'s result says so (e.g. "created": true), and once it does, say it is done and never ask the user to confirm it again.';
             $rules[] = '- When no tool can make the change the user wants, tell them where in the panel to make it, linking the record when you have its url.';
         } elseif ($records) {
             $rules[] = '- You can read the panel\'s records but you cannot create, change or delete anything. When the user asks for a change, say so plainly and tell them where in the panel to make it, linking the record when you have its url.';
