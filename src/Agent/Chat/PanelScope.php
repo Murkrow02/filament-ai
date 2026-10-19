@@ -45,6 +45,12 @@ final class PanelScope
         if (auth()->guard($guard)->check()) {
             auth()->shouldUse($guard);
             $user = auth()->guard($guard)->user();
+        } elseif ($user !== null && AuthorizeApi::current()) {
+            // A token request authenticated on another guard (Sanctum): Filament
+            // checks resource policies against the panel's guard, which would
+            // be empty and deny everything. For this request only, the token's
+            // user is the panel's user; nothing is written to a session.
+            auth()->guard($guard)->setUser($user);
         }
 
         if (! $panel->hasTenancy() || ! $user instanceof HasTenants) {

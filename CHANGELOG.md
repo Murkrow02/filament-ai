@@ -9,6 +9,14 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.6.1] - 2026-10-19
+
+### Fixed
+
+- Token API with `api.resources`: users authenticated on another guard (Sanctum) got no resource
+  tools when the resources have policies, because Filament checks them against the panel's guard. The
+  token's user is now the panel guard's user for that request.
+
 ## [6.6.0] - 2026-10-19
 
 ### Added
