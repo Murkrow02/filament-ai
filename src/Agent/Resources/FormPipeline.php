@@ -114,6 +114,9 @@ final class FormPipeline
 
                 $schema->model($record)->saveRelationships();
 
+                // The new record may be an option of another form (a type, a category).
+                app(ResourceToolRegistry::class)->forget();
+
                 return $this->outcome($data, $accepted, $record, existing: false, saved: $record);
             });
         });
@@ -138,6 +141,8 @@ final class FormPipeline
                 $outcome = $this->outcome($data, $accepted, $before, existing: true);
 
                 $record->update($data);
+
+                app(ResourceToolRegistry::class)->forget();
 
                 return new FormOutcome($outcome->data, [], $outcome->ignored, $outcome->changes, $record);
             });

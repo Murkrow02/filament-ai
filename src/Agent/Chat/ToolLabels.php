@@ -23,9 +23,6 @@ final class ToolLabels
 {
     private const FIXED = ['search_knowledge', 'fetch_document', 'run_code', 'search_web', 'fetch_web_page'];
 
-    /** @var list<ResourceBlueprint>|null */
-    private ?array $blueprints = null;
-
     public function __construct(private readonly ResourceToolRegistry $registry) {}
 
     public function label(string $tool): string
@@ -70,9 +67,9 @@ final class ToolLabels
     private function blueprints(): array
     {
         try {
-            return $this->blueprints ??= $this->registry->blueprints(Filament::getCurrentOrDefaultPanel());
+            return $this->registry->blueprints(Filament::getCurrentOrDefaultPanel());
         } catch (Throwable) {
-            return $this->blueprints = [];
+            return [];
         }
     }
 }

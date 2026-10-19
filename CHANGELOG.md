@@ -9,6 +9,13 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.4.2] - 2026-10-19
+
+### Fixed
+
+- Approval cards showed a select's raw key (`custom_3`) instead of its label when the option had been
+  created earlier in the same request: the resource blueprints are now rebuilt after a write.
+
 ## [6.4.1] - 2026-10-19
 
 ### Changed

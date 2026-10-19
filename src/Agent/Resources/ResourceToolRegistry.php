@@ -33,6 +33,16 @@ final class ResourceToolRegistry
     public function __construct(private readonly ResourceInspector $inspector) {}
 
     /**
+     * Drop what was inspected. A write can change what a form offers -- a new
+     * option for a select -- and a card built later in the same request must
+     * read it, not the options the request started with.
+     */
+    public function forget(): void
+    {
+        $this->resolved = [];
+    }
+
+    /**
      * @return list<ResourceBlueprint>
      */
     public function blueprints(?Panel $panel = null): array
