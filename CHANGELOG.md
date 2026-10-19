@@ -9,6 +9,8 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.5.0] - 2026-10-19
+
 ### Added
 
 - Token API for non-browser clients (`filament-ai.api.*`, off by default): `GET config`,
