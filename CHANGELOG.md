@@ -9,6 +9,8 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.7.0] - 2026-10-22
+
 ### Added
 
 - Files: a host tool hands the user a file with `$this->file($contents, $name)`. The file is kept on
@@ -32,6 +34,7 @@ Versions before 2.0.0 were released under the package's former name,
 - `agent.resources.writes` (`FILAMENT_AI_AGENT_WRITES`) now switches off the resources' write tools
   only; an application's own write tools are no longer dropped with them.
 - The trash filter is no longer offered to the list tool.
+- The agent's context gives the weekday along with today's date.
 
 ## [6.6.2] - 2026-10-19
 
