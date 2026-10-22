@@ -389,7 +389,7 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
 
     protected function contextSection(): string
     {
-        $lines = ['Context:', '- Today is '.now()->toDateString().'.'];
+        $lines = ['Context:', '- Today is '.now()->toDateString().' ('.now()->englishDayOfWeek.').'];
 
         if (($panel = $this->panel()) !== null) {
             $lines[] = '- Panel: '.$this->plain($this->safely(fn () => $panel->getBrandName()) ?? $panel->getId()).'.';
