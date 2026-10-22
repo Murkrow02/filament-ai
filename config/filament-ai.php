@@ -724,6 +724,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Files
+    |--------------------------------------------------------------------------
+    |
+    | Files a tool hands the user (a report, an export), shown in the chat as
+    | download links. Links are temporary signed URLs, minted again whenever a
+    | conversation is read; `php artisan ai:files:prune` (schedule it daily)
+    | removes files older than `keep_days`.
+    |
+    */
+
+    'files' => [
+        'enabled' => env('FILAMENT_AI_FILES_ENABLED', true),
+        'disk' => env('FILAMENT_AI_FILES_DISK'),   // null: filesystems.default
+        'directory' => 'filament-ai/files',
+        'path' => env('FILAMENT_AI_FILES_PATH', 'ai/files'),
+        'url_ttl' => 1440,                          // minutes a link stays valid
+        'keep_days' => 7,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Token API
     |--------------------------------------------------------------------------
     |

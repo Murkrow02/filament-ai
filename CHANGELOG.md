@@ -11,6 +11,10 @@ Versions before 2.0.0 were released under the package's former name,
 
 ### Added
 
+- Files: a host tool hands the user a file with `$this->file($contents, $name)`. The file is kept on
+  `files.disk`, the chat shows it as a download link (live and in reloaded conversations) and the
+  API streams a `file` event. Links are signed and expire after `files.url_ttl` minutes;
+  `ai:files:prune` removes files older than `files.keep_days`.
 - Metrics (opt-in, `agent.metrics`): `Metric` classes declare a figure once -- measures, a date
   column, dimensions (belongs-to chains joined automatically, or a join callback), filters, named
   periods -- and become one tool each: totals for a period, comparison with the previous period or

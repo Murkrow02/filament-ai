@@ -143,6 +143,7 @@ Multipart `audio` → `{text}`. Only while `chat.voice.engine = server`; `403` o
 | `tool` | `{id, label, status: running\|done\|failed\|denied, name?, error?}` — same `id` updates the same step |
 | `approval` | `{calls: [card]}` — the turn pauses after this |
 | `sources` | `{passages: [...]}` — knowledge passages, when the knowledge tools are on |
+| `file` | `{id, name, mime, size, url}` — a file a tool produced; `url` is a signed, temporary GET link (no token needed) |
 | `done` | `{conversation, answer, pending: [card], cost_usd, model, tokens, passages}` |
 | `error` | `{message, detail?}` |
 

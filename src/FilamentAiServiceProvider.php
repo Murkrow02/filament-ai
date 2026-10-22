@@ -106,7 +106,7 @@ class FilamentAiServiceProvider extends ServiceProvider
         $this->registerPublishing();
 
         if ($this->app->runningInConsole()) {
-            $this->commands([Console\InstallCommand::class]);
+            $this->commands([Console\InstallCommand::class, Console\PruneFilesCommand::class]);
 
             // Every other command reads or writes the knowledge base.
             if (Knowledge::enabled()) {
@@ -139,6 +139,7 @@ class FilamentAiServiceProvider extends ServiceProvider
         $this->registerMcpServer();
         $this->registerChat();
         $this->registerApi();
+        $this->registerFiles();
     }
 
     /**
@@ -218,6 +219,21 @@ class FilamentAiServiceProvider extends ServiceProvider
 
         Route::group($group, function (): void {
             $this->loadRoutesFrom(__DIR__.'/../routes/chat.php');
+        });
+    }
+
+    /**
+     * The download route for files the assistant's tools produce. Signed
+     * links, no session: the same link works from the web chat and an app.
+     */
+    private function registerFiles(): void
+    {
+        if (! config('filament-ai.enabled', true) || ! config('filament-ai.files.enabled', true) || $this->app->routesAreCached()) {
+            return;
+        }
+
+        Route::group(['prefix' => trim((string) config('filament-ai.files.path', 'ai/files'), '/')], function (): void {
+            $this->loadRoutesFrom(__DIR__.'/../routes/files.php');
         });
     }
 

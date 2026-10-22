@@ -7,6 +7,7 @@ namespace Murkrow\FilamentAi\Agent\Tools;
 use Illuminate\Support\Str;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
+use Murkrow\FilamentAi\Agent\Files\FileStore;
 use Murkrow\FilamentAi\Agent\Tools\Concerns\GuardsToolFailures;
 use Murkrow\FilamentAi\Agent\Tools\Contracts\ConditionalTool;
 use Murkrow\FilamentAi\Agent\Tools\Contracts\HasChatLabel;
@@ -76,6 +77,19 @@ abstract class AgentTool implements ConditionalTool, HasChatLabel, Tool
      * @return array<mixed>|string
      */
     abstract protected function run(array $arguments): array|string;
+
+    /**
+     * Stores a file for the user and returns its descriptor. Put it in the
+     * result under `files` and the chat shows a download link:
+     *
+     *     return ['files' => [$this->file($xlsx, 'Vendite settembre.xlsx')], 'rows' => 42];
+     *
+     * @return array{id: string, name: string, mime: string, size: int, url: string}
+     */
+    protected function file(string $contents, string $name, ?string $mime = null): array
+    {
+        return app(FileStore::class)->put($contents, $name, $mime);
+    }
 
     /**
      * @param  array<mixed>|string  $result

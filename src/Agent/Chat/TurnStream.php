@@ -13,6 +13,7 @@ use Laravel\Ai\Streaming\Events\TextDelta;
 use Laravel\Ai\Streaming\Events\ToolApprovalRequest;
 use Laravel\Ai\Streaming\Events\ToolCall as ToolCallEvent;
 use Laravel\Ai\Streaming\Events\ToolResult as ToolResultEvent;
+use Murkrow\FilamentAi\Agent\Files\FileStore;
 use Murkrow\FilamentAi\Agent\PanelAssistant;
 use Murkrow\FilamentAi\Ingestion\CostCalculator;
 
@@ -33,6 +34,7 @@ final class TurnStream
     public function __construct(
         private readonly ToolLabels $labels,
         private readonly ApprovalCards $cards,
+        private readonly FileStore $files,
     ) {}
 
     /**
@@ -52,6 +54,13 @@ final class TurnStream
 
             if ($translated !== null) {
                 yield $translated;
+            }
+
+            // A tool that produced files announces them in its result.
+            if ($event instanceof ToolResultEvent && ! $event->preliminary && $event->successful) {
+                foreach ($this->files->fromToolResult($event->toolResult->result) as $file) {
+                    yield ['file', $file];
+                }
             }
         }
 

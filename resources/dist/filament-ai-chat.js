@@ -34,7 +34,8 @@
       tools: [],
       approvals: [],
       decisions: {},
-      passages: []
+      passages: [],
+      files: []
     };
   }
 
@@ -71,6 +72,7 @@
 
       (row.tools || []).forEach(function (tool) { current.tools.push(tool); });
       (row.passages || []).forEach(function (passage) { current.passages.push(passage); });
+      (row.files || []).forEach(function (file) { current.files.push(file); });
     });
 
     // Whatever is still waiting belongs to the last thing the assistant said.
@@ -499,6 +501,7 @@
       close: '<path d="M18 6L6 18M6 6l12 12"/>',
       moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
       link: '<path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>',
+      download: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
       tool: '<path d="M14.7 6.3a4 4 0 0 1-5 5L4 17v3h3l5.7-5.7a4 4 0 0 0 5-5z"/>',
       shield: '<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M12 9v4"/><path d="M12 16h.01"/>',
       mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/>',
@@ -928,6 +931,27 @@
     return html + '</details>';
   }
 
+  /**
+   * Files a tool produced for this answer: a report, an export. Links are
+   * signed and short-lived; the server mints fresh ones on every read.
+   */
+  function filesHtml(message) {
+    if (!message.files || !message.files.length) return '';
+
+    return '<div class="fai-files">' + message.files.map(function (file) {
+      return '<a class="fai-file" href="' + escapeHtml(file.url) + '" download="' + escapeHtml(file.name) + '" rel="noopener">' +
+        icon('download') + '<span class="fai-file__name">' + escapeHtml(file.name) + '</span>' +
+        (file.size ? '<span class="fai-file__size">' + escapeHtml(fileSize(file.size)) + '</span>' : '') +
+        '</a>';
+    }).join('') + '</div>';
+  }
+
+  function fileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  }
+
   function metaLine(message) {
     var parts = [];
 
@@ -967,7 +991,7 @@
     node.innerHTML =
       '<div class="fai-ask">' + escapeHtml(message.question) + '</div>' +
       '<div class="fai-steps">' + stepsHtml(message) + '</div>' +
-      '<div class="fai-answer">' + body + sourcesHtml(message) + approvalsHtml(message) + '</div>' +
+      '<div class="fai-answer">' + body + filesHtml(message) + sourcesHtml(message) + approvalsHtml(message) + '</div>' +
       '<div class="fai-tools"></div>';
 
     node.querySelector('.fai-tools').innerHTML = toolbar(message);
@@ -1014,6 +1038,7 @@
 
     answer.innerHTML = (body || (caret ? '<span class="fai-thinking"><i></i><i></i><i></i></span>' : '')) +
       (caret && body ? '<span class="fai-caret"></span>' : '') +
+      filesHtml(message) +
       sourcesHtml(message) +
       approvalsHtml(message);
 
@@ -1239,6 +1264,10 @@
 
           var card = el('fai-stream').querySelector('.fai-turn[data-index="' + index + '"] .fai-approvals');
           if (card) card.scrollIntoView({ block: 'nearest' });
+        } else if (event[1] === 'file') {
+          message.files = message.files || [];
+          message.files.push(parsed);
+          paintTurn(index, true);
         } else if (event[1] === 'sources') {
           (parsed.passages || []).forEach(function (passage) { message.passages.push(passage); });
           paintTurn(index, true);

@@ -13,6 +13,7 @@ use Laravel\Ai\Contracts\ResolvesPendingApprovals;
 use Laravel\Ai\Enums\MessageStatus;
 use Laravel\Ai\Models\Conversation;
 use Laravel\Ai\Models\ConversationMessage;
+use Murkrow\FilamentAi\Agent\Files\FileStore;
 use Murkrow\FilamentAi\Agent\Tools\WebSearch;
 use Murkrow\FilamentAi\Agent\WebSearch\WebSearchHit;
 use Throwable;
@@ -136,7 +137,7 @@ final class ConversationTranscript
     }
 
     /**
-     * @return list<array{role: string, content: string, tools: list<array{id: string, name: string, status: string}>, failed?: bool, passages?: list<array<string, mixed>>}>
+     * @return list<array{role: string, content: string, tools: list<array{id: string, name: string, status: string}>, failed?: bool, passages?: list<array<string, mixed>>, files?: list<array<string, mixed>>}>
      */
     public function messages(string $conversationId): array
     {
@@ -191,6 +192,7 @@ final class ConversationTranscript
                 // knowledge tool returned is -- and this package wrote it, so
                 // it can read it back.
                 'passages' => $this->passagesFrom($row),
+                'files' => $this->filesFrom($row),
             ];
         }
 
@@ -281,6 +283,23 @@ final class ConversationTranscript
      *
      * @return list<array<string, mixed>>
      */
+    /**
+     * Files the turn's tools produced and that are still kept, with fresh links.
+     *
+     * @return list<array{id: string, name: string, mime: string, size: int, url: string}>
+     */
+    private function filesFrom(ConversationMessage $row): array
+    {
+        $store = app(FileStore::class);
+        $files = [];
+
+        foreach ($row->tool_results as $call) {
+            array_push($files, ...$store->fromToolResult($call['result'] ?? null));
+        }
+
+        return $files;
+    }
+
     private function passagesFrom(ConversationMessage $row): array
     {
         $passages = [];

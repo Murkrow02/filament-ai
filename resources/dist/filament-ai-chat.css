@@ -782,6 +782,11 @@ a.fai-step:hover { color: var(--fai-text); }
 }
 .fai-cite:hover { color: var(--fai-text); border-color: var(--fai-accent); }
 
+.fai-files { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.fai-file { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--fai-border); border-radius: 10px; background: var(--fai-bg-raised); color: var(--fai-text); text-decoration: none; font-size: 14px; }
+.fai-file:hover { background: var(--fai-bg-hover); border-color: var(--fai-border-strong); }
+.fai-file svg { width: 16px; height: 16px; color: var(--fai-accent); }
+.fai-file__size { color: var(--fai-text-faint); font-size: 12px; }
 .fai-sources { margin-top: 12px; border-top: 1px solid var(--fai-border); padding-top: 8px; }
 .fai-sources summary {
   display: flex; align-items: center; gap: 6px;

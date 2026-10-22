@@ -520,6 +520,21 @@ final class RecordSale extends AgentAction
 
 `available()` false leaves a tool out of the turn for that user (it is checked again when called). `FILAMENT_AI_AGENT_WRITES=false` switches off the resources' writes only; your own write tools are your decision, made in `additionalTools()`. Any tool can implement `HasChatLabel` / `HasApprovalCard` / `ConditionalTool` directly instead of extending the bases.
 
+### Files: reports the user downloads
+
+A tool can hand the user a file -- "send me September's sales in Excel". Build the contents however you like and return `$this->file(...)` among the result; the chat shows a download link under the answer, and the mobile API streams a `file` event.
+
+```php
+protected function run(array $arguments): array
+{
+    $xlsx = Excel::raw(new SalesExport($arguments['from'], $arguments['to']), Excel::XLSX);
+
+    return ['files' => [$this->file($xlsx, 'vendite-settembre.xlsx')]];
+}
+```
+
+The file is kept on `filament-ai.files.disk` (under `files.directory`), and the link is a signed URL valid for `files.url_ttl` minutes: whoever holds it can download, so it is never put anywhere but the conversation. Reopening a conversation signs a fresh link while the file exists. Schedule `ai:files:prune` to remove files older than `files.keep_days`.
+
 ### Metrics: totals, rankings and trends
 
 Adding up pages of listed records is exactly what a language model gets wrong. A metric computes a figure in SQL from a definition you write once, and gives the agent one tool for "how much this week", "who sold most in September", "compare September with August" and "month by month". Opt-in: list the classes in `filament-ai.agent.metrics`.

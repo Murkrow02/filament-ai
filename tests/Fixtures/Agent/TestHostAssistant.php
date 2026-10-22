@@ -13,6 +13,6 @@ class TestHostAssistant extends PanelAssistant
 {
     protected function additionalTools(): iterable
     {
-        return [new CountBooks, new RetitleBooks];
+        return [new CountBooks, new RetitleBooks, new ExportBooks];
     }
 }
