@@ -6,6 +6,7 @@ namespace Murkrow\FilamentAi\Agent\Chat;
 
 use Filament\Facades\Filament;
 use Illuminate\Support\Str;
+use Murkrow\FilamentAi\Agent\Tools\Contracts\HasChatLabel;
 use Murkrow\FilamentAi\Agent\Resources\AgentTools;
 use Murkrow\FilamentAi\Agent\Resources\ResourceBlueprint;
 use Murkrow\FilamentAi\Agent\Resources\ResourceToolRegistry;
@@ -38,6 +39,10 @@ final class ToolLabels
                 'label' => $blueprint->label,
                 'plural' => $blueprint->pluralLabel,
             ]);
+        }
+
+        if (($host = app(HostTools::class)->find($tool)) instanceof HasChatLabel) {
+            return $host->chatLabel();
         }
 
         return Str::of($tool)->replace(['_', '-'], ' ')->ucfirst()->toString();

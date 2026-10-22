@@ -849,6 +849,9 @@
       html += '<div class="fai-approval"><p class="fai-approval__tool">' + escapeHtml(call.title || call.tool || '') + '</p>';
 
       if (call.summary) html += '<p class="fai-approval__reason">' + escapeHtml(call.summary) + '</p>';
+      (call.warnings || []).forEach(function (warning) {
+        html += '<p class="fai-approval__warning">' + escapeHtml(warning) + '</p>';
+      });
 
       if (changes.length) {
         html += '<table class="fai-approval__changes"><thead><tr><th>' + escapeHtml(t.field) + '</th>' +

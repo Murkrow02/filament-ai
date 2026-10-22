@@ -106,7 +106,7 @@ return [
         'records' => 'Record',
         'resources_enabled' => 'Può leggere i record dell\'applicazione',
         'resources_writes' => 'Permetti di proporre modifiche ai record',
-        'resources_writes_help' => 'Spento: l\'assistente legge soltanto. Nessuna creazione, modifica o eliminazione viene offerta per nessuna risorsa.',
+        'resources_writes_help' => 'Spento: l\'assistente legge soltanto. Nessuna creazione, modifica o eliminazione viene offerta per nessuna risorsa (gli strumenti propri dell\'applicazione restano).',
         'max_records' => 'Record per risposta',
         'abilities' => 'Cosa può fare',
         'abilities_help' => 'Qui compare solo ciò che la risorsa stessa mette a disposizione.',

@@ -106,7 +106,7 @@ return [
         'records' => 'Records',
         'resources_enabled' => 'Let it read application records',
         'resources_writes' => 'Let it propose changes to records',
-        'resources_writes_help' => 'Off: the assistant only reads. No create, edit or delete is offered for any resource.',
+        'resources_writes_help' => 'Off: the assistant only reads the resources. No create, edit or delete is offered for any resource (the application\'s own tools are kept).',
         'max_records' => 'Records per answer',
         'abilities' => 'What it may do',
         'abilities_help' => 'Only what the resource itself offers is listed here.',

@@ -18,6 +18,10 @@ use Laravel\Ai\Contracts\RemembersConversations as RemembersConversationsContrac
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Promptable;
 use Murkrow\FilamentAi\Agent\Resources\ResourceToolRegistry;
+use Murkrow\FilamentAi\Agent\Resources\Tools\CreateRecordTool;
+use Murkrow\FilamentAi\Agent\Resources\Tools\DeleteRecordTool;
+use Murkrow\FilamentAi\Agent\Resources\Tools\EditRecordTool;
+use Murkrow\FilamentAi\Agent\Tools\Contracts\ConditionalTool;
 use Murkrow\FilamentAi\Agent\Tools\FetchDocument;
 use Murkrow\FilamentAi\Agent\Tools\FetchWebPage;
 use Murkrow\FilamentAi\Agent\Tools\RunCode;
@@ -164,11 +168,15 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
             ...(RunCode::enabled() ? [new RunCode] : []),
             ...(WebSearch::enabled() ? [new WebSearch] : []),
             ...(FetchWebPage::enabled() ? [new FetchWebPage] : []),
-            ...$this->additionalTools(),
+            ...$this->hostTools(),
         ];
 
-        if ($this->withoutWrites || ! config('filament-ai.agent.resources.writes', true)) {
+        if ($this->withoutWrites) {
             $tools = array_values(array_filter($tools, static fn (Tool $tool): bool => ! $tool instanceof Approvable));
+        } elseif (! config('filament-ai.agent.resources.writes', true)) {
+            // The resources' writes only: the application's own write tools
+            // are its own decision, made in additionalTools().
+            $tools = array_values(array_filter($tools, static fn (Tool $tool): bool => ! $tool instanceof CreateRecordTool && ! $tool instanceof EditRecordTool && ! $tool instanceof DeleteRecordTool));
         }
 
         if ($this->onlyTools === null) {
@@ -181,6 +189,25 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
             $tools,
             static fn (Tool $tool): bool => in_array($tool->name(), $allowed, strict: true),
         ));
+    }
+
+    /**
+     * The application's own tools (`additionalTools()`), less those that say
+     * they are not available to the current user.
+     *
+     * @return list<Tool>
+     */
+    public function hostTools(): array
+    {
+        $tools = [];
+
+        foreach ($this->additionalTools() as $tool) {
+            if (! $tool instanceof ConditionalTool || $tool->available()) {
+                $tools[] = $tool;
+            }
+        }
+
+        return $tools;
     }
 
     /**
@@ -467,7 +494,8 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
         }
 
         if ($writes) {
-            $rules[] = '- You change data only through the _create, _edit and _delete tools, and only when the user asked for the change. The user confirms each change in the interface before it runs: call the tool directly with complete arguments instead of asking for confirmation in text. If a change is rejected, do not try it again. Write nothing about the outcome before the tool answers: a change is saved only once the tool\'s result says so (e.g. "created": true), and once it does, say it is done and never ask the user to confirm it again.';
+            $writing = array_values(array_map(static fn (Tool $tool): string => $tool->name(), array_filter($tools, static fn (Tool $tool): bool => $tool instanceof Approvable)));
+            $rules[] = '- You change data only through the tools that ask for approval ('.implode(', ', $writing).'), and only when the user asked for the change. The user confirms each change in the interface before it runs: call the tool directly with complete arguments instead of asking for confirmation in text. If a change is rejected, do not try it again. Write nothing about the outcome before the tool answers: a change is saved only once the tool\'s result says so (e.g. "created": true), and once it does, say it is done and never ask the user to confirm it again.';
             $rules[] = '- When no tool can make the change the user wants, tell them where in the panel to make it, linking the record when you have its url.';
         } elseif ($records) {
             $rules[] = '- You can read the panel\'s records but you cannot create, change or delete anything. When the user asks for a change, say so plainly and tell them where in the panel to make it, linking the record when you have its url.';

@@ -16,6 +16,7 @@ use Laravel\Octane\Events\RequestReceived;
 use Laravel\Octane\Events\TaskReceived;
 use Laravel\Octane\Events\TickReceived;
 use Murkrow\FilamentAi\Agent\Chat\CitedPassages;
+use Murkrow\FilamentAi\Agent\Chat\HostTools;
 use Murkrow\FilamentAi\Agent\Resources\ResourceToolRegistry;
 use Murkrow\FilamentAi\Agent\Sandbox\SandboxManager;
 use Murkrow\FilamentAi\Agent\WebSearch\WebSearchManager;
@@ -285,6 +286,7 @@ class FilamentAiServiceProvider extends ServiceProvider
         // One per request: the passages a turn cited are read back by the
         // chat that asked for them, and nothing else.
         $this->app->singleton(CitedPassages::class);
+        $this->app->scoped(HostTools::class);
 
         $this->app->singleton(EmbeddingManager::class);
         $this->app->singleton(LanguageModelManager::class);

@@ -158,8 +158,11 @@ for `cost` or `debug`.
   "record": null,
   "changes": [{"label": "Nome", "before": null, "after": "Camicia", "missing": false}],
   "summary": null,
+  "warnings": [],
   "tool": "items_create", "arguments": {}
 }
 ```
 
-`tool` and `arguments` only for `debug`. Draw the changes, then post the decision.
+`tool` and `arguments` only for `debug`. `warnings` (optional, may be absent) are lines to show
+prominently: an application's own write tool (`AgentAction`) uses them for "last piece in stock" and
+the like. Draw the changes, then post the decision.

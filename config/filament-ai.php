@@ -419,8 +419,10 @@ return [
         'resources' => [
             'enabled' => true,
 
-            // False makes the assistant read-only: no create, edit or delete
+            // False makes the resources read-only: no create, edit or delete
             // tool is offered for any resource, whatever the resources declare.
+            // The application's own write tools (additionalTools()) are not
+            // affected: leave them out there.
             'writes' => (bool) env('FILAMENT_AI_AGENT_WRITES', true),
 
             // Default cap on records per list call; AgentTools::limit() overrides it per resource.

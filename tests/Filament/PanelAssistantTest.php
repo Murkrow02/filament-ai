@@ -93,7 +93,7 @@ it('never tells the model it can change records when it cannot', function (): vo
         ->not->toContain('test_books_create', 'test_books_edit')
         ->and($assistant->instructions())
         ->toContain('you cannot create, change or delete anything')
-        ->not->toContain('_create, _edit and _delete');
+        ->not->toContain('tools that ask for approval');
 });
 
 it('says it has no access to records when no resource is offered', function (): void {
@@ -101,11 +101,11 @@ it('says it has no access to records when no resource is offered', function (): 
 
     expect((new \Murkrow\FilamentAi\Agent\PanelAssistant)->instructions())
         ->toContain('You have no access to the panel\'s records')
-        ->not->toContain('_create, _edit and _delete');
+        ->not->toContain('tools that ask for approval');
 });
 
 it('keeps the write rule when writes are offered', function (): void {
-    expect((new \Murkrow\FilamentAi\Agent\PanelAssistant)->instructions())->toContain('_create, _edit and _delete');
+    expect((new \Murkrow\FilamentAi\Agent\PanelAssistant)->instructions())->toContain('tools that ask for approval');
 });
 
 it('anchors the reply language to the application\'s', function (): void {

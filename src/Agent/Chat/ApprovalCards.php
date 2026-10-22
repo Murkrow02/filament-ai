@@ -6,6 +6,7 @@ namespace Murkrow\FilamentAi\Agent\Chat;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Murkrow\FilamentAi\Agent\Tools\Contracts\HasApprovalCard;
 use Murkrow\FilamentAi\Agent\Resources\AgentTools;
 use Murkrow\FilamentAi\Agent\Resources\FormPipeline;
 use Murkrow\FilamentAi\Agent\Resources\RecordKey;
@@ -42,9 +43,11 @@ final class ApprovalCards
     {
         [$blueprint, $action] = $this->labels->resourceTool($tool);
 
-        $card = $blueprint === null
-            ? $this->generic($tool, $reason, $arguments)
-            : $this->forResource($blueprint, (string) $action, $reason, $arguments);
+        $card = match (true) {
+            $blueprint !== null => $this->forResource($blueprint, (string) $action, $reason, $arguments),
+            ($host = app(HostTools::class)->find($tool)) instanceof HasApprovalCard => $this->forHostTool($host, $tool, $reason, $arguments),
+            default => $this->generic($tool, $reason, $arguments),
+        };
 
         $card['id'] = $id;
 
@@ -112,6 +115,24 @@ final class ApprovalCards
             report($exception);
 
             return ['title' => $this->labels->label($blueprint->toolPrefix.'_'.$action), 'record' => null, 'changes' => [], 'summary' => $reason];
+        }
+    }
+
+    /**
+     * A host tool that draws its own card. A card that fails to draw falls
+     * back to the generic one rather than leaving the decision without one.
+     *
+     * @param  array<string, mixed>  $arguments
+     * @return array<string, mixed>
+     */
+    private function forHostTool(HasApprovalCard $host, string $tool, ?string $reason, array $arguments): array
+    {
+        try {
+            return $host->approvalCard($arguments)->toArray();
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return $this->generic($tool, $reason, $arguments);
         }
     }
 

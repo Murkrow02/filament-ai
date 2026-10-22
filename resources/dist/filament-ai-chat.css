@@ -677,6 +677,7 @@ body.fai-body,
 .fai-approval + .fai-approval { border-top: 1px solid var(--fai-border); }
 .fai-approval__tool { margin: 0; font-weight: 600; font-size: 14px; }
 .fai-approval__reason { margin: 4px 0 0; font-size: 13px; color: var(--fai-text-muted); }
+.fai-approval__warning { margin: 4px 0 0; font-size: 13px; color: var(--fai-fair); font-weight: 600; }
 .fai-approval__changes {
   width: 100%; margin: 8px 0 0; border-collapse: collapse; font-size: 13px; table-layout: fixed;
 }
