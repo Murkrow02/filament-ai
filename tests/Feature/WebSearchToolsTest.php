@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 use Laravel\Ai\Tools\Request;
 use Murkrow\FilamentAi\Agent\Tools\FetchWebPage;
 use Murkrow\FilamentAi\Agent\Tools\WebSearch;
+use Murkrow\FilamentAi\Agent\WebSearch\DeepSeekSearchEngine;
 use Murkrow\FilamentAi\Agent\WebSearch\FakeSearchEngine;
 use Murkrow\FilamentAi\Agent\WebSearch\GoogleSearchEngine;
 use Murkrow\FilamentAi\Agent\WebSearch\SerperSearchEngine;
@@ -152,4 +153,106 @@ it('returns readable, capped, valid text marked as untrusted', function (): void
         ->and(json_encode($output))->not->toBeFalse();
 
     Http::assertSent(fn (HttpRequest $request): bool => true);
+});
+
+it('is offered with deepseek only once its key is set', function (): void {
+    config()->set('filament-ai.agent.web_search.driver', 'deepseek');
+    config()->set('filament-ai.agent.web_search.deepseek.api_key', null);
+
+    expect(WebSearch::enabled())->toBeFalse();
+
+    config()->set('filament-ai.agent.web_search.deepseek.api_key', 'ds-key');
+
+    expect(WebSearch::enabled())->toBeTrue()
+        ->and(app(WebSearchManager::class)->driver('deepseek'))->toBeInstanceOf(DeepSeekSearchEngine::class);
+});
+
+it('asks deepseek with a bearer key, reads the summaries, cuts long queries and caches', function (): void {
+    config()->set('filament-ai.agent.web_search.deepseek.api_key', 'ds-key');
+    config()->set('filament-ai.agent.web_search.deepseek.snippet_characters', 120);
+
+    Http::fake(['api.deepseek.com/v1/tools/search' => Http::response(['results' => [
+        ['title' => 'Casa Rosa', 'url' => 'https://ieranto.example/casa-rosa', 'snippet' => 'breve', 'summary' => 'Massimo Vignelli soggiorno\' nella casa rosa sul sentiero tra Nerano e Ieranto. '.str_repeat('Altro. ', 50), 'site_name' => 'Ieranto'],
+        ['title' => 'Senza url'],
+        ['title' => 'Metro', 'url' => 'https://metro.example/map', 'snippet' => 'Mappa di Vignelli', 'summary' => '', 'site_name' => null],
+    ]])]);
+
+    $query = 'Vignelli casa rosa '.str_repeat('Ieranto ', 30);
+    $engine = DeepSeekSearchEngine::fromConfig();
+    $result = $engine->search($query, 5);
+    $engine->search($query, 5);
+
+    Http::assertSentCount(1);
+    Http::assertSent(fn (HttpRequest $request): bool => $request->method() === 'POST'
+        && $request->hasHeader('Authorization', 'Bearer ds-key')
+        && mb_strlen($request['query']) === 128 && $request['count'] === 5);
+
+    expect($result->hits)->toHaveCount(2)
+        ->and($result->hits[0]->snippet)->toStartWith('Massimo Vignelli')->and(mb_strlen($result->hits[0]->snippet))->toBeLessThanOrEqual(123)
+        ->and($result->hits[0]->displayUrl)->toBe('Ieranto')
+        ->and($result->hits[1]->snippet)->toBe('Mappa di Vignelli')
+        ->and($result->hits[1]->displayUrl)->toBe('metro.example');
+});
+
+it('reports a deepseek error or a missing key as a failed search', function (): void {
+    config()->set('filament-ai.agent.web_search.deepseek.api_key', null);
+
+    expect(DeepSeekSearchEngine::fromConfig()->search('x', 3)->failed)->toBeTrue();
+
+    config()->set('filament-ai.agent.web_search.deepseek.api_key', 'bad');
+    Http::fake(['api.deepseek.com/*' => Http::response(['error' => ['message' => 'Authentication Fails', 'type' => 'invalid_request_error', 'param' => null, 'code' => 'invalid_request_error']], 401)]);
+
+    $result = DeepSeekSearchEngine::fromConfig()->search('x', 3);
+
+    expect($result->failed)->toBeTrue()
+        ->and($result->toToolOutput())->toContain('401: Authentication Fails');
+});
+
+it('reads a page through deepseek as markdown marked as untrusted', function (): void {
+    config()->set('filament-ai.agent.web_search.fetch_page.enabled', true);
+    config()->set('filament-ai.agent.web_search.fetch_page.driver', 'deepseek');
+    config()->set('filament-ai.agent.web_search.fetch_page.max_output_characters', 500);
+    config()->set('filament-ai.agent.web_search.deepseek.api_key', 'ds-key');
+
+    Http::fake(['api.deepseek.com/v1/tools/fetch' => Http::response(['title' => 'Fornacelle', 'content' => "## Chiesa\n\nSotto l'altare maggiore le reliquie di San Clemente. ".str_repeat('testo ', 200)])]);
+
+    $output = (new FetchWebPage)->handle(new Request(['url' => 'https://parrocchia.example/fornacelle']));
+
+    expect($output)->toStartWith('<untrusted_web_content url="https://parrocchia.example/fornacelle">')
+        ->toContain("# Fornacelle\n\n## Chiesa")
+        ->toContain('[... truncated ...]');
+
+    Http::assertSentCount(1);
+    Http::assertSent(fn (HttpRequest $request): bool => $request->hasHeader('Authorization', 'Bearer ds-key') && $request['url'] === 'https://parrocchia.example/fornacelle');
+});
+
+it('reads the page directly when deepseek cannot, unless the fallback is off', function (): void {
+    config()->set('filament-ai.agent.web_search.fetch_page.enabled', true);
+    config()->set('filament-ai.agent.web_search.fetch_page.driver', 'deepseek');
+    config()->set('filament-ai.agent.web_search.deepseek.api_key', 'ds-key');
+
+    Http::fake([
+        'api.deepseek.com/*' => Http::response(['error' => ['message' => 'No usable content']], 404),
+        'http://93.184.215.14/*' => Http::response('<p>Letta da qui</p>', 200, ['Content-Type' => 'text/html']),
+    ]);
+
+    expect((new FetchWebPage)->handle(new Request(['url' => 'http://93.184.215.14/page'])))->toContain('Letta da qui');
+
+    config()->set('filament-ai.agent.web_search.fetch_page.fallback', null);
+
+    expect((new FetchWebPage)->handle(new Request(['url' => 'http://93.184.215.14/page'])))
+        ->toBe('Error: the fetch service returned 404: No usable content.');
+});
+
+it('does not read the page directly when deepseek fails for another reason', function (): void {
+    config()->set('filament-ai.agent.web_search.fetch_page.enabled', true);
+    config()->set('filament-ai.agent.web_search.fetch_page.driver', 'deepseek');
+    config()->set('filament-ai.agent.web_search.deepseek.api_key', 'ds-key');
+
+    Http::fake(['api.deepseek.com/*' => Http::response(['error' => ['message' => 'Insufficient Balance']], 402), '*' => Http::response('no')]);
+
+    expect((new FetchWebPage)->handle(new Request(['url' => 'http://93.184.215.14/page'])))
+        ->toBe('Error: the fetch service returned 402: Insufficient Balance.');
+
+    Http::assertSentCount(1);
 });

@@ -9,6 +9,17 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+## [6.8.0] - 2026-10-22
+
+### Added
+
+- Web search: `deepseek` driver for DeepSeek's Search API (`web_search.deepseek.*`, the key defaults
+  to `DEEPSEEK_API_KEY`). Results use DeepSeek's model-oriented summary as the snippet; queries are
+  cut to the API's 128 characters.
+- `fetch_web_page` can read pages through DeepSeek's Fetch API (`fetch_page.driver` = `deepseek`):
+  Markdown, JavaScript pages included, with a direct read when DeepSeek refuses or finds nothing
+  (`fetch_page.fallback`, default `direct`).
+
 ## [6.7.0] - 2026-10-22
 
 ### Added

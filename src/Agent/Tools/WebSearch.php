@@ -113,6 +113,7 @@ final class WebSearch implements Tool
         return match (config('filament-ai.agent.web_search.driver', 'google')) {
             'google' => filled(config('filament-ai.agent.web_search.google.api_key')) && filled(config('filament-ai.agent.web_search.google.cx')),
             'serper' => filled(config('filament-ai.agent.web_search.serper.api_key')),
+            'deepseek' => filled(config('filament-ai.agent.web_search.deepseek.api_key')),
             default => true,
         };
     }

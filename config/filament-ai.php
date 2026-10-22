@@ -525,7 +525,7 @@ return [
         'web_search' => [
             'enabled' => (bool) env('FILAMENT_AI_AGENT_WEB_SEARCH', false),
 
-            // google | serper | fake, or a driver registered on WebSearchManager.
+            // google | serper | deepseek | fake, or a driver registered on WebSearchManager.
             // Google's Custom Search JSON API takes no new customers and
             // shuts down on 2027-01-01; serper returns the same results.
             'driver' => env('FILAMENT_AI_AGENT_WEB_SEARCH_DRIVER', 'google'),
@@ -548,6 +548,21 @@ return [
                 'timeout' => (int) env('FILAMENT_AI_SERPER_TIMEOUT', 8),
             ],
 
+            // DeepSeek's Search & Fetch APIs, billed per successful request
+            // (empty searches free), with the same key as the DeepSeek models.
+            // The search driver is `deepseek`; page reading goes through them
+            // with `fetch_page.driver` = `deepseek`.
+            'deepseek' => [
+                'api_key' => env('FILAMENT_AI_DEEPSEEK_SEARCH_API_KEY', env('DEEPSEEK_API_KEY')),
+                'endpoint' => env('FILAMENT_AI_DEEPSEEK_SEARCH_ENDPOINT', 'https://api.deepseek.com/v1/tools/search'),
+                'fetch_endpoint' => env('FILAMENT_AI_DEEPSEEK_FETCH_ENDPOINT', 'https://api.deepseek.com/v1/tools/fetch'),
+                'timeout' => (int) env('FILAMENT_AI_DEEPSEEK_SEARCH_TIMEOUT', 15),
+                // Their pages are loaded on their side, scripts included: slower.
+                'fetch_timeout' => (int) env('FILAMENT_AI_DEEPSEEK_FETCH_TIMEOUT', 30),
+                // Each result's model-oriented summary, cut to this.
+                'snippet_characters' => (int) env('FILAMENT_AI_DEEPSEEK_SEARCH_SNIPPET', 600),
+            ],
+
             // Results per call when the model does not say how many; Google
             // never returns more than 10 regardless of what is asked.
             'default_results' => (int) env('FILAMENT_AI_AGENT_WEB_SEARCH_RESULTS', 5),
@@ -561,6 +576,12 @@ return [
             // capped) but it is a separate decision: off unless switched on.
             'fetch_page' => [
                 'enabled' => (bool) env('FILAMENT_AI_AGENT_WEB_FETCH', false),
+                // direct (from this server) | deepseek (DeepSeek's Fetch API,
+                // Markdown, JavaScript pages too). With deepseek, a page they
+                // refuse or cannot read (403/404) is read directly unless
+                // `fallback` is null.
+                'driver' => env('FILAMENT_AI_AGENT_WEB_FETCH_DRIVER', 'direct'),
+                'fallback' => env('FILAMENT_AI_AGENT_WEB_FETCH_FALLBACK', 'direct'),
                 'timeout' => (int) env('FILAMENT_AI_AGENT_WEB_FETCH_TIMEOUT', 8),
                 'max_bytes' => (int) env('FILAMENT_AI_AGENT_WEB_FETCH_MAX_BYTES', 200000),
                 'max_output_characters' => (int) env('FILAMENT_AI_AGENT_WEB_FETCH_MAX_OUTPUT', 6000),

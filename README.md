@@ -654,6 +654,14 @@ It is off by default. Two drivers ship:
   FILAMENT_AI_SERPER_LANGUAGE=it            # optional, Serper's "hl"
   ```
 
+- **`deepseek`** -- DeepSeek's [Search API](https://api-docs.deepseek.com/guides/search), with the same key as the DeepSeek models. Billed per successful request ($0.75 per 1,000 at launch; empty results are free), whatever the number of results. Each result carries a summary written for models, which is what the agent reads (cut to `deepseek.snippet_characters`). Queries longer than 128 characters are cut.
+
+  ```dotenv
+  FILAMENT_AI_AGENT_WEB_SEARCH=true
+  FILAMENT_AI_AGENT_WEB_SEARCH_DRIVER=deepseek
+  DEEPSEEK_API_KEY=...                      # or FILAMENT_AI_DEEPSEEK_SEARCH_API_KEY
+  ```
+
 - **`google`** -- Google's [Programmable Search Engine](https://programmablesearchengine.google.com) (Custom Search JSON API), for existing customers until it closes: an engine set to search the whole web, and an API key with the "Custom Search API" enabled at the [Google Cloud console](https://console.cloud.google.com/apis/credentials).
 
   ```dotenv
@@ -665,6 +673,8 @@ It is off by default. Two drivers ship:
 `search_web` caches identical queries for `web_search.cache_ttl` seconds (an hour by default), so the same question asked twice in a conversation is not billed twice. At most 10 results per request, whatever is configured. The tool is only offered to the agent once its driver has the keys it needs.
 
 `fetch_web_page` is **off unless switched on** (`FILAMENT_AI_AGENT_WEB_FETCH=true`): it makes this server fetch a url the model chose. It only accepts plain `http`/`https` urls resolving to public addresses -- no loopback, private, carrier-grade NAT, link-local (cloud metadata) or IPv6 forms that embed them -- and connects to exactly the address it checked, so DNS cannot answer differently the second time. Every redirect is checked and pinned again, the body is read as a stream and abandoned at `max_bytes`, and the text comes back marked as untrusted content. Every search and fetch is logged with the user who asked.
+
+With `FILAMENT_AI_AGENT_WEB_FETCH_DRIVER=deepseek`, `fetch_web_page` asks DeepSeek's Fetch API instead: their servers load the page (JavaScript included) and return Markdown, and nothing is requested from this server's network. When they refuse a url (403) or get nothing usable from it (404), the page is read directly as above, unless `FILAMENT_AI_AGENT_WEB_FETCH_FALLBACK` is empty. Any other failure (no balance, rate limit) is reported to the agent as it is.
 
 The Google key is sent as the `X-Goog-Api-Key` header, never in the url. The provider's key, engine id and endpoint are not editable from the panel; on/off, result counts and caching are.
 

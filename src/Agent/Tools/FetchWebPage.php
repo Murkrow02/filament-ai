@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
 use Murkrow\FilamentAi\Agent\Tools\Concerns\GuardsToolFailures;
+use Murkrow\FilamentAi\Agent\WebSearch\DeepSeekPageFetcher;
 use Murkrow\FilamentAi\Agent\WebSearch\PublicUrlGuard;
 use Psr\Http\Message\StreamInterface;
 use Throwable;
@@ -33,6 +34,8 @@ use Throwable;
  *   in its instructions and around the text, that a page is data, not orders.
  *
  * Off by default: switching web search on does not switch this on with it.
+ * With `fetch_page.driver` = `deepseek` the page is read by DeepSeek's Fetch
+ * API instead (`DeepSeekPageFetcher`), and from here only when they cannot.
  */
 final class FetchWebPage implements Tool
 {
@@ -74,11 +77,13 @@ final class FetchWebPage implements Tool
                 return 'Error: the "url" argument is required.';
             }
 
-            $result = $this->fetch($url);
+            $driver = (string) config('filament-ai.agent.web_search.fetch_page.driver', 'direct');
+            $result = $driver === 'deepseek' ? $this->throughDeepSeek($url) : $this->fetch($url);
 
             Log::info('filament-ai: the assistant fetched a web page', [
                 'url' => $url,
                 'user' => auth()->id(),
+                'driver' => $driver,
                 'outcome' => str_starts_with($result, 'Error:') ? $result : 'ok',
             ]);
 
@@ -90,6 +95,38 @@ final class FetchWebPage implements Tool
     {
         return WebSearch::enabled()
             && (bool) config('filament-ai.agent.web_search.fetch_page.enabled', false);
+    }
+
+    /**
+     * DeepSeek's servers read the page and answer Markdown. When their policy
+     * refuses a url (403) or they get nothing usable from it (404), the page
+     * is read from here instead, unless `fetch_page.fallback` is off.
+     */
+    private function throughDeepSeek(string $url): string
+    {
+        $fetcher = DeepSeekPageFetcher::fromConfig();
+        $page = $fetcher->fetch($url);
+
+        if ($page === null) {
+            $fallback = (string) config('filament-ai.agent.web_search.fetch_page.fallback', 'direct') === 'direct';
+
+            return $fallback && in_array($fetcher->status, [403, 404], true)
+                ? $this->fetch($url)
+                : 'Error: '.$fetcher->error;
+        }
+
+        $text = trim($page['content']);
+        $max = (int) config('filament-ai.agent.web_search.fetch_page.max_output_characters', 6000);
+
+        if ($text === '') {
+            $text = 'The page had no readable text.';
+        } elseif (mb_strlen($text) > $max) {
+            $text = Str::substr($text, 0, $max)."\n[... truncated ...]";
+        }
+
+        $title = $page['title'] === '' ? '' : '# '.$page['title']."\n\n";
+
+        return '<untrusted_web_content url="'.htmlspecialchars($url, ENT_QUOTES)."\">\n{$title}{$text}\n</untrusted_web_content>";
     }
 
     private function fetch(string $url): string
