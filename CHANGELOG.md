@@ -9,6 +9,26 @@ Versions before 2.0.0 were released under the package's former name,
 
 ## [Unreleased]
 
+### Added
+
+- Metrics (opt-in, `agent.metrics`): `Metric` classes declare a figure once -- measures, a date
+  column, dimensions (belongs-to chains joined automatically, or a join callback), filters, named
+  periods -- and become one tool each: totals for a period, comparison with the previous period or
+  year, rankings by a dimension, series by day/week/month/year.
+- Host tools: `AgentTool` (read) and `AgentAction` (approved write, with `prepare()` checked before
+  asking and again before `perform()`) bases; `HasChatLabel`, `HasApprovalCard` and
+  `ConditionalTool` contracts; `ApprovalCard` builder. Approval cards may carry `warnings`.
+- List tool: relationship columns are searched through the relationship (`customer.name`), sortable
+  columns are offered as `sort`/`direction`, plain toggle filters become booleans, filters with their
+  own form offer each describable field (dates, text, numbers, switches, static selects), and
+  relationship selects list up to 100 options.
+
+### Changed
+
+- `agent.resources.writes` (`FILAMENT_AI_AGENT_WRITES`) now switches off the resources' write tools
+  only; an application's own write tools are no longer dropped with them.
+- The trash filter is no longer offered to the list tool.
+
 ## [6.6.2] - 2026-10-19
 
 ### Fixed

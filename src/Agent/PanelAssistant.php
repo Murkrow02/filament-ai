@@ -17,6 +17,7 @@ use Laravel\Ai\Contracts\HasTools;
 use Laravel\Ai\Contracts\RemembersConversations as RemembersConversationsContract;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Promptable;
+use Murkrow\FilamentAi\Agent\Metrics\Metric;
 use Murkrow\FilamentAi\Agent\Resources\ResourceToolRegistry;
 use Murkrow\FilamentAi\Agent\Resources\Tools\CreateRecordTool;
 use Murkrow\FilamentAi\Agent\Resources\Tools\DeleteRecordTool;
@@ -201,7 +202,7 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
     {
         $tools = [];
 
-        foreach ($this->additionalTools() as $tool) {
+        foreach ([...$this->additionalTools(), ...$this->metrics()] as $tool) {
             if (! $tool instanceof ConditionalTool || $tool->available()) {
                 $tools[] = $tool;
             }
@@ -342,6 +343,25 @@ class PanelAssistant implements Agent, HasTools, RemembersConversationsContract
     protected function additionalTools(): iterable
     {
         return [];
+    }
+
+    /**
+     * The metrics this agent can compute: `filament-ai.agent.metrics`, a list
+     * of `Metric` classes. None unless the application lists some.
+     *
+     * @return list<Metric>
+     */
+    protected function metrics(): array
+    {
+        $metrics = [];
+
+        foreach ((array) config('filament-ai.agent.metrics', []) as $class) {
+            if (is_string($class) && is_a($class, Metric::class, true)) {
+                $metrics[] = app($class);
+            }
+        }
+
+        return $metrics;
     }
 
     /**

@@ -444,6 +444,12 @@ return [
         // give it a persona, a domain and extra tools.
         'assistant' => \Murkrow\FilamentAi\Agent\PanelAssistant::class,
 
+        // Figures the assistant can compute and follow over time: a list of
+        // Murkrow\FilamentAi\Agent\Metrics\Metric classes, one tool each
+        // (totals for a period, breakdowns, comparisons, series). None by
+        // default. See docs/metrics.md.
+        'metrics' => [],
+
         // Which model answers in the panel. Both fall back to the generation
         // model configured above, so a host that set FILAMENT_AI_LLM_* once does not
         // have to say it twice; null then leaves laravel/ai's own defaults

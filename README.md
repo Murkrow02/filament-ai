@@ -381,7 +381,14 @@ class OrderResource extends Resource implements AgentResource
 }
 ```
 
-That resource now gives the agent `orders_list` (free-text search over the table's searchable columns, paginated, newest first) and `orders_view` (one record, with the table's columns and the form's fields). The table's own filters become arguments too -- `status`, `customer`, a ternary toggle -- and are applied by Filament itself, so they narrow exactly as they do in the panel. Narrow or describe it when the defaults are not right:
+That resource now gives the agent `orders_list` (free-text search over the table's searchable columns, paginated, newest first) and `orders_view` (one record, with the table's columns and the form's fields). The table's own filters become arguments too and are applied by Filament itself, so they narrow exactly as they do in the panel:
+
+- selects and ternaries (`status`, `customer`): a relationship select that is not preloaded lists its options when there are at most 100, its key otherwise;
+- a plain `Filter::make('overdue')->toggle()`: a boolean that narrows when true;
+- a filter with its own form (`Filter::make('placed')->schema([DatePicker::make('from'), DatePicker::make('until')])`): one argument per field it can describe -- dates, text, numbers, switches, static selects -- named `placed_from`, `placed_until` (just `placed` for a one-field form);
+- the trash filter is never offered: what the agent sees of trashed rows is decided in `agentQuery()`.
+
+A searchable relationship column (`TextColumn::make('customer.name')->searchable()`) is searched through the relationship, so an order is found by its customer's name; `searchUsing()` accepts `relation.column` too. Sortable columns are offered as `sort` / `direction` and ordered by the column itself (relationship columns included). Narrow or describe it when the defaults are not right:
 
 ```php
 public static function agentTools(AgentTools $tools): AgentTools
@@ -457,6 +464,95 @@ To make the whole assistant read-only, set `FILAMENT_AI_AGENT_WRITES=false` (or 
 Creation and edits can skip the confirmation per resource with `->withoutApproval(AgentTools::CREATE, AgentTools::EDIT)`. Think twice: record content the agent reads can then steer a write nobody looks at. A deletion is always confirmed, whatever the code or the settings say.
 
 To turn a write back to asking (for instance per environment), `->requireApproval(AgentTools::EDIT)` undoes `withoutApproval()`.
+
+### Tools of your own
+
+The derived tools read and write one resource at a time. For anything else -- a stock level summed over warehouses, a sale with several lines, a bulk change -- give the agent a tool of your own from `additionalTools()`. Two bases do what every tool here must (never throw, answer a problem as an `Error:` the model can explain, name itself in the chat):
+
+```php
+use Murkrow\FilamentAi\Agent\Tools\AgentTool;
+use Murkrow\FilamentAi\Agent\Tools\ToolRefusal;
+
+final class StockLevels extends AgentTool   // name: stock_levels
+{
+    public function description(): string { return 'Pieces in stock of an item, by size.'; }
+    public function schema(JsonSchema $schema): array { return ['item' => $schema->string()->required()]; }
+    public function chatLabel(): string { return 'Checking stock'; }
+    public function available(): bool { return auth()->user()->can('viewAny', Stock::class); }
+
+    protected function run(array $arguments): array|string
+    {
+        $item = Item::findByName($arguments['item']) ?? throw new ToolRefusal('no item is called that.');
+
+        return ['item' => $item->name, 'sizes' => $item->stockBySize()];   // sent as JSON
+    }
+}
+```
+
+A write extends `AgentAction`: `prepare()` resolves and checks the arguments without changing anything and returns the card the user approves; `perform()` makes the change. A request `prepare()` refuses is never put to the user -- the model gets the refusal -- and `prepare()` runs again right before `perform()`, so an approval given minutes ago is checked against the data as it is now.
+
+```php
+use Murkrow\FilamentAi\Agent\Chat\ApprovalCard;
+use Murkrow\FilamentAi\Agent\Tools\AgentAction;
+
+final class RecordSale extends AgentAction
+{
+    protected function prepare(array $arguments): ApprovalCard
+    {
+        $lines = $this->resolveLines($arguments['lines']);   // throws ToolRefusal when out of stock
+
+        $card = ApprovalCard::make('Record sale')->record($this->store()->name);
+        foreach ($lines as $line) {
+            $card->change($line->label, "{$line->quantity} × {$line->price}");
+        }
+
+        return $card->change('Total', $this->total($lines))->warning('Last piece in stock.');
+    }
+
+    protected function perform(array $arguments, ApprovalCard $card): array|string
+    {
+        $sale = SaleService::create(/* ... */);
+
+        return ['saved' => true, 'sale' => $sale->id];
+    }
+}
+```
+
+`available()` false leaves a tool out of the turn for that user (it is checked again when called). `FILAMENT_AI_AGENT_WRITES=false` switches off the resources' writes only; your own write tools are your decision, made in `additionalTools()`. Any tool can implement `HasChatLabel` / `HasApprovalCard` / `ConditionalTool` directly instead of extending the bases.
+
+### Metrics: totals, rankings and trends
+
+Adding up pages of listed records is exactly what a language model gets wrong. A metric computes a figure in SQL from a definition you write once, and gives the agent one tool for "how much this week", "who sold most in September", "compare September with August" and "month by month". Opt-in: list the classes in `filament-ai.agent.metrics`.
+
+```php
+use Murkrow\FilamentAi\Agent\Metrics\Metric;
+use Murkrow\FilamentAi\Agent\Metrics\MetricDefinition;
+
+final class SalesMetric extends Metric   // tool: metric_sales
+{
+    public function query(): Builder
+    {
+        return Sale::query()->where('status', 'completed');   // what may ever be counted, scoped
+    }
+
+    public function define(MetricDefinition $metric): void
+    {
+        $metric->label('Sales')
+            ->describe('Completed sales only.')
+            ->date('sold_at')
+            ->count('sales')
+            ->sum('revenue', 'total_cents', unit: 'EUR', divisor: 100)
+            ->dimension('operator', 'user.name')                     // belongs-to chains are joined
+            ->dimension('supplier', 'suppliers.name',                // anything else: your join
+                join: fn ($query) => $query->join(/* ... */),
+                when: fn () => auth()->user()->isAdmin())            // per-user
+            ->filter('store', 'Only this store', fn (Builder $q, $id) => $q->where('store_id', $id))
+            ->periods(fn () => ['spring_summer_2026' => ['2026-03-01', '2026-08-31']]);
+    }
+}
+```
+
+The tool takes a `period` (presets such as `today`, `this_week`, `last_month`, `this_year`, plus your named periods) or `from`/`to`; `compare` (`previous_period`: September with August, this month so far with the same days of last month; or `previous_year`) with differences and percentages; `group_by` a dimension with `sort_by` and `limit` for a ranking; `series` by day, week, month or year; and your filters. Money is stored however you store it (`divisor: 100` for cents) and reported in units. The model only picks among names you declared: no column or expression of its own reaches SQL. Series work on SQLite, MySQL/MariaDB and PostgreSQL.
 
 ### Documents only some users may read
 

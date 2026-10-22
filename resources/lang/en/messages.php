@@ -150,6 +150,7 @@ return [
     ],
 
     'tools' => [
+        'metric' => 'Compute: :label',
         'list' => 'Search :plural',
         'view' => 'Open a :label',
         'create' => 'Create a :label',
