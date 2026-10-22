@@ -52,7 +52,7 @@ it('derives the table filters as tool arguments', function (): void {
 it('offers the filters alongside search and pagination', function (): void {
     $arguments = array_keys(bookListTool()->schema(new \Illuminate\JsonSchema\JsonSchemaTypeFactory));
 
-    expect($arguments)->toBe(['page', 'per_page', 'search', 'author', 'bad_ocr']);
+    expect($arguments)->toBe(['page', 'per_page', 'search', 'sort', 'direction', 'author', 'bad_ocr']);
 });
 
 it('narrows by a select filter the way the table does', function (): void {

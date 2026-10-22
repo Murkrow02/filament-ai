@@ -55,6 +55,11 @@ final class ResourceInspector
             ?? $this->searchableColumns($columns, $model)
             ?: $resource::getGloballySearchableAttributes();
 
+        $searchColumns = array_values(array_filter(
+            array_unique($searchColumns),
+            fn (string $column): bool => $this->isRealColumn($model, $column),
+        ));
+
         $configured = $tools->configuredAttributes();
 
         return new ResourceBlueprint(
@@ -63,10 +68,10 @@ final class ResourceInspector
             label: (string) $resource::getModelLabel(),
             pluralLabel: (string) $resource::getPluralModelLabel(),
             abilities: $tools->abilities(),
-            // Only real columns of the model's own table: a searchable column
-            // backed by a relationship or a custom query callback would reach
-            // SQL as a column that does not exist.
-            searchColumns: array_values(array_intersect(array_unique($searchColumns), $this->columnListing($model))),
+            // Only real columns, of the model's table or of a related one
+            // ("itemData.name"): a searchable column backed by a custom query
+            // callback would reach SQL as a column that does not exist.
+            searchColumns: $searchColumns,
             listAttributes: $configured ?? $tableNames,
             viewAttributes: $configured ?? array_values(array_unique([...$tableNames, ...$formNames])),
             maxRecords: $tools->maxRecords(),
@@ -75,6 +80,7 @@ final class ResourceInspector
             unapprovedAbilities: $tools->unapprovedAbilities(),
             filters: $table === null ? [] : $this->tableFilters($table),
             editFields: $editFields,
+            sortColumns: $this->sortableColumns($columns),
         );
     }
 
@@ -90,7 +96,10 @@ final class ResourceInspector
         }
 
         try {
-            return $resource::table(Table::make($livewire));
+            // A query is what lets a relationship filter list its options
+            // (Filament reads the table's model from it); the resource's own
+            // table() replaces it if it sets one.
+            return $resource::table(Table::make($livewire)->query(fn () => $resource::getModel()::query()));
         } catch (Throwable $exception) {
             report($exception);
 
@@ -208,13 +217,70 @@ final class ResourceInspector
                     continue;
                 }
 
-                array_push($searchable, ...$column->getSearchColumns($model));
+                // A relationship column searches the related model's columns,
+                // reached as "relation.column" (Filament's own search does
+                // the same with whereRelation).
+                $relationship = $column->getRelationshipName($model);
+                $prefix = blank($relationship) ? '' : $relationship.'.';
+
+                foreach ($column->getSearchColumns($model) as $searchColumn) {
+                    $searchable[] = $prefix.$searchColumn;
+                }
             } catch (Throwable) {
                 continue;
             }
         }
 
         return array_values(array_unique($searchable));
+    }
+
+    /**
+     * Sortable table columns by name. Sorting is handed back to the column
+     * (`applySort()`), so a relationship or a custom sort query orders the
+     * records exactly as the table does.
+     *
+     * @param  list<Column>  $columns
+     * @return array<string, Column>
+     */
+    private function sortableColumns(array $columns): array
+    {
+        $sortable = [];
+
+        foreach ($columns as $column) {
+            try {
+                if ($column->isSortable()) {
+                    $sortable[$column->getName()] = $column;
+                }
+            } catch (Throwable) {
+                continue;
+            }
+        }
+
+        return $sortable;
+    }
+
+    /**
+     * A column of the model's table, or "relation.column" (any depth) ending
+     * on a real column of the related model's table.
+     */
+    private function isRealColumn(Model $model, string $column): bool
+    {
+        $parts = explode('.', $column);
+        $name = array_pop($parts);
+
+        foreach ($parts as $relation) {
+            try {
+                if (! $model->isRelation($relation)) {
+                    return false;
+                }
+
+                $model = $model->{$relation}()->getRelated();
+            } catch (Throwable) {
+                return false;
+            }
+        }
+
+        return in_array($name, $this->columnListing($model), true);
     }
 
     /**
